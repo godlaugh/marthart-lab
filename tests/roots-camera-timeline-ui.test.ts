@@ -14,7 +14,7 @@ import type {SceneDocument} from '../src/types';
 
 const spatial=()=>withRootsPresentation(createScene(definition('roots')),defaultRootsPresentationConfiguration());
 function markup(scene:SceneDocument,part:'panel'|'timeline'|'color',language:'zh'|'en'='en'){
- const children=part==='panel'?createElement(RootsPresentationControls,{scene,onChange:()=>{}}):part==='color'?createElement(RootsDensityColorControls,{scene,onChange:()=>{}}):createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}});
+ const children=part==='panel'?createElement(RootsPresentationControls,{scene,onChange:()=>{}}):part==='color'?createElement(RootsDensityColorControls,{scene,onChange:()=>{}}):createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}});
  return renderToStaticMarkup(createElement(I18nProvider,{language,children}));
 }
 function clipOptions(html:string){return html.match(/<select aria-label="New clip type"[^>]*>(.*?)<\/select>/)?.[1]??'';}

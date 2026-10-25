@@ -869,7 +869,10 @@ export default function App() {
     if(sourceLivePreviewKind(sceneRef.current)==='roots'){
       if(value!==0){setToast(t('后台实时采样请使用返回起点重新开始'));return;}
       if(rootsNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}
-      try{admitRootsRetention(rootsEditor.current!.checkpoint());rootsEditor.current!.edit({kind:'restart'});retireRootsGesture();livePlaybackTransition.current=undefined;
+      // The queue still owns an unacknowledged pause/resume. Its acknowledgement
+      // must not rewrite a restart that is intended to create a running clock.
+      if(livePlaybackTransition.current){notify(t('请等待播放状态切换完成后再重新开始'));return;}
+      try{admitRootsRetention(rootsEditor.current!.checkpoint());rootsEditor.current!.edit({kind:'restart'});retireRootsGesture();
         // Native Reset resumes the applied scene and leaves author edits staged.
         autoPlayPending.current=false;playingRef.current=true;setPlaying(true);liveLastFrameAt.current=undefined;
         playbackClock.current=0;timeRef.current=0;setTime(0);liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);
@@ -891,6 +894,12 @@ export default function App() {
     autoPlayPending.current=false;
     playbackClock.current=value;
     setTime(value);
+  }
+  function restartTimeline(){
+    // Roots restart owns the new clock and resumes it. Other timeline families
+    // retain their existing pause-then-seek behavior.
+    if(sourceLivePreviewKind(sceneRef.current)!=='roots')void play(false);
+    seek(0);
   }
   function play(value:boolean):Promise<void>|undefined {
     if(value&&samilaExportPreview.current.active)return;
@@ -1647,6 +1656,7 @@ export default function App() {
             playing={playing}
             onTime={seek}
             onPlay={play}
+            onRestart={restartTimeline}
             onChange={next=>sourceLivePreviewKind(sceneRef.current)==='fractal'?editFractal(next,'stage'):sourceLivePreviewKind(sceneRef.current)==='roots'?editRoots(next,'roots-stage'):['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?void applyScene({...sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),timeline:next.timeline}):edit(next)}
           />}
         </main>

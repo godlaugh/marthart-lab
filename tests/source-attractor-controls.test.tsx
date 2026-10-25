@@ -56,7 +56,7 @@ describe('canonical source Attractor authoring',()=>{
   onChange.mockClear();field(tree,'吸引子背景 ARGB').onBlur({target:{value:'#abc'}});expect(onChange).not.toHaveBeenCalled();
  });
  it('offers source camera/gradient authoring without parameter clips and retains local Attractor UI',()=>{
-  const s=scene(),html=renderToStaticMarkup(<Timeline scene={s} time={0} playing={false} onTime={()=>{}} onPlay={()=>{}} onChange={()=>{}}/>),choices=html.match(/<select aria-label="新片段类型"[^>]*>(.*?)<\/select>/)?.[1]??'';
+  const s=scene(),html=renderToStaticMarkup(<Timeline scene={s} time={0} playing={false} onTime={()=>{}} onPlay={()=>{}} onRestart={()=>{}} onChange={()=>{}}/>),choices=html.match(/<select aria-label="新片段类型"[^>]*>(.*?)<\/select>/)?.[1]??'';
   for(const type of ['wait','animate','align'])expect(choices).toContain(`value="${type}"`);for(const type of ['param','numeric','trails'])expect(choices).not.toContain(`value="${type}"`);
   const gradient=renderToStaticMarkup(<AttractorGradientEditor config={SOURCE_PARTICLE_GRADIENT_DEFAULT} onChange={()=>{}}/>);expect(gradient).toContain('attractor-gradient-config');expect(gradient).toContain('显示拖尾时');expect(gradient).not.toContain('曲面两侧');
   const local=createScene(definition('attractor'));expect(renderToStaticMarkup(<SourceAttractorControls scene={local} onChange={()=>{}}/>)).toBe('');expect(renderToStaticMarkup(<SourceAttractorPaletteEditor scene={local} onChange={()=>{}}/>)).toBe('');

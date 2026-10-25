@@ -16,7 +16,7 @@ import type {GradientAnimation,SceneDocument} from '../src/types';
 const spatial=()=>withRootsPresentation(createScene(definition('roots')),defaultRootsPresentationConfiguration());
 const render=(children:ReturnType<typeof createElement>,language:'zh'|'en'='en')=>renderToStaticMarkup(createElement(I18nProvider,{language,children}));
 const panel=(scene:SceneDocument)=>render(createElement(RootsPresentationControls,{scene,onChange:()=>{}}));
-const timeline=(scene:SceneDocument)=>render(createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}}));
+const timeline=(scene:SceneDocument)=>render(createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}}));
 function markerScene(){const scene=spatial();scene.timeline.tracks=[{id:'retained-start',type:'animate',target:'camera.actions',from:0,to:0,start:0,duration:1,easing:'linear',enabled:true,pingPong:false,actions:[{id:'old-marker',method:'gradientStart'}]}];return scene;}
 
 describe('Roots complete scene queue authoring',()=>{

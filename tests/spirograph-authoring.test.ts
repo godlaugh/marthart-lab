@@ -97,7 +97,7 @@ describe('explicit source Spirograph authoring',()=>{
   const scene=withSpirographClock(read(source({settings:{layers:[{autoStopOnClosure:false}]}})).scene,undefined);
   const controls=spirographAuthoringControls(scene,def.controls);expect(controls.find(c=>c.key==='rotation')!.label).toContain('度');expect(controls.find(c=>c.key==='offsetY')!.label).toContain('向下');expect(controls.find(c=>c.key==='spiroView')!.options![0].value).toBe('native');expect(controls.some(c=>c.key==='easeDuration'||c.key==='finishTrace')).toBe(false);expect(spirographAuthoringControls(withSpirographVersion(scene,'local-v1'),def.controls).some(c=>c.key==='easeDuration')).toBe(true);
   const html=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(SpirographEditor,{scene,time:0,onChange:()=>{}})}));expect(html).toContain('Spirograph coordinate and animation rules');expect(html).toContain('radians/second');expect(html).toContain('Completion has not been confirmed within the current replay range');
-  const timeline=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}})}));expect(timeline).toContain('value="spirograph_finish_wait"');
+  const timeline=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}})}));expect(timeline).toContain('value="spirograph_finish_wait"');
  });
  it('hides dormant source Z controls through the real Fields consumer while retaining saved values and local controls',()=>{
   const scene=read().scene;Object.assign(scene.settings,{scaleZ:7,offsetZ:-31});

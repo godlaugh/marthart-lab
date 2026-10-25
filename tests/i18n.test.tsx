@@ -45,7 +45,7 @@ describe('explicit locale boundary',()=>{
  });
  it('preserves user names, palette names, track labels and LaTeX in rendered editors',()=>{
   const scene=createScene(definitions[0]);scene.name='我的作品';scene.palette.name='我的调色板';scene.timeline.tracks[0].label='我的片段';scene.formulas=defaultFormulas();scene.formulas.main.latex='\\text{我的公式}';
-  const before=JSON.stringify(scene),markup=renderToStaticMarkup(<I18nProvider language="en"><SceneName name={scene.name} onChange={()=>{}} onError={()=>{}}/><PaletteEditor palette={scene.palette} onChange={()=>{}}/><Timeline scene={scene} time={0} playing={false} onTime={()=>{}} onPlay={()=>{}} onChange={()=>{}}/><FormulaEditor scene={scene} onChange={()=>{}}/></I18nProvider>);
+  const before=JSON.stringify(scene),markup=renderToStaticMarkup(<I18nProvider language="en"><SceneName name={scene.name} onChange={()=>{}} onError={()=>{}}/><PaletteEditor palette={scene.palette} onChange={()=>{}}/><Timeline scene={scene} time={0} playing={false} onTime={()=>{}} onPlay={()=>{}} onRestart={()=>{}} onChange={()=>{}}/><FormulaEditor scene={scene} onChange={()=>{}}/></I18nProvider>);
   expect(markup).toContain('value="我的作品"');expect(markup).toContain('value="我的调色板"');expect(markup).toContain('我的片段');expect(markup).toContain('\\text{我的公式}');expect(markup).toContain('Palette editor');expect(markup).toContain('Animation timeline');expect(JSON.stringify(scene)).toBe(before);
  });
 });

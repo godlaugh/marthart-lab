@@ -15,7 +15,7 @@ function source(kind:'surface'|'implicit'|'attractor'|'perlin'='surface'){
  if(kind==='attractor')scene.settings.presentation='points';
  scene.timeline.schedule='ordinary-camera-sequence-v1';scene.timeline.tracks=[];return scene;
 }
-function html(scene:SceneDocument){return renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}})}));}
+function html(scene:SceneDocument){return renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}})}));}
 const choices=(markup:string)=>markup.match(/<select aria-label="New clip type"[^>]*>(.*?)<\/select>/)?.[1]??'';
 describe('ordinary source camera Timeline authoring boundaries',()=>{
  it.each(['map','symmetry'] as const)('filters %s captured density clip types without hiding its supported camera components',kind=>{

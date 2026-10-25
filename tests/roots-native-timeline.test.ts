@@ -52,7 +52,7 @@ describe('Roots source math authoring and timeline applicability',()=>{
  it('offers active defaults and displays retained inactive tracks without new choices',()=>{
   const source=native();source.parameters={a:8};source.settings.rootDensityColorVersion='mathart-1.7.8-metric-v1';source.settings.rootsMode='progressive';
   expect(createAnimationTrack(source).target).toBe('settings.rootSourcePaletteOffset');
-  const s=timeline(source,[numeric('parameters.a',8,20)]),markup=renderToStaticMarkup(createElement(I18nProvider,{language:'zh',children:createElement(Timeline,{scene:s,time:1,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}})}));
+  const s=timeline(source,[numeric('parameters.a',8,20)]),markup=renderToStaticMarkup(createElement(I18nProvider,{language:'zh',children:createElement(Timeline,{scene:s,time:1,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}})}));
   expect(markup).toContain('相关轨道保留时长但未执行');expect(markup).not.toContain('<option value="parameters.a">');expect(markup).not.toContain('<option value="settings.rootIterations">');expect(s.timeline.tracks[0].target).toBe('parameters.a');
  });
 });

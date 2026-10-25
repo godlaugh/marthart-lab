@@ -75,7 +75,7 @@ describe('explicit Spirograph frame-clock authoring',()=>{
   const scene=withSpirographClock(document(),'source-frame-v1');scene.spirographFrameEvents=[{beforeFrame:60,type:'clear'}];
   const editor=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(SpirographEditor,{scene,time:1,completedFrame:60,onChange:()=>{}})}));
   expect(editor).toContain('Spirograph simulation FPS');expect(editor).toContain('offline');expect(editor).not.toContain('aria-label="Draw layers over time"');expect(editor).not.toContain('按时间逐层绘制');
-  const timeline=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:1,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}})}));
+  const timeline=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:1,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}})}));
   expect(timeline).not.toContain('aria-label="Playback mode"');expect(timeline).not.toContain('Convert to absolute timeline');
   expect(timeline).not.toContain('value="numeric"');expect(timeline).toContain('value="spirograph_finish_wait"');expect(timeline).toContain('value="animate"');
  });

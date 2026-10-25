@@ -1,0 +1,215 @@
+{
+  "date": "2026-10-25",
+  "baseCommit": "c9e308b30416d0e87ecc0a6e65bf189bb76d5387",
+  "status": "finite-app-restart-and-invalid-apply-recovery-verified",
+  "milestone": "M3",
+  "readableReport": "docs/source-roots-restart-recovery-validation.zh-CN.md",
+  "evidenceKinds": {
+    "original": "Reused prior pinned MathArt 1.7.8 JAR static control-flow evidence; no original JVM/window execution or new original pixel comparison.",
+    "local": "Actual public App controls, GenerationQueue, production generation/solver Workers and WebGL in owned hidden Chrome."
+  },
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "rootCause": "Toolbar independently issued pause and Roots restart; late pause ACK normalized the pending restart to paused while App had resumed scheduling. Clearing App transition did not cancel queue ownership.",
+  "fix": "Timeline emits one required onRestart intent; App Roots uses existing restart owner, preserves other families pause-then-seek behavior, and refuses Roots restart while pause/resume is unacknowledged without discarding its owner.",
+  "failedRun": {
+    "path": ".cache/roots-control-final-ui-20261025/run-1/report.json",
+    "checks": 86,
+    "phase": "point-cloud:toolbar restart",
+    "classification": "actual-product-clock-transition-race",
+    "densityWorkflowsPassed": true,
+    "retained": true
+  },
+  "actualApp": {
+    "path": ".cache/roots-control-final-ui-20261025/run-2/report.json",
+    "checks": 121,
+    "modes": [
+      "density",
+      "point-cloud"
+    ],
+    "logicalWorkers": 1,
+    "samples": 256,
+    "roots": 512,
+    "target": [
+      480,
+      360
+    ],
+    "runtime": {
+      "node": "24.18.0",
+      "chrome": "155.0.8059.85"
+    },
+    "elapsedMs": 19588.967917,
+    "sourceFiles": 583,
+    "sourceStable": true,
+    "pngs": {
+      "canvas": 10,
+      "app": 10
+    },
+    "sameVerifierAndAssertions": true,
+    "results": [
+      {
+        "mode": "density",
+        "restart": {
+          "controls": {
+            "revision": 7,
+            "applyRevision": 4,
+            "resetRevision": 5
+          },
+          "noPauseTransport": true,
+          "canvasReturnsToApplied": true,
+          "authoredDocumentPreserved": true
+        },
+        "invalidApply": {
+          "boundary": "production-worker-rejection",
+          "error": {
+            "name": "RootsLiveGenerationError",
+            "message": "Expected coefficient expression",
+            "previewRetained": true
+          },
+          "canvasRetained": true
+        },
+        "repairedApply": {
+          "controls": {
+            "revision": 1,
+            "applyRevision": 1,
+            "resetRevision": 1
+          },
+          "appliesStagedAuthor": true,
+          "errorCleared": true
+        },
+        "rgbaSha256": {
+          "applied": "96025d9675153fba5fbe852ac9091e2d636ddaf4bada09325d53f2e23e84d056",
+          "recovered": "ec293dac71a5907e79179528bcc7a0f2907d74cdfb3bedecf6fd1c7baf441645"
+        }
+      },
+      {
+        "mode": "point-cloud",
+        "restart": {
+          "controls": {
+            "revision": 7,
+            "applyRevision": 4,
+            "resetRevision": 5
+          },
+          "noPauseTransport": true,
+          "canvasReturnsToApplied": true,
+          "authoredDocumentPreserved": true
+        },
+        "invalidApply": {
+          "boundary": "production-worker-rejection",
+          "error": {
+            "name": "RootsLiveGenerationError",
+            "message": "Expected coefficient expression",
+            "previewRetained": true
+          },
+          "canvasRetained": true
+        },
+        "repairedApply": {
+          "controls": {
+            "revision": 1,
+            "applyRevision": 1,
+            "resetRevision": 1
+          },
+          "appliesStagedAuthor": true,
+          "errorCleared": true
+        },
+        "rgbaSha256": {
+          "applied": "220a4debc349810a4558c7a5b0d0536a9ab6eb5fa44a5fb95c906515707727d8",
+          "recovered": "bb9397d74db747cea297520f494e7c316501f5ae80b763824689141ba6bef48f"
+        }
+      }
+    ],
+    "cleanup": {
+      "workers": [
+        0,
+        0
+      ],
+      "serviceOwnedProcesses": 0,
+      "operations": [
+        {
+          "resource": "browser",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "vite",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "export-service",
+          "status": "fulfilled"
+        }
+      ],
+      "pageErrors": []
+    }
+  },
+  "cpu": {
+    "regression": {
+      "files": 14,
+      "passed": 137,
+      "failed": 0,
+      "report": ".cache/roots-control-final-ui-20261025/cpu-regression.json"
+    },
+    "modifiedAttractorTimeline": {
+      "passed": 1,
+      "skipped": 6,
+      "report": ".cache/roots-control-final-ui-20261025/cpu-attractor-timeline.json"
+    },
+    "typecheck": {
+      "command": "node node_modules/typescript/bin/tsc --noEmit",
+      "result": "passed",
+      "evidence": "Executed tool result; no separate persisted stdout log."
+    },
+    "diffCheck": "passed",
+    "preExistingFailure": {
+      "test": "tests/source-attractor-controls.test.tsx",
+      "case": "normalizes integer-gray picker display with the shared color owner while retaining raw palette text",
+      "reason": "Direct component invocation mocks useState but not required useRef.",
+      "headCopyReproduced": {
+        "passed": 6,
+        "failed": 1,
+        "scope": "HEAD test copied into cache with relative imports adjusted; current unchanged Attractor producer.",
+        "command": "node node_modules/vitest/vitest.mjs run --config .cache/roots-control-final-ui-20261025/baseline-vitest.config.mjs",
+        "evidence": "Executed tool result plus pinned test/config copies; no separate failure JSON."
+      },
+      "unrelatedToRootsApplyRejection": true
+    }
+  },
+  "sourcePins": {
+    "src/App.tsx": "a69dae4772c42004cf2e2068ea9b18f35cba4e821713da1e0deb7b822802f56e",
+    "src/components/Timeline.tsx": "a5d70985b763bf284bea12bb8470a71e01c518757fe7f025cfa63ed212099a89",
+    "src/locales/application.en.json": "924176803da18bfb9ee9de64e5d5f617ccd55f2e5d6141e2ca13ffd7bb68e2fa",
+    "src/engine/generationQueue.ts": "33781c8fedcc3dba3773f674bf0588997e99a1c1f366e17b7383691b56b2bae5",
+    "src/engine/sourceSceneHostClock.ts": "127d5acd49c693962b153253a6faeeadad98792837b702bb6a008536a954036e",
+    "src/engine/rootsNativePresentationSession.ts": "92cb8f6dab34c66ff184f7c520feb0d44f64666ce761c70e0b4edb7d84f49f9a",
+    "src/engine/rootsEditorSession.ts": "a4cbe68fda62f33d56d4031256f3b06a312279eb5f5f3f3c0c7007b81582ceca",
+    "tests/timeline-restart-intent.test.tsx": "4fded32e2bce8fa4942af906056678cb5b11ec9919c1e73bf44bb693035827be"
+  },
+  "artifacts": {
+    ".cache/roots-control-final-ui-20261025/index.json": "cfebadd5a75761e620be73d4f97fc6b76b729f28f2cff2ab70707d5af8392ead",
+    ".cache/roots-control-final-ui-20261025/verify-app.mjs": "da59ccf2919ea888e98b116fbb87953bac918d5eea382368c417a2778f0e9df7",
+    ".cache/roots-control-final-ui-20261025/preparation.json": "b18991115ba2162cff613a5638f2a0030e876b828e7f1873644e71c177c77df8",
+    ".cache/roots-control-final-ui-20261025/roots-restart.patch": "7ddf2f72f34585999a8e4f8ce4efe5b03f9c3e1cba9f8bdf140c922dbf3f854d",
+    ".cache/roots-control-final-ui-20261025/cpu-regression.json": "816d6a4460b88573046489030ffec76de7cefa67b733e9223f32e482cc950790",
+    ".cache/roots-control-final-ui-20261025/cpu-attractor-timeline.json": "b9d8c8a272daf474eb1fe943b15501ac747a3dd5afb5f534810055f9da3efeb8",
+    ".cache/roots-control-final-ui-20261025/baseline-source-attractor-controls.test.tsx": "634957e5cf229640ee0980009e435bc3bedd5127e986c7ac8b6160ca3136c0bd",
+    ".cache/roots-control-final-ui-20261025/baseline-vitest.config.mjs": "df8e322601f09119d1a3b85f6dd62606dab4b8f20c07c2cadaaad411b5d93c70",
+    ".cache/roots-control-final-ui-20261025/run-1/report.json": "5d000231e1c70495e86ffdf1b90cc2e89bc991fbad07480c32a442325c601bcb",
+    ".cache/roots-control-final-ui-20261025/run-1/summary.json": "85eecc21a0d192f8c9ad29a0f621afba226de2bb8424967db0137e31d988fbe3",
+    ".cache/roots-control-final-ui-20261025/run-1/README.zh-CN.md": "70f53117cd0cea45f29e68cbb4e7757f20784367e445908cd971fbc1ac19d613",
+    ".cache/roots-control-final-ui-20261025/run-1/verifier.mjs": "da59ccf2919ea888e98b116fbb87953bac918d5eea382368c417a2778f0e9df7",
+    ".cache/roots-control-final-ui-20261025/run-2/report.json": "d275d935ce3574ab13073aa8052ef9c666aa979dcb69f6e77c02a92e82ac95db",
+    ".cache/roots-control-final-ui-20261025/run-2/summary.json": "3a3a6d8d84baa165e0c15afa49d212a7421729c52645c68716594b45a4cdd204",
+    ".cache/roots-control-final-ui-20261025/run-2/README.zh-CN.md": "508c217826bdbf6c03f1ab7e2c9893f0f1ba28691e453a22f7ada55d7efd8de3",
+    ".cache/roots-control-final-ui-20261025/run-2/verifier.mjs": "da59ccf2919ea888e98b116fbb87953bac918d5eea382368c417a2778f0e9df7"
+  },
+  "remaining": [
+    "No delayed-ACK injection or Inspector restart during an independent pending pause/resume was executed; its rejection guard is source-derived.",
+    "No multi-worker ordering, long animation, recording/video, arbitrary capture size or original whole-image parity claim.",
+    "Overall M3 and final integrated release remain active; installed 1.0 unchanged."
+  ],
+  "unmeasuredCosts": [
+    "CPU time",
+    "peak process-family RSS",
+    "GPU time",
+    "agent tokens"
+  ],
+  "readableReportSha256": "37cd15f02efad2193e03a501c02795c7633c51a01f3bcb330ba5ee49668e1541"
+}

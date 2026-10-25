@@ -33,7 +33,7 @@ describe('Implicit source parameter import, persistence and editing',()=>{
   expect(parseScene(serializeScene(scene)).timeline.tracks[0].actions![0].implicitParameters).toEqual([{model,scope:{kind:'named',name:'a'}}]);
   const started=registryParameterActionsForMethod(scene,stopped,'paramStart');expect(started.implicitParameters![0].configuration).toEqual(SOURCE_SURFACE_PARAMETER_DEFAULT);
   const html=render(createElement(RegistryParameterActionsEditor,{model,values:started.implicitParameters,method:'paramStart',onChange:()=>{throw Error('render mutation');}}));expect(html).toContain('implicit-parameter-actions');expect(html).toContain('Step per frame');expect(html).not.toContain('rad/s');
-  const timeline=render(createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}}));expect(timeline).not.toContain('<option value="param">');expect(()=>createAnimationTrack(scene,'param')).toThrow('隐式源队列');
+  const timeline=render(createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onRestart:()=>{},onChange:()=>{}}));expect(timeline).not.toContain('<option value="param">');expect(()=>createAnimationTrack(scene,'param')).toThrow('隐式源队列');
  });
  it('bounds nested registry work before admission and retains named editor references',()=>{
   const parameters=Object.fromEntries(Array.from({length:4096},(_,i)=>[`p${i}`,{}]));expect(()=>read([{method:'paramStart',args:{parameters}}])).toThrow('4096');

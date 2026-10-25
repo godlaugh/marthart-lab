@@ -40,7 +40,7 @@ import {usesSpirographFrameClock,spirographSimulationFps} from '../engine/spirog
 import {SOURCE_EASING_NAMES} from '../engine/sourceEasing';
 import { sceneAtTime,timelineWarnings,isCameraAction,ACTIONS, CLIP_TYPES, EASING_NAMES, clipDuration, resolveTimeline, isSpirographEventTarget, isSpirographIgnoredTarget, createAnimationTrack, readAnimationValue } from '../engine/timeline';
 
-type Props = { scene: SceneDocument; time: number; playing: boolean; finalPreview?: boolean; implicitContinuation?:boolean; onTime: (t: number) => void; onPlay: (p: boolean) => void; onChange: (s: SceneDocument) => void };
+type Props = { scene: SceneDocument; time: number; playing: boolean; finalPreview?: boolean; implicitContinuation?:boolean; onTime: (t: number) => void; onPlay: (p: boolean) => void; onRestart: () => void; onChange: (s: SceneDocument) => void };
 const ordinaryClipTypes=new Set(['wait','animate','align','param','surface_mode_transition']);
 const perlinClipTypes=new Set(['wait','animate','align','trails']);
 const ordinaryActionLabels:Record<string,string>={rotateTheta:'旋转 theta',rotatePhi:'旋转 phi',rotateGamma:'旋转 gamma',stopTracking:'相机中心回到原点'};
@@ -198,7 +198,7 @@ function ActionEditor({ action, scene, targets, onChange }: { action: AnimationA
   {!samilaSource&&!symmetryGradient&&!perlinGradient&&!surfaceGradient&&!attractorGradient&&!rootsCamera&&action.method === 'gradientStart' && <GradientEditor config={action.gradient} scene={scene} onChange={gradient => patch({ gradient })} />}</div>;
 }
 
-export function Timeline({ scene, time, playing, finalPreview=false, implicitContinuation=false, onTime, onPlay, onChange }: Props) {
+export function Timeline({ scene, time, playing, finalPreview=false, implicitContinuation=false, onTime, onPlay, onRestart, onChange }: Props) {
   const {t}=useI18n();
   const rootsRealtime=sourceLivePreviewKind(scene)==='roots';
   const domainSource=usesSourceDomain(scene),fractalSource=usesSourceFractal(scene),sourceRealtime=implicitContinuation||sourceLivePreviewKind(scene)!==undefined,samilaSource=usesSourceSamilaTimeline(scene),experience=bouncingExperience(scene),gradientCapabilities=gradientAnimationCapabilities(scene),frameClock=usesSpirographFrameClock(scene),rootsCamera=usesRootsCameraTimeline(scene),rootsGradient=usesRootsGradientTimeline(scene),ordinaryCamera=usesOrdinarySourceCamera(scene);
@@ -259,7 +259,7 @@ export function Timeline({ scene, time, playing, finalPreview=false, implicitCon
   const positionAt = (x: number) => { const box = rail.current!.getBoundingClientRect(); return Math.max(0, Math.min(timeline.duration, (x - box.left) / box.width * timeline.duration)); };
   const name = (clip: AnimationTrack) => clip.label || t(CLIP_TYPES.find(item => item.type === clip.type)?.label || clip.target);
   return <section className={`timeline ${expanded ? '' : 'collapsed'}`} aria-label={t("动画时间线")}>
-    <div className="timeline-toolbar"><button title={t("返回起点")} onClick={() => { onPlay(false); onTime(0); }}><SkipBack size={14} /></button><button className="play-button" aria-label={playing ? t("暂停") : t("播放")} disabled={!!experience.error} onClick={() => onPlay(!playing)}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
+    <div className="timeline-toolbar"><button title={t("返回起点")} onClick={onRestart}><SkipBack size={14} /></button><button className="play-button" aria-label={playing ? t("暂停") : t("播放")} disabled={!!experience.error} onClick={() => onPlay(!playing)}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
       <span className="time-readout">{time.toFixed(2)} <span>{frameClock?t('秒 · 离线逐帧预览'):experience.continuous||sourceRealtime?t('秒 · 连续运行'):`/ ${timeline.duration.toFixed(2)} s`}</span></span>
       {finalPreview&&<span className="muted final-preview" title={t('点击播放或录制将从头开始')}>{t('最终效果预览')}</span>}
       {!experience.continuous&&!frameClock&&!sourceRealtime&&<select aria-label={t("播放模式")} value={timeline.playbackMode ?? (timeline.loop ? 'loop' : 'once')} onChange={e => update({ playbackMode: e.target.value as 'once' | 'loop' | 'ping-pong', loop: e.target.value !== 'once' })}><option value="once">{t("单次播放")}</option><option value="loop">{t("循环播放")}</option><option value="ping-pong">{t("往返播放")}</option></select>}
