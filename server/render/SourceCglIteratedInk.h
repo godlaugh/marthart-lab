@@ -2,11 +2,12 @@
 #define SOURCE_CGL_ITERATED_INK_H
 // Retained drawing companion for the exact iterated state owner. It borrows
 // checkpoint-bound GPU texture views; no particle readback or CPU recurrence.
-// Included after SourceCglIteratedState. The composition owner disposes ink
+// State storage is supplied through the shared sampling contract. The host disposes ink
 // before state, and keeps both on any failed cleanup.
 #include "SourceCglIteratedPrograms.h"
+#include "SourceCglIteratedSupport.h"
 @interface SourceCglIteratedInk:NSObject {
- CGLContextObj _context;SourceCglIteratedState *_state;
+ CGLContextObj _context;id<SourceCglIteratedSampling> _state;
  GLuint _ink,_output,_facts,_reductions[2],_palette,_noise,_framebuffer,_vao;
  uint32_t _width,_height,_reduceWidth,_reduceHeight,_displays,_count,_lastIndex;
  SourceCglIteratedPrograms *_programSet,*_pendingPrograms,*_retiredPrograms;BOOL _prepared,_failed,_disposed;
@@ -15,7 +16,7 @@
 @property(readonly) uint64_t retainedBytes;
 @property(readonly) uint32_t width,height,displays,count,lastIndex;
 @property(readonly) NSDictionary *lastFacts;
--(instancetype)initWithState:(SourceCglIteratedState*)state programs:(NSDictionary*)programs width:(uint32_t)width height:(uint32_t)height;
+-(instancetype)initWithState:(id<SourceCglIteratedSampling>)state programs:(NSDictionary*)programs width:(uint32_t)width height:(uint32_t)height;
 -(void)prepareWithRetained:(uint64_t)retained;
 -(void)replacePrograms:(NSDictionary*)programs retained:(uint64_t)retained;
 -(NSDictionary*)accumulateAtIndex:(uint32_t)index plan:(NSDictionary*)plan clear:(BOOL)clear decay:(float)decay record:(BOOL)record retained:(uint64_t)retained;
@@ -50,7 +51,7 @@ static void iteratedInkBind(GLuint program,NSArray *uniforms){
 @implementation SourceCglIteratedInk
 -(uint32_t)width{return _width;}-(uint32_t)height{return _height;}-(uint32_t)displays{return _displays;}-(uint32_t)count{return _count;}-(uint32_t)lastIndex{return _lastIndex;}-(NSDictionary*)lastFacts{return _lastFacts;}
 -(uint64_t)retainedBytes{return _disposed?0:_programSet.retainedBytes+_pendingPrograms.retainedBytes+_retiredPrograms.retainedBytes+(uint64_t)_width*_height*36+(uint64_t)_reduceWidth*_reduceHeight*32+4097*16+256+1024*1024;}
--(instancetype)initWithState:(SourceCglIteratedState*)state programs:(NSDictionary*)programs width:(uint32_t)width height:(uint32_t)height{
+-(instancetype)initWithState:(id<SourceCglIteratedSampling>)state programs:(NSDictionary*)programs width:(uint32_t)width height:(uint32_t)height{
  self=[super init];if(!self)return nil;INPUT(state&&width&&height&&width<=16384&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid iterated ink dimensions");INPUT([programs isKindOfClass:NSDictionary.class],@"Iterated programs must be a record");_state=state;_width=width;_height=height;_count=state.count;_lastIndex=state.index;
  uint32_t tw=[state drawViewWidth],th=[state drawViewHeight];_reduceWidth=MAX((tw+1)/2,(width+3)/4);_reduceHeight=MAX((th+1)/2,(height+3)/4);
  _programSet=[[SourceCglIteratedPrograms alloc]initWithSources:programs];

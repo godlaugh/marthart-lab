@@ -1,15 +1,9 @@
 // Retained source calculate_next TF state. Included after Budget, ensure,
 // INPUT/RUNTIME and nameValid. The host owns admission/registry identity; this
 // owner retains its exact CGL context and all provisional GL handles.
-// Borrowed sampling handles for this exact checkpoint. A consumer must retain
-// the owner, stay in its context, and neither mutate/delete these textures nor
-// use the view after advance/dispose. Padding texels beyond count are undefined.
-typedef struct {
- GLuint positions,metadata;
- uint32_t width,height,count,index;
-} SourceCglIteratedDrawView;
+#include "SourceCglIteratedSupport.h"
 
-@interface SourceCglIteratedState:NSObject {
+@interface SourceCglIteratedState:NSObject <SourceCglIteratedSampling> {
  CGLContextObj _context;
  GLuint _program,_diagnosticProgram,_shaders[4],_seed,_positions[2],_metadata[2],_vao,_feedback,_framebuffer,_colorBuffer;
  uint32_t _count,_uploaded,_index,_current,_metadataCurrent;
@@ -42,36 +36,9 @@ typedef struct {
 -(void)dispose;
 @end
 
-static const uint32_t IteratedStateChunk=65536,IteratedStateScratch=4096;
-static const uint64_t IteratedStateFixedBytes=1024*1024;
-static uint32_t iteratedStateWord(NSDictionary *operation,NSString *key){
- id value=operation[key];INPUT([value isKindOfClass:NSNumber.class],([@"Missing iterated word: " stringByAppendingString:key]));
- double number=[value doubleValue];INPUT(isfinite(number)&&number>=0&&number<=UINT32_MAX&&floor(number)==number,([@"Invalid iterated word: " stringByAppendingString:key]));return [value unsignedIntValue];
-}
-static uint64_t iteratedStateProgramBytes(NSDictionary *operation){
- uint64_t bytes=0;
- for(NSString *key in ([operation[@"kind"]unsignedIntValue]==6?@[@"vertex",@"fragment",@"diagnosticVertex",@"diagnosticFragment"]:@[@"vertex",@"fragment"])){
-  id source=operation[key];INPUT([source isKindOfClass:NSString.class],@"Iterated shader must be UTF-8 text");
-  NSString *text=source;NSUInteger length=[text lengthOfBytesUsingEncoding:NSUTF8StringEncoding];const char *utf8=text.UTF8String;
-  INPUT(length>0&&utf8&&memchr(utf8,0,length)==NULL, @"Invalid iterated shader UTF-8/NUL");
-  // Accept the same explicit first-line profile as the wire producer. No
-  // source/precision/operation rewriting occurs at this boundary.
-  INPUT([text hasPrefix:@"#version 410 core\n"],@"Iterated shader requires explicit GL 4.1 core profile");
-  ensure(length<=Budget/3&&bytes<=Budget-(uint64_t)length*3,@"capacity",@"Iterated program exceeds memory budget");bytes+=(uint64_t)length*3;
- }
- id declared=operation[@"programBytes"];INPUT([declared isKindOfClass:NSNumber.class]&&[declared doubleValue]==(double)bytes,@"Iterated program storage identity mismatch");return bytes;
-}
-static void iteratedStateBudget(uint64_t retained,uint64_t packetBytes,uint64_t readBytes){
- ensure(retained<=Budget&&packetBytes<=Budget/6&&readBytes<=Budget&&retained+packetBytes*6+readBytes<=Budget,@"capacity",@"Iterated state, shared owners and transfer copies exceed memory budget");
-}
-static void iteratedStateCompile(GLuint *shader,GLenum stage,NSString *source){
- *shader=glCreateShader(stage);RUNTIME(*shader!=0,@"Iterated shader allocation failed");
- const char *text=source.UTF8String;GLint length=(GLint)[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding];glShaderSource(*shader,1,&text,&length);glCompileShader(*shader);
- GLint compiled=0;glGetShaderiv(*shader,GL_COMPILE_STATUS,&compiled);if(!compiled){char log[8192]={0};glGetShaderInfoLog(*shader,sizeof(log),NULL,log);RUNTIME(NO,[NSString stringWithUTF8String:log]?:@"Iterated shader compilation failed");}
-}
-
 @implementation SourceCglIteratedState
 -(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_count*64+_programBytes+IteratedStateFixedBytes+_viewRetainedBytes;}
+-(NSString*)diagnosticUnit{return @"iteration";}
 -(uint32_t)drawViewWidth{return MIN(2048,_count);}
 -(uint32_t)drawViewHeight{uint32_t width=[self drawViewWidth];return width?(_count+width-1)/width:0;}
 -(uint64_t)drawViewAllocationBytes{return (uint64_t)[self drawViewWidth]*[self drawViewHeight]*24;}

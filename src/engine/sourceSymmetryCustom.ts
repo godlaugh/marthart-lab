@@ -13,9 +13,9 @@ export interface SourceSymmetryCustomProgram extends SymmetryCustomInput {
  * Body macros, fragment globals, output initialization and raw nonfinite
  * results remain driver semantics. No TF wrapper, loop guard or reseeding.
  *
- * This producer is verified by the native diagnostic fixture. App routing is
- * deliberately not enabled until a retained owner, protocol admission and
- * cancellation policy implement that full contract. Compilation alone neither
+ * The producer and retained texture owner have separate native diagnostics.
+ * App routing awaits protocol admission, context-uniform preparation and
+ * cancellation integration. Compilation alone neither
  * proves termination nor bounds arbitrary authored shader execution time. */
 export function prepareSourceSymmetryCustomProgram(rawSource:string,compileDegree:number):SourceSymmetryCustomProgram {
  const input=prepareSymmetryCustomInput(rawSource,compileDegree);

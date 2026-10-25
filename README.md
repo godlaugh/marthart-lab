@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-26 自定义 Symmetry 的持久原生状态资源已完成，六组、48 帧完整纹理与原版逐位一致，含写入历史及上下文绑定；实际重播和失败清理检查通过。应用协议、上下文准备与完整画面仍待接入，整体仍在 M3。见[持久状态资源中文记录](docs/source-symmetry-state-validation.zh-CN.md)。
+
 2026-10-26 自定义 Symmetry 的原生片元计算核通过四组、32 帧完整状态纹理对照，包含邻居、补齐单元、多次迭代及非有限结果，逐位零差异。计算核尚未接入应用，完整画面与生命周期继续验收；当前自定义场景仍走原有 Worker。见[自定义原生计算核中文记录](docs/source-symmetry-custom-native-validation.zh-CN.md)。
 
 2026-10-26 当前独立 Apple Silicon 预览版为 `2.0.0-preview.3`，输出 `dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app`，约 376 MiB。原生渲染器和独立公式字形服务均已随包提供，运行应用不需要外部后端配置。打包使用 `npm run desktop:build:v2 -- --glyph-backend /absolute/path/to/backend.json`，该 JSON 显式选择已有独立 JDK 的 `javaHome` 和官方 JLaTeXMath 的 `jarPath`，自有 helper 每次从源码重建；也可用 `MATHART_GLYPH_BACKEND` 指定该文件。工作区默认保存在 `~/Library/Application Support/MathArt Lab 2 Preview/`。字形原版对照、带公式的实际预览/PNG 和两个迭代场景的编辑、播放及重启恢复通过。Map/Symmetry 从初始状态重放现已使用独立原生资源，32 帧原版对照及实际桌面 PNG 导出通过；自定义 Symmetry 仍走 Worker。此包仍为 M3 预览，见[冷重放中文验收](docs/source-iterated-native-cold-validation.zh-CN.md)、[公式打包中文验收](docs/native-v2-glyph-packaging-validation.zh-CN.md)及[上一轮桌面验收](docs/native-v2-desktop-preview-validation.zh-CN.md)。

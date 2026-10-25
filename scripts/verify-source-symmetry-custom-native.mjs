@@ -7,14 +7,15 @@ import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createServer} from 'vite';
 
-const [referenceArg,outArg]=process.argv.slice(2);assert(referenceArg&&outArg,'Supply original-reference-directory new-output-directory');
+const [referenceArg,outArg,mode]=process.argv.slice(2);assert(referenceArg&&outArg&&(mode===undefined||mode==='--retained-owner'),'Supply original-reference-directory new-output-directory [--retained-owner]');
+const fixture=mode?'tests/fixtures/source-symmetry-state/runner.m':'tests/fixtures/source-symmetry-custom-native/runner.m';
 const reference=resolve(referenceArg),out=resolve(outArg),sha=b=>createHash('sha256').update(b).digest('hex');await mkdir(out,{recursive:false});
-const report={status:'running',scope:'Production source-fragment producer + diagnostic CGL texture owner; complete square state only. No app routing, ink, tone, UI, export or arbitrary shader termination claim.',sourceBefore:{},referenceBefore:{},frames:[]};
+const report={status:'running',scope:(mode?'Production retained fragment state + diagnostic input adapter. ':'Production source-fragment producer + diagnostic CGL texture owner. ')+'Complete square state only; no app routing, ink, tone, UI, export or arbitrary shader termination claim.',sourceBefore:{},referenceBefore:{},frames:[]};
 const began=performance.now();let vite;
 async function pinned(path,group){const b=await readFile(path);group[path]=sha(b);return b;}
 async function ref(name){return pinned(reference+'/'+name,report.referenceBefore);}
 try{
- for(const p of ['src/engine/sourceSymmetryCustom.ts','src/engine/symmetryCustom.ts','src/scenes/symmetryParameters.ts','tests/fixtures/source-symmetry-custom-native/runner.m','scripts/verify-source-symmetry-custom-native.mjs',...(await readdir('server/render')).map(p=>'server/render/'+p)].sort())await pinned(p,report.sourceBefore);
+ for(const p of ['src/engine/sourceSymmetryCustom.ts','src/engine/symmetryCustom.ts','src/scenes/symmetryParameters.ts',fixture,'scripts/verify-source-symmetry-custom-native.mjs',...(await readdir('server/render')).map(p=>'server/render/'+p)].sort())await pinned(p,report.sourceBefore);
  const run=JSON.parse(await ref('run.json')),authorization=JSON.parse(await ref('authorization.json')),complete=JSON.parse(await ref('complete.json')),source=JSON.parse(await ref('source.json')),descriptor=JSON.parse(await ref('descriptor.json'));
  assert.equal(run.status,'observed');assert.equal(run.exit,0);assert.deepEqual(run.processGroupAfter,[]);assert.deepEqual(run.sourceAfter,run.sourceBefore);assert.equal(authorization.VIEW,true);assert.equal(authorization.RUN,true);assert.equal(complete.observed,true);assert.equal(source.type,'SYMMETRY_CHAOS');assert.equal(complete.frames,descriptor.frames.length);
  report.authorization=authorization;report.constructedInput=descriptor.constructedInput===true;
@@ -30,16 +31,22 @@ try{
    assert.deepEqual(d.state.viewport,[0,0,size,size]);assert.equal(d.uniforms.stateTex.values[0],0);
    const parameters=Object.fromEntries(Object.entries(d.uniforms).filter(([,u])=>u.type===5126&&u.size===1).map(([name,u])=>[name,u.values[0]]));
    const uniforms=bindSymmetryCustomParameters(program,parameters);
-   for(const [name,u] of Object.entries(d.uniforms))if(u.type===5126)assert.equal(uniforms[name],u.values[0],`Matched source float ${name}`);
-   return{iterations:d.uniforms.iterations.values[0],uniforms};
+   for(const name of program.bindingNames){const u=d.uniforms[name];if(u)assert.equal(uniforms[name],u.values[0],`Matched source float ${name}`);}
+   const additional=Object.entries(d.uniforms).filter(([name])=>!['stateTex','iterations'].includes(name)&&!program.bindingNames.includes(name));
+   assert(mode||additional.length===0,'Context/default bindings require the retained owner diagnostic');
+   // These are observed GL inputs, not an implementation of Processing's
+   // context-uniform preparation. Preserve the distinction in the manifest.
+   const typedBindings=additional.map(([name,u])=>({name:name.replace(/\[0\]$/,''),type:u.type,values:u.values}));
+   return{iterations:d.uniforms.iterations.values[0],uniforms,...(mode?{typedBindings}:{} )};
   }));
   originalStates.push(await ref(`frame-${frame.index}/state-current-level-0.bin`));
  }
  await vite.close();vite=undefined;
- const manifest={count,size,seed:out+'/seed.bin',vertex:program.vertex,fragment:program.fragment,frames};await writeFile(out+'/manifest.json',JSON.stringify(manifest,null,2)+'\n');
+ const manifest={count,size,seed:out+'/seed.bin',vertex:program.vertex,fragment:program.fragment,bindingNames:program.bindingNames,frames};await writeFile(out+'/manifest.json',JSON.stringify(manifest,null,2)+'\n');
  report.layout={count,size,texels:size*size,padding:size*size-count};report.dialect=program.dialect;report.bindingNames=program.bindingNames;report.passes=frames.map(p=>p.map(v=>v.iterations));
- const executable=out+'/renderer',build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-Werror','-framework','Foundation','-framework','OpenGL','-I','server/render','tests/fixtures/source-symmetry-custom-native/runner.m','-o',executable],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL',maxBuffer:65536});await writeFile(out+'/compile.log',build.stderr??'');assert.equal(build.error,undefined);assert.equal(build.status,0,build.stderr);assert.equal(build.stderr,'');report.executableSha256=sha(await readFile(executable));
+ const executable=out+'/renderer',build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-Werror','-framework','Foundation','-framework','OpenGL','-I','server/render',fixture,'-o',executable],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL',maxBuffer:65536});await writeFile(out+'/compile.log',build.stderr??'');assert.equal(build.error,undefined);assert.equal(build.status,0,build.stderr);assert.equal(build.stderr,'');report.executableSha256=sha(await readFile(executable));
  const native=spawnSync(executable,[out+'/manifest.json',out],{encoding:'utf8',timeout:120000,killSignal:'SIGKILL',maxBuffer:65536});await writeFile(out+'/native.json',native.stdout??'');await writeFile(out+'/native.stderr',native.stderr??'');assert.equal(native.error,undefined);assert.equal(native.status,0,native.stdout+'\n'+native.stderr);assert.equal(native.stderr,'');report.native=JSON.parse(native.stdout);assert.equal(report.native.status,'observed');assert.equal(report.native.handlesAfterDelete,0);assert.equal(report.native.contextReleased,true);
+ if(mode){assert.equal(report.native.diagnosticUnit,'completed-pass');assert.equal(report.native.drawViewAdditionalBytes,0);assert.equal(report.native.retainedBytes,size*size*64+(Buffer.byteLength(program.vertex)+Buffer.byteLength(program.fragment))*3+1024*1024);assert.equal(Object.keys(report.native.lifecycle).length,13);assert(Object.values(report.native.lifecycle).every(v=>v===true));}
  for(let index=0;index<originalStates.length;index++){
   const actual=await readFile(out+`/frame-${index}.bin`),expected=originalStates[index];assert.equal(actual.length,expected.length);let activeWordDifferences=0,paddingWordDifferences=0;
   for(let at=0;at<actual.length;at+=4)if(actual.readUInt32LE(at)!==expected.readUInt32LE(at)){if(at<count*16)activeWordDifferences++;else paddingWordDifferences++;}
