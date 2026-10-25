@@ -1,0 +1,56 @@
+{
+  "scope": "Original unmodified MathArt 1.7.8 CPU setter observations and VIEW/RUN preview GL draws; no original export or image-parity claim.",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "evidence": {
+    ".cache/source-symmetry-original-full-20261025/dot-cpu.json": "028e7c5101629aa5056ddba8c677dcd9e77edda75c3f8c9f86e1ce14a38b5184",
+    ".cache/source-symmetry-original-full-20261025/Emperors_Cloak1-run5/frame-0/draws.json": "6b82c346662a34a4eb1cb22b11c879baf72e2b20d82454de5cb11f5fca5ae36f",
+    ".cache/source-symmetry-original-full-20261025/Emperors_Cloak1-run5/runtime-before.json": "d55fca36a89bd299a6019cbbee333d736a703047490073f7af0a5c7657a52884",
+    ".cache/source-symmetry-original-full-20261025/source-pins.json": "6a3bb8d7ec736a9e00672dd8cea2f6de545bc273e49d6294b98b38ebfd5431aa"
+  },
+  "authorDotSize": 1.5,
+  "coldPointSize": 1.7999999523162842,
+  "calls": [
+    {
+      "argument": 1.5,
+      "argumentFloatBits": 1069547520,
+      "result": 1.5,
+      "changedPrimitiveFields": [
+        "runtimeDotSize"
+      ]
+    },
+    {
+      "argument": 1.5,
+      "argumentFloatBits": 1069547520,
+      "result": 1.5,
+      "changedPrimitiveFields": []
+    },
+    {
+      "argument": 0.5,
+      "argumentFloatBits": 1056964608,
+      "result": 1.0,
+      "changedPrimitiveFields": [
+        "runtimeDotSize"
+      ]
+    },
+    {
+      "argument": 0,
+      "argumentFloatBits": -2147483648,
+      "result": 1.0,
+      "changedPrimitiveFields": []
+    },
+    {
+      "argument": 3.200000047683716,
+      "argumentFloatBits": 1078774989,
+      "result": 3.200000047683716,
+      "changedPrimitiveFields": [
+        "runtimeDotSize"
+      ]
+    }
+  ],
+  "authoredBurnIn": 100,
+  "firstFrameUpdateIterations": [
+    16,
+    1,
+    1
+  ]
+}

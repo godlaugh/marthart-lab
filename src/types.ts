@@ -270,6 +270,8 @@ export interface SceneDocument {
   symmetrySourcePalette?:{colors:string[]};
   symmetryPaletteEditor?:SymmetryPaletteEditorState;
   symmetryPaletteSession?:SymmetryPaletteSession;
+  /** Consumed hot setter value. History keeps it; files and cold Apply do not. */
+  symmetryRuntimePointSize?:number;
   mapSource?:SourceMapConfiguration;
   perlinSource?: SourcePerlinDocumentPayload;
   /** Legacy single-backend payloads remain readable when provenance is incomplete. */

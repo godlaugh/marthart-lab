@@ -1,5 +1,7 @@
 # Symmetry 初始化修复与本地验证
 
+> 2026-10-25 补充：本文的默认预热 100 是作者／构造配置值；真实原版普通首帧只提交一次预热，并在 GPU 调用处钳制为 16。修正与原版全量观察见 [冷启动运行边界](source-symmetry-cold-runtime-validation.zh-CN.md)。
+
 2026-10-21。**源 JSON 导入的默认值、构造种子和初始点流已修复；原版整窗效果仍未验收。** 本轮没有操作原生窗口，也没有重新打包或替换 1.0 Apple Silicon 应用。
 
 后续更新：[编辑顺序与原版 JVM 验证](source-symmetry-editor-order-validation.zh-CN.md)已解决下文当时未验证的有限参数编辑树顺序；整窗验收仍待完成。

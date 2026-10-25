@@ -1,5 +1,7 @@
 # Symmetry 项目显示参数与 GPU 着色修复
 
+> 2026-10-25 补充：本文点大小 1.5 是原 ProjectState 作者默认，不能作为 Symmetry 新对象的运行点径。原版构造实际使用 1.8f，只有显式热 setter 消费作者值；见 [冷启动运行边界](source-symmetry-cold-runtime-validation.zh-CN.md)。
+
 2026-10-21。**已修复项目默认缩放、浮点转换与 GPU 颜色输入；原版整窗效果验收仍为 0/11。** 本轮没有移动窗口或输入，没有重新打包、替换已有 1.0 Apple Silicon 应用。
 
 ## 修复结果

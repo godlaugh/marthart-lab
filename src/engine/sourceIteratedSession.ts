@@ -11,6 +11,8 @@ import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareIteratedFrame,prepareIteratedField} from '../scenes/iteratedDensity';
 import {SourceIteratedTimelineSession,bindSourceIterationFrame,type SourceIteratedTimelineResult} from './sourceIteratedTimeline';
 import {SourceIteratedReplaySession,sourceIteratedRenderFps,type SourceIteratedDisplayFacts} from './sourceIteratedReplaySession';
+import {prepareSourceIterationFramePlan} from './sourceIterationFramePlan';
+import {resetSourceSymmetryPointSize} from './sourceSymmetryConfig';
 import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 import {sourceIteratedLiveKind} from './sourceLivePreview';
 import {prepareSourceMapTone} from './sourceMapPresentation';
@@ -119,7 +121,8 @@ export class SourceIteratedSession {
   job.densitySplat=prepareSourceDensitySplat(this.family,job.config.pointSize,plan.displayScale);
   const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,anchor));
   if(reconstructing){
-   this.requestSteps+=job.config.count*((!this.replay!.diagnostics().warmupApplied&&updates.length?job.config.burn:0)+updates.length*job.config.iterations);
+   const planned=prepareSourceIterationFramePlan(this.family,{frameIndex:this.displays,updateCount:updates.length},this.replay!.diagnostics().warmupApplied,job.config.burn,job.config.iterations);
+   this.requestSteps+=job.config.count*(planned.warmupSteps+planned.iterationSteps);
    this.requestPixels+=sourceDensitySplatPixelTests(job.densitySplat,job.config.count);
    if(this.requestSteps>2_000_000_000||this.requestPixels>2_000_000_000)throw Error('迭代场景 本地重建超过 20 亿工作预算');
   }
@@ -167,7 +170,7 @@ export class SourceIteratedSession {
   }catch(error){this.reset([error]);throw error;}finally{this.busy=false;}
  }
  private initialize(scene:SceneDocument,live:SourceIteratedLiveContext){
-  const applied=scene.symmetrySourcePalette?symmetryPaletteColdAnchor(scene):scene;
+  const applied=scene.symmetrySourcePalette?symmetryPaletteColdAnchor(scene):resetSourceSymmetryPointSize(scene);
   if(scene.symmetrySourcePalette)assertSymmetryPaletteRetention({input:scene,authored:scene,applied,construction:scene.symmetrySource});
   this.reset();this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySourcePalette?applied.symmetrySource:scene.symmetrySource});this.applied=structuredClone(applied);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
   this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;
@@ -188,7 +191,7 @@ export class SourceIteratedSession {
   if(scene.symmetrySourcePalette)assertSymmetryPaletteRetention({input:scene,applied:this.applied,detached:this.applied});
   const applied=structuredClone(this.applied),effective=scene.symmetrySourcePalette
    ?{...applied,id:scene.id,name:scene.name,description:scene.description,favorite:scene.favorite,symmetryPaletteSession:{cold:applied},timeline:{...applied.timeline,fps:options.simulationFps}}
-   :{...structuredClone(scene),equations:applied.equations,parameters:applied.parameters,settings:applied.settings,sourceCamera:applied.sourceCamera,mapSource:applied.mapSource,symmetrySource:applied.symmetrySource,palette:applied.palette,projectResolution:applied.projectResolution,timeline:{...applied.timeline,fps:options.simulationFps}};
+   :{...resetSourceSymmetryPointSize(structuredClone(scene)),equations:applied.equations,parameters:applied.parameters,settings:applied.settings,sourceCamera:applied.sourceCamera,mapSource:applied.mapSource,symmetrySource:applied.symmetrySource,palette:applied.palette,projectResolution:applied.projectResolution,timeline:{...applied.timeline,fps:options.simulationFps}};
   const live:SourceIteratedLiveContext={sessionId:crypto.randomUUID(),renderFps:options.simulationFps,replayRevision:0,mapEdits:this.family==='map'?{runtimeRevision:0,dotSizeRevision:0}:undefined,clock:{paused:false}};
   const key=this.family==='map'?'mapLive':'symmetryLive',toneKey=this.family==='map'?'sourceMapToneReference':'sourceSymmetryToneReference';
   const primary:GenerateContext={...snapshotGenerationInput(c),time:0,[key]:live,isCancelled:c.isCancelled};

@@ -5,7 +5,7 @@ import {defaultSourceCosinePalette,type SourceGradientPaletteCommit,type SourceG
 import type {SourcePaletteGeneratorConfiguration} from './sourcePaletteGeneratorImport';
 import {validatePalette} from './palette';
 import {usesSourceSymmetryGpu} from './sourceSymmetryMath';
-import {usesSourceSymmetryConfiguration,parseSourceSymmetryConfiguration} from './sourceSymmetryConfig';
+import {usesSourceSymmetryConfiguration,parseSourceSymmetryConfiguration,resetSourceSymmetryPointSize,retainSourceSymmetryPointSize} from './sourceSymmetryConfig';
 import {rootsControlRepresentationBytes} from './rootsControl';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 
@@ -23,7 +23,7 @@ export function assertSymmetrySourcePaletteProfile(scene:SceneDocument):void {
 export function assertSymmetryPaletteRetention(value:unknown):number {
  try{return rootsControlRepresentationBytes(value);}catch(error){throw new PaletteFailure(error instanceof Error?error.message.replaceAll('复根','Symmetry'):String(error),typeof error==='object'&&error!==null&&'failureKind'in error&&error.failureKind==='capacity'?'capacity':'input');}
 }
-const transientKeys=['symmetryPaletteSession','symmetryPaletteEditor','iteratedDraft','domainPaletteEditor','implicitPaletteEditor','samilaPaletteEditor','samilaPaletteSession','runtimeSamilaViewport','evaluatedCamera','evaluatedRootsCamera','evaluatedDomainGradient','evaluatedDomainScene','evaluatedFractalGradient','evaluatedFractalScene','evaluatedSourceCamera','evaluatedSpirographRotationRadians','evaluatedSpirographFrame'] as const;
+const transientKeys=['symmetryPaletteSession','symmetryPaletteEditor','symmetryRuntimePointSize','iteratedDraft','domainPaletteEditor','implicitPaletteEditor','samilaPaletteEditor','samilaPaletteSession','runtimeSamilaViewport','evaluatedCamera','evaluatedRootsCamera','evaluatedDomainGradient','evaluatedDomainScene','evaluatedFractalGradient','evaluatedFractalScene','evaluatedSourceCamera','evaluatedSpirographRotationRadians','evaluatedSpirographFrame'] as const;
 const ownedCold=new WeakSet<SceneDocument>();
 const record=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
 function freezeCold(copy:SceneDocument):SceneDocument {
@@ -120,6 +120,7 @@ export function commitSymmetrySourcePalette(scene:SceneDocument,commit:SourceGra
 export function restoreSymmetrySourceManualPalette(scene:SceneDocument):SourcePaletteGenerationResult<SceneDocument>{const state={...symmetryPaletteEditorState(scene),useCosine:false,useCurve:false},colors=state.manualColors??scene.symmetrySourcePalette!.colors;delete state.manualColors;return edit(scene,colors,state);}
 export function changeSymmetrySourcePalette(scene:SceneDocument,colors:readonly string[]):SourcePaletteGenerationResult<SceneDocument>{return edit(scene,colors,symmetryPaletteEditorState(scene));}
 export function applySymmetrySourcePalette(scene:SceneDocument):SceneDocument {
+ scene=resetSourceSymmetryPointSize(scene);
  if(!scene.symmetrySourcePalette)return scene;
  const palette=symmetryColdPalette(scene.symmetrySourcePalette.colors,scene.palette.name),applied={...scene,palette};
  return{...applied,symmetryPaletteSession:{cold:snapshotSymmetryAppliedScene(applied)}};
@@ -132,7 +133,7 @@ function retainSymmetryParameterEditor(before:SceneDocument,runtime:SceneDocumen
  return{...configuration,...(Object.hasOwn(before.symmetrySource,'editorMap')?{editorMap:before.symmetrySource.editorMap}:{}),...(Object.hasOwn(before.symmetrySource,'editorParameters')?{editorParameters:before.symmetrySource.editorParameters}:{})};
 }
 export function restartSymmetrySourcePalette(scene:SceneDocument):SceneDocument {
- if(!scene.symmetrySourcePalette)return scene;
+ if(!scene.symmetrySourcePalette)return resetSourceSymmetryPointSize(scene);
  const anchor=session(scene);assertSymmetryPaletteRetention({input:scene,detached:anchor.cold});
  const runtime=structuredClone(anchor.cold);
  return{...runtime,id:scene.id,name:scene.name,description:scene.description,favorite:scene.favorite,symmetrySource:retainSymmetryParameterEditor(scene,runtime),symmetrySourcePalette:scene.symmetrySourcePalette,symmetryPaletteEditor:scene.symmetryPaletteEditor,symmetryPaletteSession:anchor};
@@ -142,10 +143,11 @@ export function symmetryPaletteRuntimeScene(scene:SceneDocument):SceneDocument {
  const {symmetryPaletteEditor:_,...runtime}=scene;return runtime;
 }
 export function persistentSymmetryPaletteScene(scene:SceneDocument):SceneDocument {
- const {symmetryPaletteEditor:_,symmetryPaletteSession:__,...document}=scene;
+ const {symmetryPaletteEditor:_,symmetryPaletteSession:__,...document}=resetSourceSymmetryPointSize(scene);
  return document.symmetrySourcePalette?{...document,palette:symmetryColdPalette(document.symmetrySourcePalette.colors,document.palette.name)}:document;
 }
 export function retainSymmetryPaletteOnSave(before:SceneDocument,saved:SceneDocument):SceneDocument {
+ saved=retainSourceSymmetryPointSize(before,saved);
  return before.symmetrySourcePalette&&saved.kind==='symmetry'?{...saved,palette:before.palette,symmetryPaletteEditor:before.symmetryPaletteEditor,symmetryPaletteSession:before.symmetryPaletteSession}:saved;
 }
 /** Recording owns runtime palette A, while the open editor still owns raw B.

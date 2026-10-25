@@ -5,12 +5,16 @@ import {prepareIteratedFrame,visibleIteratedControls} from '../src/scenes/iterat
 import {prepareSourceDensitySplat,sourceDensityPointDiameter,sourceDensitySplatPixelTests} from '../src/engine/sourceDensitySplat';
 import {sceneAtTime} from '../src/engine/timeline';
 import {ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../src/engine/ordinarySourceCamera';
+import {writeSourceSymmetryPointSize} from '../src/engine/sourceSymmetryConfig';
+import nativeCold from './fixtures/symmetry/cold-runtime-20261025.json';
 
 const load=(dot_size:number)=>parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Source dot',type:'SYMMETRY_CHAOS',settings:{dot_size,batch_size:8,burn_in_steps:0}})).scene;
 describe('Symmetry source point-size consumer',()=>{
- it.each([-2,0,.01,1.5,40,100000])('retains authored dot size %s across file import/reopen and prepares the original minimum',value=>{
+ it.each([-2,0,.01,1.5,40,100000])('retains author %s across reopen; only the hot setter changes runtime point size',value=>{
   const scene=parseScene(serializeScene(load(value))),job=prepareIteratedFrame(scene,0,0);
-  expect(scene.settings.pointSize).toBe(Math.fround(value));expect(job.densitySplat).toMatchObject({dotSize:Math.fround(value),displayScale:1,radius:Math.max(1,Math.fround(value)),path:'points'});
+  expect(scene.settings.pointSize).toBe(Math.fround(value));expect(job.densitySplat).toMatchObject({dotSize:nativeCold.coldPointSize,displayScale:1,radius:nativeCold.coldPointSize,path:'points'});
+  const hot=writeSourceSymmetryPointSize(scene,value);if(!hot.ok)throw Error(hot.error.reason);
+  expect(prepareIteratedFrame(hot.value,0,0).densitySplat).toMatchObject({dotSize:Math.max(1,Math.fround(value)),displayScale:1,radius:Math.max(1,Math.fround(value)),path:'points'});
  });
  it('uses the source camera owner’s logical export scale, not pixel density',()=>{
   const scene=load(2),context={time:0,width:900,height:600,quality:'export' as const,sourceViewport:{logicalWidth:900,logicalHeight:600,referenceLogicalHeight:200,target:'offscreen' as const,projectionPass:'perspective' as const},sourcePointPixelDensity:2};

@@ -7,6 +7,9 @@ import {parseDomainSourceDouble} from './domainSourceScalar';
 import {javaEqualsIgnoreCaseAscii} from './sourceJavaText';
 
 export const SOURCE_SYMMETRY_CONFIG='mathart-1.7.8-initialization-v1' as const;
+/** BaseSymmetryChaosConfig owns the cold value. JsonSymmetryChaosConfig does
+ * not consume ProjectState.dot_size; only the explicit hot setter does. */
+export const SOURCE_SYMMETRY_COLD_POINT_SIZE=Math.fround(1.8);
 export type SourceSymmetryEntry=readonly [string,number];
 /** Construction facts are distinct from the mutable runtime parameter map.
  * Runtime animation/replay keeps these facts; an inspector edit rebuild replaces
@@ -22,6 +25,25 @@ export interface SourceSymmetryConfiguration {
 }
 export type SourceSymmetryResult<T>={ok:true;value:T}|{ok:false;error:{kind:'input'|'capacity';reason:string}};
 const error=(reason:string,kind:'input'|'capacity'='input')=>({ok:false as const,error:{kind,reason}});
+export function writeSourceSymmetryPointSize(scene:SceneDocument,value:unknown):SourceSymmetryResult<SceneDocument>{
+ if(!usesSourceSymmetryConfiguration(scene))return error('源 Symmetry 点径更新需要构造配置');
+ if(typeof value!=='number'||!Number.isFinite(value)||!Number.isFinite(Math.fround(value)))return error('源 Symmetry 点径需要有限 Float32 数值');
+ return{ok:true,value:{...scene,symmetryRuntimePointSize:Math.max(1,Math.fround(value))}};
+}
+export function sourceSymmetryPointSize(scene:Pick<SceneDocument,'kind'|'symmetrySource'|'symmetryRuntimePointSize'>):number {
+ if(!usesSourceSymmetryConfiguration(scene))throw Error('源 Symmetry 点径需要构造配置');
+ const value=scene.symmetryRuntimePointSize;
+ if(value===undefined)return SOURCE_SYMMETRY_COLD_POINT_SIZE;
+ if(typeof value!=='number'||!Number.isFinite(value)||value<1||!Object.is(value,Math.fround(value)))throw Error('源 Symmetry 运行点径状态无效');
+ return value;
+}
+export function resetSourceSymmetryPointSize(scene:SceneDocument):SceneDocument {
+ if(!Object.hasOwn(scene,'symmetryRuntimePointSize'))return scene;
+ const {symmetryRuntimePointSize:_,...cold}=scene;return cold;
+}
+export function retainSourceSymmetryPointSize(before:SceneDocument,saved:SceneDocument):SceneDocument {
+ return before.symmetryRuntimePointSize===undefined?saved:{...saved,symmetryRuntimePointSize:sourceSymmetryPointSize(before)};
+}
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const standard:SourceSymmetryEntry[]=[['lambda',2],['alpha',-2.43],['beta',1],['gamma',.05],['omega',0],['symmetry_degree',3]];
 export const sourceSymmetryDefaults=(template:string):SourceSymmetryEntry[]=>(template==='modified'?[...standard.slice(0,5),['delta',0],standard[5],['delta_power',1]]:standard).map(([k,v])=>[k,v] as SourceSymmetryEntry);
@@ -168,5 +190,5 @@ export function editSourceSymmetryConfiguration(before:SceneDocument,next:SceneD
  const parsed=importSourceSymmetryParameters(Object.fromEntries(values),json.value.keys,String(next.settings.template));if(!parsed.ok)throw Error(parsed.error.reason);
  const retained=anchor.editorParameters?editor:prepareSourceSnapshotMap(parsed.value.ordered.map(([key])=>key),editor.state);if(!retained.ok)throw Error(retained.error.reason);
  const created=createSourceSymmetryConfiguration(Number(next.settings.batchSize),parsed.value.ordered,retained.state,anchor.editorParameters?[...values]:undefined,anchor.entry);if(!created.ok)throw Error(created.error.reason);
- return{...next,parameters:parsed.value.parameters,settings:{...next.settings,degree:created.value.construction.degree,deltaPower:parsed.value.parameters.delta_power??1},symmetrySource:created.value};
+ return{...resetSourceSymmetryPointSize(next),parameters:parsed.value.parameters,settings:{...next.settings,degree:created.value.construction.degree,deltaPower:parsed.value.parameters.delta_power??1},symmetrySource:created.value};
 }

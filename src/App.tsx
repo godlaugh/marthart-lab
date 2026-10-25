@@ -26,7 +26,7 @@ import {editSourceMapScene} from './engine/sourceMapScene';
 import {sourceLivePreviewKind} from './engine/sourceLivePreview';
 import {SOURCE_MAP_RUNTIME_SETTINGS,sourceIteratedApplyIdentity,sourceIteratedReplayIdentity,SOURCE_ITERATED_REPLAY_SETTINGS} from './engine/sourceIteratedLiveIdentity';
 import {usesSourceSymmetryPresentation} from './engine/sourceSymmetryPresentation';
-import {editSourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
+import {editSourceSymmetryConfiguration,writeSourceSymmetryPointSize,usesSourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import {sourceSamilaApplyIdentity} from './engine/sourceSamilaIdentity';
 import {usesSourceSamilaSampling} from './engine/sourceSamilaSampling';
 import {SourceSamilaPaletteEditor} from './components/SourceSamilaPaletteEditor';
@@ -598,6 +598,7 @@ export default function App() {
     return edit(next,false,intent!=='stage',`fractal-${intent}`);
   }
   function edit(next:SceneDocument,samilaDirty=false,display=true,intent?:SceneEditIntent,draftAfter?:{editor:SceneDocument;cameraTexts?:string[]}|null,normalized=false){
+    if(intent==='iterated-dot-size'&&usesSourceSymmetryConfiguration(next)){const written=writeSourceSymmetryPointSize(next,next.settings.pointSize);if(!written.ok){notify(written.error.reason);return;}next=written.value;}
     try{if(!normalized)next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     try{next=syncSourceSamilaPaletteSession(sceneRef.current,next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(next.symmetrySourcePalette&&(intent==='iterated-apply'||sourceLivePreviewKind(sceneRef.current)==='symmetry'&&!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(sceneRef.current,next,[...pendingParameterWrites.current]))&&sourceIteratedApplyIdentity(sceneRef.current)!==sourceIteratedApplyIdentity(next)))next=applySymmetrySourcePalette(next);
@@ -682,7 +683,7 @@ export default function App() {
     if(family==='roots'){editRoots(next,'roots-apply');return;}
     if(family!=='map'&&family!=='symmetry'){
       const applied=applySourceSamilaPalette(next);
-      if(edit(applied)&&applied.samilaSourcePalette){replaceLiveSession(undefined);playbackClock.current=0;timeRef.current=0;setTime(0);liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);}return;
+      if(edit(applied,false,true,usesSourceSymmetryConfiguration(applied)?'iterated-apply':undefined)&&applied.samilaSourcePalette){replaceLiveSession(undefined);playbackClock.current=0;timeRef.current=0;setTime(0);liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);}return;
     }
     cancelApplyCheck();
     try{
@@ -721,7 +722,7 @@ export default function App() {
         :{...scene.settings,[key]:value};
       const next=scene.samilaSourcePalette?writeSourceSamilaSetting(scene,key,value):{...scene,settings};
       if(scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)!==usesSourceImplicitCpuMesh(next)){void applyScene(next);return;}
-      editInspector(next,usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':family==='symmetry'&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
+      editInspector(next,usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':usesSourceSymmetryConfiguration(scene)&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {
@@ -883,7 +884,7 @@ export default function App() {
       autoPlayPending.current=false;playingRef.current=true;setPlaying(true);playbackClock.current=0;timeRef.current=0;setTime(0);
       liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);return;
     }
-    if(value===0&&sceneRef.current.symmetrySourcePalette){
+    if(value===0&&(sceneRef.current.symmetrySourcePalette||usesSourceSymmetryConfiguration(sceneRef.current))){
       const editor=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),restored=restartSymmetrySourcePalette(sceneRef.current);
       setIteratedDraft(sourceIteratedDraftFromEditor(restored,{...editor,palette:restored.palette},iteratedDraftRef.current?.cameraTexts));
       setScene(restored);replaceLiveSession(undefined);

@@ -1,5 +1,7 @@
 # Symmetry 空队列与结束后的粒子绘制验收
 
+> 2026-10-25 补充：普通首帧的原始 burn-in 配置不等于执行次数。真实原 GL 证明每次 runUpdatePass 最多 16 步，普通初始化只提交一次；重播仍保留完整剩余预算。见 [冷启动运行边界](source-symmetry-cold-runtime-validation.zh-CN.md)。
+
 > **后续证据更正（2026-10-21）**：原版 GenericSymmetryChaosScene 在通用更新后还会额外更新 Mobject；未暂停时，队列进行中调用两次，空/结束队列调用一次。本文按通用 Scene 推导的完整时序结论不能作为原版一致性证明。生产调度现已修正，见[最新修复验收](source-symmetry-dispatch-validation.zh-CN.md)及[原版调用链证据](source-symmetry-dispatch-correction.zh-CN.md)；本文保留为历史记录。
 
 2026-10-21。**已修正源 Symmetry 时间线结束后仍继续迭代的问题，也让空队列正确显示初始粒子。** 本轮验证覆盖本地实际 GPU、项目导入、保存重开、回退定位和导出；原版完整窗口一致性仍为 **0/11**。已安装的 1.0 Apple Silicon 应用没有重新打包或替换。

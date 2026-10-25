@@ -22,15 +22,17 @@ try{
    const display=event=>owner.display({...job,frame:serial++},options,event);
    try{
     owner.requestReplay();assert(!owner.usesReplayDisplay,'Pre-init replay should be cleared by initialization');
-    const first=display({...idle,updates:initialUpdating?[job.field]:[],paused:!initialUpdating});if(initialUpdating)advance(burn+job.config.iterations);assert(!first.replayed&&first.passes===1,'Initialization incorrectly replayed');assert(equal(owner.readParticles().positionsAndMetric,expected),'Ordinary initial recurrence');
+    const first=display({...idle,updates:initialUpdating?[job.field]:[],paused:!initialUpdating});if(initialUpdating)advance(Math.min(16,burn)+job.config.iterations);assert(!first.replayed&&first.passes===1,'Initialization incorrectly replayed');assert(equal(owner.readParticles().positionsAndMetric,expected),'Ordinary initial recurrence');
     owner.requestReplay();assert(owner.usesReplayDisplay,'Explicit edit did not request replay');
     let remainingBurn=burn,remainingDraw=Math.max(64,Math.min(256,burn)),index=0,recorded=0,previousMass;
     while(remainingBurn>0||remainingDraw>0){
      // Independent recurrence and schedule from native helper rules. The GPU
      // executor's emitted phases are not used to calculate expected positions.
+     // Actual original runUpdatePass clamps each ordinary burn call to 16;
+     // replay retains the complete remaining authored burn budget.
      const b=Math.min(remainingBurn,Math.min(12,Math.max(8,Math.min(64,burn))));
      const count=Math.min(remainingDraw,8,index===0?(remainingDraw>=16?2:remainingDraw>0?1:0):Math.ceil(remainingDraw/Math.max(1,fps/2-index)));
-     const ordinary=updating?(index===0&&initialUpdating?job.config.iterations:burn+job.config.iterations):0;
+     const ordinary=updating?(index===0&&initialUpdating?job.config.iterations:Math.min(16,burn)+job.config.iterations):0;
      if(index===0)expected=new Float32Array(seeds);else advance(ordinary);
      advance(b+count*job.config.iterations);
      const result=display({...idle,updates:updating?[job.field]:[],paused:!updating,parameterChanged:true,cameraChanged:true});

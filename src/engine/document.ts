@@ -141,6 +141,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   delete data.implicitPaletteEditor;
   delete data.symmetryPaletteEditor;
   delete data.symmetryPaletteSession;
+  delete data.symmetryRuntimePointSize;
   delete data.samilaPaletteEditor;
   delete data.samilaPaletteSession;
   delete data.domainRender; // Delivered execution facts are not authored rules.

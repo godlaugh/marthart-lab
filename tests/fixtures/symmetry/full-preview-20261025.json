@@ -1,0 +1,460 @@
+{
+  "status": "cold-runtime-fixed; original-preview-differences-remain",
+  "sourceJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "sourceMemberSha256": "7cd4bceab0313426ba204b2366bfd980593874d8d0338664446f16dfeb7a586d",
+  "scope": {
+    "family": "symmetry",
+    "case": "Emperors_Cloak1",
+    "particles": 562144,
+    "width": 810,
+    "height": 972,
+    "frames": 8,
+    "originalNormalPolicy": {
+      "VIEW": true,
+      "RUN": true,
+      "EXPORT": false
+    },
+    "secondDevice": false,
+    "wholeWindowParity": false,
+    "wholeFamilyComplete": false
+  },
+  "corrected": {
+    "authorDotSize": 1.5,
+    "coldDotSize": 1.7999999523162842,
+    "authorBurnIn": 100,
+    "firstFrameSteps": 10118592,
+    "updatePasses": [
+      16,
+      1,
+      1
+    ]
+  },
+  "originalComparison": {
+    "initial": {
+      "values": 2248576,
+      "differentValues": 0,
+      "differentBits": 0,
+      "nonfiniteClassDifferences": 0,
+      "finiteMaxAbsoluteDifference": 0.0,
+      "finiteMeanAbsoluteDifference": 0.0,
+      "differentRows": 0
+    },
+    "frames": [
+      {
+        "index": 0,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 521406,
+          "differentPixels": 162715,
+          "maxDifference": 243,
+          "meanAbsoluteDifference": 2.3608678809124624,
+          "channelsDifferent": [
+            157876,
+            159241,
+            152443,
+            51846
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1662761,
+          "differentBits": 1662761,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 0.003773987293243408,
+          "finiteMeanAbsoluteDifference": 2.8801535621545497e-05,
+          "differentRows": 560472
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 751116,
+          "differentBits": 751116,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 37.405181884765625,
+          "finiteMeanAbsoluteDifference": 0.26722158259265233,
+          "differentRows": 195700
+        }
+      },
+      {
+        "index": 1,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 659365,
+          "differentPixels": 202585,
+          "maxDifference": 213,
+          "meanAbsoluteDifference": 2.5978909465020577,
+          "channelsDifferent": [
+            197042,
+            198156,
+            193891,
+            70276
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1674070,
+          "differentBits": 1674070,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 0.016029179096221924,
+          "finiteMeanAbsoluteDifference": 9.099453585879916e-05,
+          "differentRows": 561304
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 900159,
+          "differentBits": 900159,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 68.77842712402344,
+          "finiteMeanAbsoluteDifference": 0.5388945292988011,
+          "differentRows": 232255
+        }
+      },
+      {
+        "index": 2,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 777498,
+          "differentPixels": 234859,
+          "maxDifference": 203,
+          "meanAbsoluteDifference": 3.1157737641619674,
+          "channelsDifferent": [
+            228625,
+            229304,
+            226324,
+            93245
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1680507,
+          "differentBits": 1680507,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 0.09069007635116577,
+          "finiteMeanAbsoluteDifference": 0.000288648003889364,
+          "differentRows": 561742
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 1012028,
+          "differentBits": 1012028,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 95.87322998046875,
+          "finiteMeanAbsoluteDifference": 0.8230189944853337,
+          "differentRows": 258943
+        }
+      },
+      {
+        "index": 3,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 887802,
+          "differentPixels": 264310,
+          "maxDifference": 197,
+          "meanAbsoluteDifference": 3.751166298328507,
+          "channelsDifferent": [
+            257270,
+            257660,
+            255842,
+            117030
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1683309,
+          "differentBits": 1683309,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 0.2522774860262871,
+          "finiteMeanAbsoluteDifference": 0.0009111010574207894,
+          "differentRows": 561942
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 1109535,
+          "differentBits": 1109535,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 119.086181640625,
+          "finiteMeanAbsoluteDifference": 1.1215897831567114,
+          "differentRows": 281909
+        }
+      },
+      {
+        "index": 4,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 982917,
+          "differentPixels": 289710,
+          "maxDifference": 206,
+          "meanAbsoluteDifference": 4.328448089722095,
+          "channelsDifferent": [
+            282191,
+            282164,
+            280924,
+            137638
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1684838,
+          "differentBits": 1684838,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 0.7385974675416946,
+          "finiteMeanAbsoluteDifference": 0.0028860817747455446,
+          "differentRows": 562032
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 1196344,
+          "differentBits": 1196344,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 145.9481201171875,
+          "finiteMeanAbsoluteDifference": 1.4287183495280893,
+          "differentRows": 302631
+        }
+      },
+      {
+        "index": 5,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 1063339,
+          "differentPixels": 311022,
+          "maxDifference": 193,
+          "meanAbsoluteDifference": 4.7643448661281305,
+          "channelsDifferent": [
+            303073,
+            302891,
+            302086,
+            155289
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1685654,
+          "differentBits": 1685654,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 1.1596650183200836,
+          "finiteMeanAbsoluteDifference": 0.008949687287107416,
+          "differentRows": 562098
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 1272360,
+          "differentBits": 1272360,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 171.64404296875,
+          "finiteMeanAbsoluteDifference": 1.737696083491645,
+          "differentRows": 321054
+        }
+      },
+      {
+        "index": 6,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 1131902,
+          "differentPixels": 329490,
+          "maxDifference": 179,
+          "meanAbsoluteDifference": 5.079431489102271,
+          "channelsDifferent": [
+            320933,
+            320838,
+            320282,
+            169849
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1686038,
+          "differentBits": 1686038,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 1.4069516509771347,
+          "finiteMeanAbsoluteDifference": 0.025308130725540397,
+          "differentRows": 562119
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 1340750,
+          "differentBits": 1340750,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 181.27593994140625,
+          "finiteMeanAbsoluteDifference": 2.0439664480269304,
+          "differentRows": 337807
+        }
+      },
+      {
+        "index": 7,
+        "rgba": {
+          "bytes": 3149280,
+          "differentBytes": 1190540,
+          "differentPixels": 345325,
+          "maxDifference": 171,
+          "meanAbsoluteDifference": 5.29840693745872,
+          "channelsDifferent": [
+            336221,
+            336116,
+            335855,
+            182348
+          ]
+        },
+        "particles": {
+          "values": 2248576,
+          "differentValues": 1686251,
+          "differentBits": 1686251,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 1.4200008660554886,
+          "finiteMeanAbsoluteDifference": 0.056259368122849436,
+          "differentRows": 562134
+        },
+        "ink": {
+          "values": 3149280,
+          "differentValues": 1399704,
+          "differentBits": 1399704,
+          "nonfiniteClassDifferences": 0,
+          "finiteMaxAbsoluteDifference": 210.89324951171875,
+          "finiteMeanAbsoluteDifference": 2.3474833343052777,
+          "differentRows": 352314
+        }
+      }
+    ],
+    "intermediate": [
+      {
+        "cumulativeSteps": 16,
+        "particles": 562144,
+        "differentFloat32Bits": 1641102,
+        "differentParticles": 558628,
+        "maxAbs": 0.0006922781467437744,
+        "meanAbs": 9.085430667744258e-06,
+        "perChannelDifferent": [
+          555075,
+          548375,
+          0,
+          537652
+        ],
+        "actualProductionSteps": 16
+      },
+      {
+        "cumulativeSteps": 17,
+        "particles": 562144,
+        "differentFloat32Bits": 1654063,
+        "differentParticles": 559782,
+        "maxAbs": 0.0017493963241577148,
+        "meanAbs": 1.6117059713364937e-05,
+        "perChannelDifferent": [
+          557102,
+          552242,
+          0,
+          544719
+        ],
+        "actualProductionSteps": 1
+      },
+      {
+        "cumulativeSteps": 18,
+        "particles": 562144,
+        "differentFloat32Bits": 1662761,
+        "differentParticles": 560472,
+        "maxAbs": 0.003773987293243408,
+        "meanAbs": 2.8801535621545497e-05,
+        "perChannelDifferent": [
+          558625,
+          555256,
+          0,
+          548880
+        ],
+        "actualProductionSteps": 1
+      }
+    ],
+    "productionObserverUnchanged": {
+      "particles": true,
+      "rgba": true
+    }
+  },
+  "cpuArithmeticModel": {
+    "status": "observed-cpu-model",
+    "scope": "CPU explicit fmaf arithmetic hypothesis; all562144 original active particles x/y at original run6 steps16/17/18. No GPU execution, no metric, no driver root-cause conclusion.",
+    "count": 562144,
+    "rows": [
+      {
+        "mode": "explicit-fma-left",
+        "steps": 16,
+        "differentFloat32Bits": 0,
+        "maxAbs": 0,
+        "nonfiniteValues": 0,
+        "firstDifferentParticle": null
+      },
+      {
+        "mode": "explicit-fma-left",
+        "steps": 17,
+        "differentFloat32Bits": 0,
+        "maxAbs": 0,
+        "nonfiniteValues": 0,
+        "firstDifferentParticle": null
+      },
+      {
+        "mode": "explicit-fma-left",
+        "steps": 18,
+        "differentFloat32Bits": 0,
+        "maxAbs": 0,
+        "nonfiniteValues": 0,
+        "firstDifferentParticle": null
+      }
+    ],
+    "allXyBitsExact": true,
+    "metricCompared": false,
+    "wallSeconds": 1.5383619170170277,
+    "cpuSeconds": 0.719255,
+    "peakRssBytes": 28459008
+  },
+  "validation": {
+    "cpuTests": 222,
+    "testFiles": 12,
+    "buildV2": "passed; existing large-chunk warning",
+    "appChecks": 83,
+    "replayFrames": 219,
+    "replayRepresentative": {
+      "particles": 65536,
+      "width": 640,
+      "height": 480,
+      "frames": 30,
+      "steps": 13107200,
+      "passes": 100,
+      "elapsedMs": 970.6000000238419,
+      "gpu": {
+        "cleanupPending": false,
+        "retainedBytesAccuracy": "known-storage",
+        "pendingAllocationBytes": 0,
+        "retainedBytes": 10694912,
+        "estimatedPeakBytes": 25209376,
+        "frame": 100,
+        "programs": 5,
+        "particleCount": 65536
+      }
+    },
+    "replayCancellation": true,
+    "cpuFirstAttemptFailure": "New fixed-preview test swapped time/frame arguments; corrected test and passed all four. Product unchanged for this correction."
+  },
+  "evidence": {
+    ".cache/source-symmetry-production-full-20261025/cloak1-baseline-run1/report.json": "e81fb38fd14817ece4f9358f8cc5d04b59cdb1b8c877f852bfb7c6bdd2668999",
+    ".cache/source-symmetry-production-full-20261025/cloak1-corrected-run1/report.json": "9b6e37f99887091859ed37778665e097c6f375992c61894c7926750a8f65ef48",
+    ".cache/source-symmetry-production-full-20261025/cloak1-corrected-updates-run1/report.json": "ddf0276f8e4d57192b309f1f8a161362dd092c0b2f35134f1bb114cf0a5a9562",
+    ".cache/source-symmetry-production-full-20261025/cloak1-baseline-comparison.json": "dd08b6eadaba9a9295a266f1d8b2785e0001af5e7bedc4d4eb40ee9e114c04be",
+    ".cache/source-symmetry-production-full-20261025/cloak1-corrected-comparison.json": "eea59558a4fb91014e1fcadc7c17d8e2a4ee9098982cc268aa1bbda4f4c88275",
+    ".cache/source-symmetry-production-full-20261025/first-update-boundary-comparison.json": "c3b641fd27d0f6e2d91994554a77510fef84ba7603439df479bec464e1b650e0",
+    ".cache/source-symmetry-production-full-20261025/replay-after-cold-fix-run1/report.json": "acf7fc3814432fe39eae6c4e527d8718b29819ad3c96d701e1018c991a9aaf8e",
+    ".cache/source-symmetry-original-full-20261025/run5-index.json": "9bba7b47c497e976f678c128442f475c9ab7fb991c10dd7d79327011b68c6634",
+    ".cache/source-symmetry-original-full-20261025/run6-index.json": "b432813ef8a0c6865d839b1e4fd92e1d7ceeaa8322f5e014a205e4cf973d1e83",
+    ".cache/source-symmetry-original-full-20261025/cpu-fma-run6-full/report.json": "fb239a22de4eede68ffbc13990fa3aef414a98b4c8318ba34a015d866abf661d",
+    ".cache/source-symmetry-original-full-20261025/cpu-fma-run6-full/README.zh-CN.md": "ff9d67a36c43c71fbbd09c0613c4ebcdd6c72bfc7cddaf019fe9885eb558f6a7",
+    ".cache/source-symmetry-production-full-20261025/validation-index.json": "ad0b44db1e762fb898a26084f7742d5ecaa943850f43ee8e60480a77cee05f3b"
+  },
+  "sourcePins": {
+    "src/App.tsx": "a9115f31a907c3d6a5dde1829ec2416918636f03bb55ef88a66ada44f1560450",
+    "src/engine/sourceIteratedSession.ts": "2473a9d5aa57a250bdab132e33755b957f0453ccd35e2e7ef87573c1dfbba8b6",
+    "src/engine/sourceIterationFramePlan.ts": "baf460138ebcbedf2b1ce054a428879d28563bf1050b6fb0b33e23dcd73f811c",
+    "src/engine/sourceSymmetryConfig.ts": "d732d74108284b27b771c282e4e2c874027a61b93a93b87b943e5ca5e9ed750e",
+    "src/engine/sourceSymmetryPaletteEditing.ts": "7735b148037e1a6dea0a1370b370ae3888c15f6dee877b4cd94d57a8702b4cb3",
+    "src/scenes/iteratedDensity.ts": "8c5e5d3adac84b70fe92af3bd7db0864be63677cdbe83a4a97f97e4b91d38699"
+  },
+  "limits": [
+    "The actual difference exists at the warmup16 boundary; first divergent arithmetic operation remains unknown.",
+    "Explicit fmaf CPU matches original x/y at16/17/18 for this complete input only. No metric, driver-root-cause or arbitrary-formula claim.",
+    "Original full normal preview retained separately from core buffer; no original export attempted.",
+    "No performance speedup or second-device claim."
+  ]
+}
