@@ -27,7 +27,7 @@ describe('shared prepared source iterated drawing/presentation owner (CPU only)'
   for(const [name,unit,kind]of [['states',0,'sampler2d'],['counters',1,'usampler2d'],['palette',2,'sampler2d'],['noisePermutation',3,'usampler2d']])expect(binding(plan.drawUniforms,name as string)).toEqual({name,texture:unit,kind});
   expect(values(plan.drawUniforms,'particleOffset')).toEqual([0]);expect(values(plan.drawUniforms,'count')).toEqual([8]);expect(values(plan.drawUniforms,'stateWidth')).toEqual([4]);
   for(const u of plan.sharedUniforms){expect(plan.drawUniforms.find(v=>v.name===u.name)).toBe(u);expect(plan.statsUniforms.find(v=>v.name===u.name)).toBe(u);}
-  expect(values(plan.drawUniforms,'radius')).toEqual([2]);expect(values(plan.statsUniforms,'radius')).toEqual([.5]);
+  expect(values(plan.statsUniforms,'densitySplat')).toEqual([1]);expect(plan.drawUniforms.filter(u=>u.name==='densitySplat')).toHaveLength(1);expect(values(plan.drawUniforms,'radius')).toEqual([2]);expect(values(plan.statsUniforms,'radius')).toEqual([.5]);
   expect(binding(plan.statsUniforms,'sourceSize')).toBeUndefined();expect(plan.layout.states.channels).toEqual(['x','y','z','metric']);expect(plan.layout.counters.channels).toEqual(['invalid','validity']);
   expect(values(plan.drawUniforms,'capturedProjection')).toEqual(Array(16).fill(0));expect(values(plan.statsUniforms,'capturedModelView')).toEqual(Array(16).fill(0));expect(binding(plan.beforeTextures,'capturedProjection')).toBeUndefined();
   expect(plan.noisePermutation).toEqual(createNoisePermutation(frame.config.seed));expect(plan.blend).toMatchObject({source:'one',destination:'one'});

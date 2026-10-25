@@ -1,0 +1,43 @@
+{
+  "provenance": {
+    "kind": "production-stage-pins",
+    "date": "2026-10-26",
+    "source": "src/engine/iteratedDensityGpuPrograms.ts",
+    "sourceSha256": "e0a9a38dedcfc2a2bc8150dcaa13a7c7327f3e99c1cb56bf39f58bdbe3ba7671",
+    "note": "Current evolved drawing/statistics stages, not original MathArt source. Source eligibility is independent of local math validity and raw-coordinate sentinel. Historical pre-extraction 5d8c9d2 fixture stays unchanged; previous source drawing pins are in commit 9909dd0."
+  },
+  "shaders": {
+    "DRAW_VERTEX": {
+      "sha256": "9559a7efd7c38b6a9dc610313547dba457cf8bf0f067cdd48555456185e1a01f",
+      "bytes": 6628
+    },
+    "SOURCE_DENSITY_POINTS_FRAGMENT": {
+      "sha256": "891710f3fdc3449e8202e9b70320ab33bf279c158e97947d15844b7e9174f059",
+      "bytes": 994
+    },
+    "SOURCE_DENSITY_QUAD_FRAGMENT": {
+      "sha256": "4073679a75fa432fe72044a5a85b5bdf1794024a6c6adb3487ba831a3ba79dae",
+      "bytes": 1077
+    },
+    "SOURCE_MAP_POINTS_FRAGMENT": {
+      "sha256": "1545647a3898db2995f42f8e48ddefe663ec1f281a784dcd00860fe14cd8b9d3",
+      "bytes": 877
+    },
+    "SOURCE_MAP_QUAD_FRAGMENT": {
+      "sha256": "4d9aa15fa2105b90b9ec2d2bfc91f37b03a0b8caf475d0cbd0ae610ba7ef892a",
+      "bytes": 960
+    },
+    "BOUNDS_FIRST": {
+      "sha256": "fc0d0ea79318bcb3bbf86eaf720e9bdef4134bcd007b5129f8d375dc7439660b",
+      "bytes": 2883
+    },
+    "STATS_FIRST": {
+      "sha256": "b10ab0368750cde6c062e0655198869c339572022c179e6a770501d2ae7bf875",
+      "bytes": 3527
+    },
+    "SOURCE_DRAW_VERTEX": {
+      "sha256": "f88f0d9477456215135bda2b5710f00e93d2f068d214a8734c0bc9ab613ab453",
+      "bytes": 3818
+    }
+  }
+}

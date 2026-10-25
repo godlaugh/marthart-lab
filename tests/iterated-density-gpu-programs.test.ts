@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {describe,expect,it} from 'vitest';
 import fixture from './fixtures/iterated-density-gpu-programs/5d8c9d2.json';
-import evolved from './fixtures/iterated-density-gpu-programs/source-density-quad-20261026.json';
+import evolved from './fixtures/iterated-density-gpu-programs/source-drawing-current.json';
 import {iteratedDensityGpuPrograms,iteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
 import {prepareSymmetryCustomSource,bindSymmetryCustomParameters} from '../src/engine/symmetryCustom';
 import type {GpuShaderProfile} from '../src/engine/gpuShaderProfile';

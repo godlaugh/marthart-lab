@@ -103,6 +103,21 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated render CGL 
    expect((await o.computeGood(releaseState())).decoded).toMatchObject({disposition:'released',index:2,totalCount:f.count});expect(o.service.retainedResourceCount).toBe(0);
   }finally{await o.close();}
  },30000);
+ it.each(['infinite-metric','large-raw-coordinate','nonfinite-position'] as const)('keeps source drawing admission separate from local diagnostic state: %s',async boundary=>{
+  const o=await owner(),f=fixture(4),infinite=boundary==='infinite-metric',badPosition=boundary==='nonfinite-position';
+  const field:IteratedGpuFieldSource={sourceCalculateNext:true,key:boundary,uniforms:{},source:`void calculate_next(in vec3 p,out vec3 next,out float metric){next=vec3(${infinite?'0.':badPosition?'uintBitsToFloat(0x7f800000u)':'1.e13'},0.,0.);metric=${infinite?'uintBitsToFloat(0x7f800000u)':'.5'};}`};
+  try{
+   f.program=iteratedDensityGpuPrograms('native-gl41').iteration(field);await o.setup(f);await o.computeGood(f.advance(0,1,{uniforms:[]}));
+   const state=(await o.computeGood(f.read(1))).decoded;
+   expect([...state.validity!]).toEqual(Array(4).fill(infinite||badPosition?0:1));expect([...state.invalidCounts!]).toEqual(Array(4).fill(infinite||badPosition?1:0));
+   expect(state.positionsAndMetric![3]).toBe(infinite?Infinity:.5);
+   const drawJob=!infinite&&!badPosition?{...f.job,transform:{...f.job.transform,sx:1e-14}}:f.job;
+   await o.good(f.create(INK_A,1));const drawn=(await o.good(f.draw(INK_A,1,0,drawJob))).decoded;
+   expect(drawn).toMatchObject({accepted:badPosition?0:4,clipped:0,sampleInvalid:badPosition?4:0,invalid:infinite||badPosition?4:0});
+   const pixels=(await o.good(f.present(INK_A,1))).decoded.occupiedPixels!;if(badPosition)expect(pixels).toBe(0);else expect(pixels).toBeGreaterThan(0);
+   await o.good(releaseInk());await o.computeGood(releaseState());
+  }finally{await o.close();}
+ });
  it('rejects malformed drawing identities, dimensions, checkpoints and controls without changing retained pixels',async()=>{
   const o=await owner(),f=fixture();try{
    await o.setup(f);await o.computeGood(f.advance(0));await o.good(f.create(INK_A,1));await o.good(f.draw(INK_A,1));

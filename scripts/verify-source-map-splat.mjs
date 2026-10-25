@@ -40,7 +40,7 @@ try{
     ...[0,17.3,180,359.999,360,-1,721].map(phase=>({phase,min:-.7,max:1.3,speed:1.7})),
     ...[0,.1,.22,1,2,12].map(speed=>({speed,min:-2,max:1,mode:'ROBUST'})),
     {min:1,max:1},{min:1,max:1.0001},{min:2,max:1},{omitDot:true,entry:'runtime-config'},{omitDot:true,entry:'project'},
-    {paletteEdit:true,min:-1,max:2,phase:73.25,speed:1.75},
+    {paletteEdit:true,min:-1,max:2,phase:73.25,speed:1.75},{metric:1e20,position:[0,0],mode:'CLAMP'},
    ].map((s,i)=>({...base,...s,id:i}));
    for(const path of ['points','quad']){const gpu=new IteratedDensityGpu();try{for(const spec of specs){
     const initialX=F(F(spec.position[0])-F(spec.metric)),initialY=F(spec.position[1]);
