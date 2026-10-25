@@ -1,0 +1,194 @@
+{
+  "settings": {
+    "trail_lifetime": 4,
+    "render_mode": "GPU",
+    "line_weight": 0.6800000071525574,
+    "dot_size": 1.5,
+    "show_trails": true
+  },
+  "color": {
+    "use_curve_palette": false,
+    "outside": {
+      "gradient_offset": 0,
+      "color_density": 3,
+      "transfer_function": "LINEAR",
+      "algorithm_params": {"metric": "ITERATION"},
+      "algorithm_id": "basic",
+      "solid_color": "#000000",
+      "repeat_gradient": true
+    },
+    "cosine_a": [
+      0.30733945965766907,
+      0.21559633314609528,
+      0.5183486342430115
+    ],
+    "curve_green": [
+      {
+        "x": 0,
+        "y": 0.16373345255851746
+      },
+      {
+        "x": 0.26659226417541504,
+        "y": 0.6754783987998962
+      },
+      {
+        "x": 0.49941036105155945,
+        "y": 0.7966501116752625
+      },
+      {
+        "x": 0.7773435711860657,
+        "y": 0.14583323895931244
+      },
+      {
+        "x": 1,
+        "y": 0.031349360942840576
+      }
+    ],
+    "cosine_b": [
+      0.3637971580028534,
+      0.5512971878051758,
+      0.27771225571632385
+    ],
+    "inside": {
+      "gradient_offset": 0,
+      "color_density": 1,
+      "transfer_function": "NONE",
+      "algorithm_params": {},
+      "algorithm_id": "none",
+      "solid_color": "#000000",
+      "repeat_gradient": true
+    },
+    "cosine_c": [
+      0.7741745114326477,
+      0.5748820900917053,
+      0.9156839847564697
+    ],
+    "use_cosine_palette": false,
+    "cosine_d": [
+      0.2588443458080292,
+      0.5383254885673523,
+      0.4333726465702057
+    ],
+    "curve_red": [
+      {
+        "x": 0,
+        "y": 0.16310197114944458
+      },
+      {
+        "x": 0.2494712471961975,
+        "y": 0.26303404569625854
+      },
+      {
+        "x": 0.40294089913368225,
+        "y": 0.7697300910949707
+      },
+      {
+        "x": 0.6282991170883179,
+        "y": 0.8732413649559021
+      },
+      {
+        "x": 0.798611044883728,
+        "y": 0.20208315551280975
+      },
+      {
+        "x": 0.9657119512557983,
+        "y": 0.06421282887458801
+      }
+    ],
+    "curve_blue": [
+      {
+        "x": 0,
+        "y": 0.19786563515663147
+      },
+      {
+        "x": 0.22526045143604279,
+        "y": 0.6999998092651367
+      },
+      {
+        "x": 0.4224620461463928,
+        "y": 0.7670788764953613
+      },
+      {
+        "x": 0.6253848671913147,
+        "y": 0.01666666753590107
+      },
+      {
+        "x": 1,
+        "y": 0.12155798822641373
+      }
+    ]
+  },
+  "main_equation": {
+    "color": "#FFFFFF",
+    "scale": 0.25,
+    "position": [
+      0,
+      200
+    ],
+    "enabled": false
+  },
+  "name": "Mandelbrot",
+  "fractal": {
+    "center": [
+      -0.699999988079071,
+      0
+    ],
+    "rotation": 0,
+    "perturbation_precision": "ULTRA",
+    "zoom": 0.5,
+    "type": "MANDELBROT",
+    "iterations": 300,
+    "bailout": 4,
+    "render_method": "MULTIPASS",
+    "formula_id": "mandelbrot",
+    "formula": "z^2 + c",
+    "formula_type": "POWER",
+    "formula_params": {"power": 2},
+    "power": 2,
+    "parameters": {
+      "start_point": [
+        0,
+        0
+      ],
+      "power": 2,
+      "bailout": 4
+    },
+    "julia_constant": [
+      -0.8123120069503784,
+      0.01600000075995922
+    ]
+  },
+  "timeline": [{
+    "duration": 5,
+    "label": "Wait",
+    "type": "wait",
+    "easing": "SINE_IN_OUT"
+  }],
+  "palette": [
+    "#2A2A32",
+    "#304A58",
+    "#376B7E",
+    "#3E8CA4",
+    "#52ACB6",
+    "#8AB5BC",
+    "#C2BEC2",
+    "#CCC79A",
+    "#D4B75B",
+    "#DB8F1C",
+    "#B86707",
+    "#753F0C",
+    "#332211",
+    "#251915",
+    "#17111A",
+    "#10081F"
+  ],
+  "type": "FRACTAL",
+  "camera": {
+    "phi": "PI/2",
+    "theta": "0",
+    "gamma": "0"
+  },
+  "parameters": {},
+  "config_version": "1.0.0",
+  "isUserScene": true
+}

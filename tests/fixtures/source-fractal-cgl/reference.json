@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "scope": "Fixed Mandelbrot mathematical raster, bottom-up RGBA8. Original independent GL reference calibrated against actual Scene central mathematical ROI; not whole-window or overlay parity.",
+  "inputSha256": "d99ae18ff13011177ee9f0bc2d5f3b1c32a84a5948747d0badf3e0b57ad34207",
+  "width": 500,
+  "height": 600,
+  "logicalWidth": 250,
+  "logicalHeight": 300,
+  "originalDevice": {
+    "renderer": "Apple M2 Max",
+    "version": "4.1 Metal - 90.5"
+  },
+  "cases": [
+    {
+      "name": "shallow",
+      "fractalChanges": {},
+      "rgbaSha256": "a87289bc3caa4ed5add0622320ab87d9933e40adb662e8ba77c6cd5964b30517",
+      "gradientSha256": "c60a3621a8cb97e28392eef7c68905f3d556c4b9e2ac4e22b607f08cc08cc43c",
+      "referenceSha256": null,
+      "referenceLength": 0,
+      "originalEvidence": {
+        "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/fractal-native-residual-20261022/float-boundary/corrected/native-display-fractal",
+        "files": {
+          "color8.rgba": {
+            "bytes": 1200000,
+            "sha256": "a87289bc3caa4ed5add0622320ab87d9933e40adb662e8ba77c6cd5964b30517"
+          },
+          "color8.glsl": {
+            "bytes": 63500,
+            "sha256": "4bfa77d2615aeb17bc6104efff0a6a53897fc939803bb4ba5e5c1f81e2c05fe9"
+          },
+          "diagnostic-vertex.glsl": {
+            "bytes": 356,
+            "sha256": "6568eac957efe446af368ba5a8a4b889cb44c48feac5d07bbaad79b02d92e908"
+          },
+          "gradient.f32": {
+            "bytes": 12288,
+            "sha256": "c60a3621a8cb97e28392eef7c68905f3d556c4b9e2ac4e22b607f08cc08cc43c"
+          },
+          "frame-3/actual-fragment.glsl": {
+            "bytes": 63501,
+            "sha256": "57422453d479882bcb4cf296ce115c7d3fa9110048583497bf10cc52dec58188"
+          },
+          "frame-3/uploaded-uniforms.json": {
+            "bytes": 5600,
+            "sha256": "89c8b698a542225b22de7b6d5830d050f2451ac68a340bbcd5af08c07bc81179"
+          }
+        }
+      }
+    },
+    {
+      "name": "deep-1e5",
+      "fractalChanges": {
+        "center": [
+          -0.743643887037151,
+          0.13182590420533
+        ],
+        "zoom": 100000.125,
+        "iterations": 800
+      },
+      "rgbaSha256": "6e54d920179cfde0e738335ddcf94607ad1d2453b4fb21ea07bc7c5aee8934a1",
+      "gradientSha256": "c60a3621a8cb97e28392eef7c68905f3d556c4b9e2ac4e22b607f08cc08cc43c",
+      "referenceSha256": "423ec28076db1e63c091ea8e089ae727984ba93167d87615ec33f19cec5df315",
+      "referenceLength": 800,
+      "originalEvidence": {
+        "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/fractal-native-residual-20261022/deep-producer/native-display-zoom-1e5",
+        "files": {
+          "color8.rgba": {
+            "bytes": 1200000,
+            "sha256": "6e54d920179cfde0e738335ddcf94607ad1d2453b4fb21ea07bc7c5aee8934a1"
+          },
+          "color8.glsl": {
+            "bytes": 63500,
+            "sha256": "4bfa77d2615aeb17bc6104efff0a6a53897fc939803bb4ba5e5c1f81e2c05fe9"
+          },
+          "diagnostic-vertex.glsl": {
+            "bytes": 356,
+            "sha256": "6568eac957efe446af368ba5a8a4b889cb44c48feac5d07bbaad79b02d92e908"
+          },
+          "gradient.f32": {
+            "bytes": 12288,
+            "sha256": "c60a3621a8cb97e28392eef7c68905f3d556c4b9e2ac4e22b607f08cc08cc43c"
+          },
+          "frame-3/actual-fragment.glsl": {
+            "bytes": 63501,
+            "sha256": "57422453d479882bcb4cf296ce115c7d3fa9110048583497bf10cc52dec58188"
+          },
+          "frame-3/uploaded-uniforms.json": {
+            "bytes": 5654,
+            "sha256": "68722637db523361a11e21a1d7299d282374a145819576aef0addb2bb994e20e"
+          },
+          "reference-texture.f32": {
+            "bytes": 12800,
+            "sha256": "423ec28076db1e63c091ea8e089ae727984ba93167d87615ec33f19cec5df315"
+          },
+          "reference-texture.json": {
+            "bytes": 60,
+            "sha256": "86b700006a10da468f4c941502c049443056a313562f3ed0a34820715cdbca30"
+          }
+        }
+      }
+    },
+    {
+      "name": "deep-1e9",
+      "fractalChanges": {
+        "center": [
+          -0.743643887037151,
+          0.13182590420533
+        ],
+        "zoom": 1000000000.125,
+        "iterations": 1200
+      },
+      "rgbaSha256": "2a132701e94522df9e4aa1d865829689b748ab2ea53f83636d7b7cd9729769da",
+      "gradientSha256": "c60a3621a8cb97e28392eef7c68905f3d556c4b9e2ac4e22b607f08cc08cc43c",
+      "referenceSha256": "fb4f1555e665029bbd148f684bb1bbbd7e2ec5df3df6e2e3d46717405b834419",
+      "referenceLength": 1200,
+      "originalEvidence": {
+        "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/fractal-native-residual-20261022/deep-producer/native-display-zoom-1e9",
+        "files": {
+          "color8.rgba": {
+            "bytes": 1200000,
+            "sha256": "2a132701e94522df9e4aa1d865829689b748ab2ea53f83636d7b7cd9729769da"
+          },
+          "color8.glsl": {
+            "bytes": 63500,
+            "sha256": "4bfa77d2615aeb17bc6104efff0a6a53897fc939803bb4ba5e5c1f81e2c05fe9"
+          },
+          "diagnostic-vertex.glsl": {
+            "bytes": 356,
+            "sha256": "6568eac957efe446af368ba5a8a4b889cb44c48feac5d07bbaad79b02d92e908"
+          },
+          "gradient.f32": {
+            "bytes": 12288,
+            "sha256": "c60a3621a8cb97e28392eef7c68905f3d556c4b9e2ac4e22b607f08cc08cc43c"
+          },
+          "frame-3/actual-fragment.glsl": {
+            "bytes": 63501,
+            "sha256": "57422453d479882bcb4cf296ce115c7d3fa9110048583497bf10cc52dec58188"
+          },
+          "frame-3/uploaded-uniforms.json": {
+            "bytes": 5641,
+            "sha256": "8e6ca068ba359ebe0c4661bc37e62f2bc94b3ba6fd1ee8c844ec3875aa90ed61"
+          },
+          "reference-texture.f32": {
+            "bytes": 19200,
+            "sha256": "fb4f1555e665029bbd148f684bb1bbbd7e2ec5df3df6e2e3d46717405b834419"
+          },
+          "reference-texture.json": {
+            "bytes": 62,
+            "sha256": "874caa92f86227b84c27079ead3712de5ba2d5f131769b241c9b2f7d6cdd3427"
+          }
+        }
+      }
+    }
+  ]
+}
