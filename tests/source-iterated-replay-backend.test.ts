@@ -6,6 +6,7 @@ import type {SourceIteratedReplayBackend,SourceIteratedReplayAsyncBackend,Source
 import type {IteratedGpuFacts,IteratedGpuOptions} from '../src/engine/iteratedDensityGpu';
 import {prepareSourceSymmetryTone} from '../src/engine/sourceSymmetryPresentation';
 import {GenerationCleanupError} from '../src/engine/generationCleanup';
+import {SourceProcessingContext} from '../src/engine/sourceProcessingContext';
 
 const options={width:32,height:24,projection:'xy' as const,padding:0,bounds:{minX:-1,maxX:1,minY:-1,maxY:1}};
 const paused:SourceIteratedDisplayEvent={updates:[],paused:true,parameterChanged:false,cameraChanged:false};
@@ -44,6 +45,26 @@ function deferred<T>(){let resolve!:(value:T)=>void,reject!:(error:unknown)=>voi
 const running=(frame:IteratedFrameJob):SourceIteratedDisplayEvent=>({...paused,paused:false,updates:[frame.field,{...frame.field}]});
 
 describe('one replay owner with synchronous and asynchronous execution (CPU-only boundary tests)',()=>{
+ it('rejects a single borrowed context for native custom replay rather than treating it as both stages',async()=>{
+  const s=scene();s.equations={glsl:'void calculate_next(in vec3 p,out vec3 q,out float m){q=p;m=0.;}'};
+  const frame=prepareIteratedFrame(s,0,0,s,{symmetryDialect:'native-gl41'}),b=asynchronous(),owner=new SourceIteratedReplaySession('symmetry',30,{asyncBackend:b.backend});
+  try{await expect(owner.displayAsync(frame,options,paused)).rejects.toThrow('分阶段');expect(b.backend.step).not.toHaveBeenCalled();}finally{await owner.resetAsync();}
+ });
+ it('detaches stage contexts before waiting and never substitutes display for a missing update snapshot',async()=>{
+  const graphics=SourceProcessingContext.create(32,24);if(!graphics.ok)throw graphics.error;
+  const started=graphics.value.apply({kind:'begin-draw'});if(!started.ok)throw started.error;
+  const read=graphics.value.snapshot();if(!read.ok)throw read.error;
+  const update=structuredClone(read.value),display=structuredClone(read.value);(display.transform as number[])[0]=7;
+  const b=asynchronous(),owner=new SourceIteratedReplaySession('symmetry',30,{asyncBackend:b.backend}),frame=job();
+  try{
+   await owner.displayAsync(frame,options,paused);owner.requestReplay();
+   const gate=deferred<IteratedGpuFacts>();b.backend.step.mockImplementationOnce(()=>gate.promise);
+   const event={...running(frame),processing:{update,display}},pending=owner.displayAsync(frame,options,event);(update.transform as number[])[0]=91;(display.transform as number[])[0]=92;
+   await vi.waitFor(()=>expect(b.backend.step).toHaveBeenCalledTimes(2));const submitted=b.backend.step.mock.calls[1][0];expect(submitted.processingContext!.transform[0]).toBe(read.value.transform[0]);
+   gate.resolve(facts(submitted));await pending;expect(b.backend.step.mock.calls.slice(2).every(([p])=>p.processingContext!.transform[0]===7)).toBe(true);
+   const count=b.backend.step.mock.calls.length;await expect(owner.displayAsync(frame,options,{...running(frame),processing:{display}})).rejects.toThrow('对应阶段');expect(b.backend.step).toHaveBeenCalledTimes(count);
+  }finally{await owner.resetAsync();graphics.value.dispose();}
+ });
  it('preserves completed-pass units across replay phases and rejects mixed units',async()=>{
   const b=asynchronous(),owner=new SourceIteratedReplaySession('symmetry',30,{asyncBackend:b.backend}),frame=job();
   b.backend.step.mockImplementation(async j=>({...facts(j),invalidUnit:'completed-pass'}));

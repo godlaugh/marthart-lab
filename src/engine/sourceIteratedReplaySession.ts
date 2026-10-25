@@ -1,10 +1,17 @@
 import type {IteratedFrameJob,IteratedField} from '../scenes/iteratedDensity';
+import type {SourceProcessingContextSnapshot} from './sourceProcessingContext';
+import {SOURCE_SYMMETRY_CUSTOM_DIALECT} from './sourceSymmetryCustom';
 import {IteratedDensityGpu,type IteratedGpuOptions,type IteratedGpuFacts} from './iteratedDensityGpu';
 import {prepareSourceIterationFramePlan,prepareSourceIterationReplayFrame,type SourceIterationFramePlan} from './sourceIterationFramePlan';
 import {sourceDensitySplatPixelTests} from './sourceDensitySplat';
 import {GenerationCleanupState} from './generationCleanup';
 import {executeSourceIteratedReplay,executeSourceIteratedReplayAsync,type SourceIteratedReplayBackend,type SourceIteratedReplayAsyncBackend,type SourceIteratedReplayBackendOptions,type SourceIteratedReplayOperation,type SourceIteratedPresentArguments,type SourceIteratedPresented} from './sourceIteratedReplayBackend';
-export interface SourceIteratedDisplayEvent {updates:readonly IteratedField[];paused:boolean;parameterChanged:boolean;cameraChanged:boolean;}
+export interface SourceIteratedDisplayEvent {
+ updates:readonly IteratedField[];paused:boolean;parameterChanged:boolean;cameraChanged:boolean;
+ /** Host snapshots of the shader's bound graphics, not necessarily the render
+  * target. Ordinary updates precede Scene.render; replay runs in world space. */
+ processing?:{update?:SourceProcessingContextSnapshot;display:SourceProcessingContextSnapshot};
+}
 export interface SourceIteratedDisplayFacts {
  displayIndex:number;replayed:boolean;resized:boolean;cleared:boolean;passes:number;accumulationPasses:number;
  warmupApplied:boolean;replayActive:boolean;remainingBurnInSteps:number;remainingReplaySteps:number;
@@ -114,6 +121,8 @@ export class SourceIteratedReplaySession {
   if(job.kind!==this.family||(this.family==='symmetry'?(!job.densitySplat||!job.symmetryPalette):job.field.kind!=='map'||job.field.mathModel!=='mathart-1.7.8-gpu-v1')||!cfg.sourceInitialSeed||!cfg.record)throw Error('迭代场景 重播需要完整源 GPU 配置与粒子绘制');
   if(!event||['paused','parameterChanged','cameraChanged'].some(key=>typeof event[key as keyof SourceIteratedDisplayEvent]!=='boolean'))throw Error('迭代场景 显示事件无效');
   if(!Array.isArray(event.updates)||event.updates.length>2)throw Error('迭代场景 有序更新事件无效');
+  if(job.field.kind==='symmetry-custom'&&job.field.plan.dialect===SOURCE_SYMMETRY_CUSTOM_DIALECT&&!event.processing)throw Error('原生自定义迭代显示需要分阶段的 Processing 上下文');
+  if(event.processing&&(!event.processing.display||event.updates.length&&!event.processing.update))throw Error('迭代场景缺少对应阶段的 Processing 上下文');
   const resized=this.initialized&&(options.width!==this.width||options.height!==this.height);
   // Validate steps with the ordinary producer before any GPU mutation.
   const ordinary=prepareSourceIterationFramePlan(this.family,{frameIndex:this.displayIndex,updateCount:event.updates.length},this.warmup,cfg.burn,cfg.iterations);
@@ -123,7 +132,7 @@ export class SourceIteratedReplaySession {
   const burnBudget=starting?Math.min(12,Math.max(8,Math.min(64,cfg.burn))):this.burnBudget;
   const burn=replay?Math.min(starting?cfg.burn:this.remainingBurn,burnBudget):0;
   const draws=replay?Math.min(remaining,sourceIteratedReplayBudget(remaining,frames-(starting?0:this.replayIndex),starting?0:this.replayIndex),8):1;
-  const phaseJob=(plan:SourceIterationFramePlan,kind:'update'|'display'|'replay',frame=this.gpuFrame):IteratedFrameJob=>({...job,frame,iterationUpdates:kind==='replay'?undefined:event.updates,iterationFrame:{...plan,frameIndex:frame}});
+  const phaseJob=(plan:SourceIterationFramePlan,kind:'update'|'display'|'replay',frame=this.gpuFrame):IteratedFrameJob=>({...job,...(event.processing?{processingContext:kind==='replay'||!event.updates.length?event.processing.display:event.processing.update}:{}),frame,iterationUpdates:kind==='replay'?undefined:event.updates,iterationFrame:{...plan,frameIndex:frame}});
   const replayPlans=replay?Array.from({length:Math.max(1,draws)},(_,i)=>prepareSourceIterationReplayFrame(this.family,this.displayIndex,i===0?burn:0,i<draws?cfg.iterations:0)):[];
   let work=!replay||event.updates.length?this.estimateWork(phaseJob(ordinary,replay?'update':'display'),!replay&&!this.initialized):0;
   for(let i=0;i<replayPlans.length;i++)work+=this.estimateWork(phaseJob(replayPlans[i],'replay'),starting&&i===0);

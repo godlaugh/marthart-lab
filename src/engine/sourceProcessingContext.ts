@@ -102,6 +102,8 @@ export class SourceProcessingContext {
  * shader instance creates a new binding; a new frame does not. */
 export class SourceProcessingShaderContext {
  private graphics?:SourceProcessingContext;private disposed=false;
+ /** Identity-only query for the host's retention of replaced offscreen slots. */
+ usesGraphics(graphics:SourceProcessingContext):boolean{return !this.disposed&&this.graphics===graphics;}
  bind(current:SourceProcessingContext|undefined):SourceProcessingContextResult<SourceProcessingContextSnapshot>{
   if(this.disposed)return{ok:false,error:new SourceProcessingContextError('state','Processing shader binding disposed')};
   if(!this.graphics){if(!current||!instances.has(current))return{ok:false,error:new SourceProcessingContextError('input','Processing graphics identity unknown')};this.graphics=current;}

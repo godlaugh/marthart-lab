@@ -8,6 +8,9 @@ import {prepareIteratedFrame} from '../src/scenes/iteratedDensity';
 import {prepareSourceIteratedNativeFrame} from '../src/engine/sourceIteratedNativeFrame';
 import {SourceIteratedNativeBackend} from '../src/engine/sourceIteratedNativeBackend';
 import {SourceProcessingContext} from '../src/engine/sourceProcessingContext';
+import {SourceProcessingHost} from '../src/engine/sourceProcessingHost';
+import {prepareSourceCamera} from '../src/engine/sourceCamera';
+import {SourceIteratedReplaySession} from '../src/engine/sourceIteratedReplaySession';
 import {prepareSourceSymmetryTone} from '../src/engine/sourceSymmetryPresentation';
 import * as transport from '../src/engine/sourceNativeClient';
 // @ts-expect-error Actual Node HTTP service lives outside browser contracts.
@@ -45,6 +48,31 @@ describe('production fragment frame boundary',()=>{
 });
 
 describe.skipIf(!native)('actual HTTP production custom owner → retained ink → pixels',()=>{
+ it('binds ordinary update and world replay to separate host snapshots through the real native backend',async()=>{
+  const app=await createExportServer({root:mkdtempSync(resolve('.cache/native-fragment-host-')),sourceRendererBackend:executable}),realFetch=globalThis.fetch,backend=new SourceIteratedNativeBackend(),session=new SourceIteratedReplaySession('symmetry',30,{asyncBackend:backend}),host=value(SourceProcessingHost.create(32,24));
+  const compute=vi.spyOn(transport,'exchangeSourceIteratedNative');let restore:(()=>void)|undefined;
+  try{
+   const address=await app.listen(0),base=`http://127.0.0.1:${address.port}`,spy=vi.spyOn(globalThis,'fetch').mockImplementation((input,init)=>realFetch(new URL(String(input),base),init));restore=()=>spy.mockRestore();
+   const {s,job}=frame('uniform mat4 transform;\nvoid calculate_next(in vec3 p,out vec3 q,out float m){q=vec3(0.);m=transform[0][0];}');
+   delete job.processingContext;
+   const camera=value(prepareSourceCamera(s.sourceCamera,{logicalWidth:32,logicalHeight:24,referenceLogicalHeight:24,target:'primary',projectionPass:'perspective'}));if(camera.kind!=='known')throw Error(camera.reason);
+   const apply=(event:Parameters<SourceProcessingHost['apply']>[0])=>value(host.apply(event));
+   apply({kind:'begin-primary',width:32,height:24});apply({kind:'initialize-scene'});apply({kind:'end-primary'});
+   const draw=async(updates:boolean)=>{
+    apply({kind:'begin-primary',width:32,height:24});const update=updates?value(host.bindCompute()):undefined;
+    apply({kind:'begin-render',plan:camera.plan});const display=value(host.bindCompute());
+    const result=await session.displayAsync(job,options,{updates:updates?[job.field,{...job.field}]:[],paused:!updates,parameterChanged:false,cameraChanged:false,processing:{update,display}});
+    apply({kind:'end-render',screenOverlay:true});apply({kind:'end-primary'});return{result,update,display};
+   };
+   await draw(false);const ordinary=await draw(true);expect(ordinary.update!.transform[0]).not.toBe(ordinary.display.transform[0]);
+   const create=compute.mock.calls[0][0].operation,resource=create.resource;
+   const metric=async()=>{const r=await transport.exchangeSourceIteratedNative({generation:92,sequence:1,operation:{kind:'read',profile:'source-fragment',resource,expectedCount:7,expectedIndex:backend.diagnostics().index,offset:0,count:7}});return [...r.positionsAndMetric!].filter((_v,i)=>i%4===3);};
+   expect(await metric()).toEqual(Array(7).fill(ordinary.update!.transform[0]));
+   session.requestReplay();const replay=await draw(true);expect(replay.result.phases.map(p=>p.kind)).toEqual(['update','replay','replay']);expect(await metric()).toEqual(Array(7).fill(replay.display.transform[0]));
+   const shown=await session.presentAsync(prepareSourceSymmetryTone(s,{width:32,height:24}));expect(shown.toneBackend).toBe('native');expect(shown.pixels.some((v,i)=>i%4!==3&&v>0)).toBe(true);
+   await session.resetAsync();expect(backend.diagnostics().retainedBytes).toBe(0);
+  }finally{await session.resetAsync();host.dispose();restore?.();compute.mockRestore();await app.close();expect(app.ownedProcessCount).toBe(0);}
+ });
  it('runs, resizes and resets native fragment state while preserving explicit diagnostics and exact cleanup',async()=>{
   const app=await createExportServer({root:mkdtempSync(resolve('.cache/native-fragment-http-')),sourceRendererBackend:executable}),realFetch=globalThis.fetch,owner=new SourceIteratedNativeBackend();
   const compute=vi.spyOn(transport,'exchangeSourceIteratedNative'),render=vi.spyOn(transport,'exchangeSourceIteratedRenderNative');let restore:(()=>void)|undefined;
