@@ -22,7 +22,7 @@ describe('source fragment wire admission and diagnostic identity',()=>{
   expect(encodeSourceIteratedNativeRequest(request({kind:'release',resource,profile}),{retainedBytes:SOURCE_FRAME_BUDGET+1}).ok).toBe(true);
  });
  it('rejects lossy integer values, malformed shapes, owner-controlled bindings and excessive scalar storage',()=>{
-  for(const binding of [{name:'x',type:5124,values:[2147483648]},{name:'x',type:5124,values:[.5]},{name:'x',type:5126,values:[Infinity]},{name:'x',type:35675,values:[1]},{name:'x',type:35670,values:[2]},{name:'x',type:35678,values:[1]},{name:'stateTex',type:35678,values:[0]},{name:'iterations',type:5124,values:[1]},{name:'x',type:0,values:[1]},{name:'x',type:5126,values:Array(65537).fill(0)}]){
+  for(const binding of [{name:'x',type:5124,values:[2147483648]},{name:'x',type:5124,values:[.5]},{name:'x',type:5126,values:[Infinity]},{name:'x',type:35675,values:[1]},{name:'x',type:35670,values:[2]},{name:'x',type:35671,values:[1,2]},{name:'x',type:35672,values:[1,0]},{name:'x',type:35673,values:[1,0,0,.5]},{name:'x',type:35678,values:[1]},{name:'stateTex',type:35678,values:[0]},{name:'iterations',type:5124,values:[1]},{name:'x',type:0,values:[1]},{name:'x',type:5126,values:Array(65537).fill(0)}]){
    const input=advance();Object.assign(input.operation,{bindings:[binding]});expect(encodeSourceIteratedNativeRequest(input)).toMatchObject({ok:false,error:{kind:'input'}});
   }
   const input=advance();Object.assign(input.operation,{steps:17});expect(encodeSourceIteratedNativeRequest(input)).toMatchObject({ok:false,error:{kind:'input'}});

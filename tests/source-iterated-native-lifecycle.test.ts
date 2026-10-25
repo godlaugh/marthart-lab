@@ -178,8 +178,8 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
 
  it('runs the v8 fragment profile with signed typed bindings, reset and exact release in the shared CGL service',async()=>{
   const o=await owner(),count=65541,profile='source-fragment' as const;
-  const program=prepareSourceSymmetryCustomProgram('uniform float gain;uniform int signedCount;uniform vec2 supplied[2];uniform mat3 basis;uniform float linkDefault=.125;void calculate_next(in vec3 pos,out vec3 nextPos,out float metric){nextPos=pos+basis*vec3(gain+supplied[1].x,supplied[1].y,9.);metric=float(signedCount)+linkDefault+supplied[0].x;}',5);
-  const bindings:SourceSymmetryNativeBinding[]=[{name:'gain',type:5126,values:[.5]},{name:'signedCount',type:5124,values:[-2]},{name:'supplied',type:35664,values:[.25,.5,1,2]},{name:'basis',type:35675,values:[1,0,0,0,1,0,0,0,1]}];
+  const program=prepareSourceSymmetryCustomProgram('uniform float gain;uniform int signedCount;uniform vec2 supplied[2];uniform mat3 basis;uniform float linkDefault=.125;uniform bvec2 flags2;uniform bvec3 flags3;uniform bvec4 flags4;void calculate_next(in vec3 pos,out vec3 nextPos,out float metric){nextPos=pos+basis*vec3(gain+supplied[1].x,supplied[1].y,9.);metric=float(signedCount)+linkDefault+supplied[0].x+float(flags2.y)+float(flags3.z)+float(flags4.x)+float(flags4.w);}',5);
+  const bindings:SourceSymmetryNativeBinding[]=[{name:'gain',type:5126,values:[.5]},{name:'signedCount',type:5124,values:[-2]},{name:'supplied',type:35664,values:[.25,.5,1,2]},{name:'basis',type:35675,values:[1,0,0,0,1,0,0,0,1]},{name:'flags2',type:35671,values:[0,1]},{name:'flags3',type:35672,values:[0,0,1]},{name:'flags4',type:35673,values:[1,0,0,1]}];
   const step=(index:number,steps:number,reset=false):SourceIteratedNativeOperation=>({kind:'advance-fragment',resource:A,expectedCount:count,expectedIndex:index,reset,resetCounter:reset,steps,bindings});
   const scan=(index:number):SourceIteratedNativeOperation=>({...read(count,index,65530,11),profile});
   try{
@@ -189,11 +189,12 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
    const initial=seed(count,65530,11);expect(bytes((await o.good(scan(0))).decoded.positionsAndMetric!)).toEqual(bytes(initial));
    await o.bad(advance(count,0),'ownership');
    await o.good(step(0,3));const first=(await o.good(scan(1))).decoded;
-   const expected=initial.slice();for(let i=0;i<11;i++){expected[i*4]=Math.fround(Math.fround(Math.fround(initial[i*4]+1.5)+1.5)+1.5);expected[i*4+1]=Math.fround(Math.fround(Math.fround(initial[i*4+1]+2)+2)+2);expected[i*4+2]=0;expected[i*4+3]=-1.625;}
+   const expected=initial.slice();for(let i=0;i<11;i++){expected[i*4]=Math.fround(Math.fround(Math.fround(initial[i*4]+1.5)+1.5)+1.5);expected[i*4+1]=Math.fround(Math.fround(Math.fround(initial[i*4+1]+2)+2)+2);expected[i*4+2]=0;expected[i*4+3]=2.375;}
    expect(bytes(first.positionsAndMetric!)).toEqual(bytes(expected));expect(first.invalidCounts!.every(n=>n===0)).toBe(true);
    // Parser failures must leave the completed checkpoint and values unchanged.
    await o.bad(step(1,1),'input',b=>b.writeUInt32LE(0xffffffff,104));
    await o.bad(step(1,1),'input',b=>b.writeUInt32LE(0x7fc00000,124)); // gain value
+   await o.bad(step(1,1),'input',b=>b.writeInt32LE(2,b.length-4)); // non-boolean bvec4 component
    await o.bad({...step(1,1),bindings:[{name:'gain',type:35664,values:[1,2]}]} as SourceIteratedNativeOperation,'input');
    expect(bytes((await o.good(scan(1))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
    await o.good(step(1,0,true));expect(bytes((await o.good(scan(2))).decoded.positionsAndMetric!)).toEqual(bytes(initial));
