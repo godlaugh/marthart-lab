@@ -1,0 +1,446 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-26T23:34:54.593694+00:00",
+  "status": "independent-terminal-complete-strict-differences-retained",
+  "wholeFamilyAcceptance": false,
+  "milestone": "M3",
+  "readable": "docs/source-roots-dense-terminal.zh-CN.md",
+  "productionChanged": false,
+  "desktopVersion": "2.0.0-preview.14",
+  "testedBaseHead": "6e356b8ee3b773f5e92dd930db3747638ce96e5f",
+  "input": {
+    "samples": 131072,
+    "workers": 4,
+    "rootPoints": 1310720,
+    "width": 500,
+    "height": 600,
+    "sourceSha256": "bec2ab2f03231d7e826aa72d39364ea7bf6fa7f2d1bd266fc1d1215652975041",
+    "actualReferenceHeapBytes": 536870912
+  },
+  "runs": [
+    {
+      "run": 0,
+      "terminalFrame": 142,
+      "pausedSnapshots": 2,
+      "strictTerminal": {
+        "density": {
+          "equal": false,
+          "differentBytes": 11779,
+          "differentRecords": 10387,
+          "first": [
+            {
+              "byte": 323316,
+              "actual": 175,
+              "reference": 174
+            },
+            {
+              "byte": 323328,
+              "actual": 110,
+              "reference": 109
+            },
+            {
+              "byte": 323332,
+              "actual": 88,
+              "reference": 89
+            },
+            {
+              "byte": 323344,
+              "actual": 31,
+              "reference": 32
+            },
+            {
+              "byte": 323348,
+              "actual": 129,
+              "reference": 130
+            },
+            {
+              "byte": 323364,
+              "actual": 30,
+              "reference": 31
+            },
+            {
+              "byte": 323376,
+              "actual": 116,
+              "reference": 115
+            },
+            {
+              "byte": 323396,
+              "actual": 213,
+              "reference": 214
+            }
+          ]
+        },
+        "math": {
+          "equal": false,
+          "differentBytes": 1,
+          "differentRecords": 1,
+          "first": [
+            {
+              "byte": 636086,
+              "actual": 44,
+              "reference": 43
+            }
+          ]
+        },
+        "formulaArt": {
+          "equal": false,
+          "differentBytes": 1,
+          "differentRecords": 1,
+          "first": [
+            {
+              "byte": 636086,
+              "actual": 44,
+              "reference": 43
+            }
+          ]
+        },
+        "fullOriginalRaw": {
+          "equal": false,
+          "differentBytes": 17132,
+          "differentRecords": 7484,
+          "first": [
+            {
+              "byte": 24068,
+              "actual": 0,
+              "reference": 2
+            },
+            {
+              "byte": 24069,
+              "actual": 0,
+              "reference": 2
+            },
+            {
+              "byte": 24070,
+              "actual": 0,
+              "reference": 2
+            },
+            {
+              "byte": 24072,
+              "actual": 0,
+              "reference": 10
+            },
+            {
+              "byte": 24073,
+              "actual": 0,
+              "reference": 10
+            },
+            {
+              "byte": 24074,
+              "actual": 0,
+              "reference": 10
+            },
+            {
+              "byte": 24076,
+              "actual": 0,
+              "reference": 15
+            },
+            {
+              "byte": 24077,
+              "actual": 0,
+              "reference": 15
+            }
+          ]
+        },
+        "fullOriginalEnhanced": {
+          "equal": false,
+          "differentBytes": 21603,
+          "differentRecords": 7981,
+          "first": [
+            {
+              "byte": 24072,
+              "actual": 0,
+              "reference": 9
+            },
+            {
+              "byte": 24073,
+              "actual": 0,
+              "reference": 9
+            },
+            {
+              "byte": 24074,
+              "actual": 0,
+              "reference": 9
+            },
+            {
+              "byte": 24076,
+              "actual": 0,
+              "reference": 14
+            },
+            {
+              "byte": 24077,
+              "actual": 0,
+              "reference": 14
+            },
+            {
+              "byte": 24078,
+              "actual": 0,
+              "reference": 14
+            },
+            {
+              "byte": 24080,
+              "actual": 0,
+              "reference": 15
+            },
+            {
+              "byte": 24081,
+              "actual": 0,
+              "reference": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "run": 1,
+      "terminalFrame": 142,
+      "pausedSnapshots": 2,
+      "strictTerminal": {
+        "density": {
+          "equal": false,
+          "differentBytes": 7696,
+          "differentRecords": 6971,
+          "first": [
+            {
+              "byte": 323348,
+              "actual": 128,
+              "reference": 130
+            },
+            {
+              "byte": 323376,
+              "actual": 117,
+              "reference": 115
+            },
+            {
+              "byte": 323440,
+              "actual": 98,
+              "reference": 96
+            },
+            {
+              "byte": 323456,
+              "actual": 181,
+              "reference": 180
+            },
+            {
+              "byte": 323460,
+              "actual": 54,
+              "reference": 55
+            },
+            {
+              "byte": 323476,
+              "actual": 149,
+              "reference": 148
+            },
+            {
+              "byte": 323492,
+              "actual": 245,
+              "reference": 246
+            },
+            {
+              "byte": 323504,
+              "actual": 193,
+              "reference": 192
+            }
+          ]
+        },
+        "math": {
+          "equal": true,
+          "differentBytes": 0,
+          "differentRecords": 0,
+          "first": []
+        },
+        "formulaArt": {
+          "equal": true,
+          "differentBytes": 0,
+          "differentRecords": 0,
+          "first": []
+        },
+        "fullOriginalRaw": {
+          "equal": false,
+          "differentBytes": 17131,
+          "differentRecords": 7483,
+          "first": [
+            {
+              "byte": 24068,
+              "actual": 0,
+              "reference": 2
+            },
+            {
+              "byte": 24069,
+              "actual": 0,
+              "reference": 2
+            },
+            {
+              "byte": 24070,
+              "actual": 0,
+              "reference": 2
+            },
+            {
+              "byte": 24072,
+              "actual": 0,
+              "reference": 10
+            },
+            {
+              "byte": 24073,
+              "actual": 0,
+              "reference": 10
+            },
+            {
+              "byte": 24074,
+              "actual": 0,
+              "reference": 10
+            },
+            {
+              "byte": 24076,
+              "actual": 0,
+              "reference": 15
+            },
+            {
+              "byte": 24077,
+              "actual": 0,
+              "reference": 15
+            }
+          ]
+        },
+        "fullOriginalEnhanced": {
+          "equal": false,
+          "differentBytes": 21602,
+          "differentRecords": 7980,
+          "first": [
+            {
+              "byte": 24072,
+              "actual": 0,
+              "reference": 9
+            },
+            {
+              "byte": 24073,
+              "actual": 0,
+              "reference": 9
+            },
+            {
+              "byte": 24074,
+              "actual": 0,
+              "reference": 9
+            },
+            {
+              "byte": 24076,
+              "actual": 0,
+              "reference": 14
+            },
+            {
+              "byte": 24077,
+              "actual": 0,
+              "reference": 14
+            },
+            {
+              "byte": 24078,
+              "actual": 0,
+              "reference": 14
+            },
+            {
+              "byte": 24080,
+              "actual": 0,
+              "reference": 15
+            },
+            {
+              "byte": 24081,
+              "actual": 0,
+              "reference": 15
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "diagnostic": {
+    "scope": "DIAGNOSTIC captured-native-world-stream replay only. Original 66 splats in their recorded order intentionally feed the production RootsNativeDensityGpu; not an independent solver/worker proof. No source equation or particle-count reduction.",
+    "status": "diagnostic-renderer-exact",
+    "density": {
+      "equal": true,
+      "differentRecords": 0,
+      "differentBytes": 0,
+      "actualSha256": "7832509ddd5b12755b263dffe02590883505a061d887f92adbd4c8e09d4349a7",
+      "expectedSha256": "7832509ddd5b12755b263dffe02590883505a061d887f92adbd4c8e09d4349a7"
+    },
+    "math": {
+      "equal": true,
+      "differentRecords": 0,
+      "differentBytes": 0,
+      "actualSha256": "04d12bc1274b1f0268f576135a9bd39c0c7e8eb545b931901d6ff45111de48b2",
+      "expectedSha256": "04d12bc1274b1f0268f576135a9bd39c0c7e8eb545b931901d6ff45111de48b2"
+    }
+  },
+  "consumerRejections": [
+    {
+      "name": "empty-runs",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "name": "missing-stage",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "name": "pending-after-terminal",
+      "passed": true,
+      "exitCode": 1
+    },
+    {
+      "name": "missing-world-artifact",
+      "passed": true,
+      "exitCode": 1
+    }
+  ],
+  "remainingOwnedProcesses": 0,
+  "sourceStable": true,
+  "visibleWindows": 0,
+  "limits": [
+    "Original default 47550000 samples not completed.",
+    "Independent asynchronous animation and original point-cloud whole image remain unverified.",
+    "Original and product solver world tuples are not bit-exact; source-lowering diagnostics preserve remaining differences.",
+    "Captured-native-stream replay is renderer isolation, not independent solver acceptance.",
+    "No cross-device verification; only current Mac available."
+  ],
+  "reports": [
+    {
+      "path": ".cache/roots-dense-terminal-20261027/reference-r1/report.json",
+      "sha256": "5cb53bd7d7277156e9dfe320f87a65d91bdb1921a63afa9f4bcc2463db4060a0"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-20261027/reference-control-r2/report.json",
+      "sha256": "af710a7b58a55c5ba317b4c79e4639ebf6dd66b8bf0cd15852ef51638067ac9c"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-20261027/reference-repeat-comparison.json",
+      "sha256": "3fe4794dfac7e36326c14ccfe23117faae763543e7f4142a048f7694db444ba3"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-product-20261027/capture-r2/report.json",
+      "sha256": "449040fc4c97b9d33859b6cce43dddede5e473dda80e7750e0d036f5eccbe96a"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-product-20261027/capture-r2/native-comparison.json",
+      "sha256": "abe56cc5af8ed5694dcc1b164e1d458e0f759ccdd419633a7fc353918ff4fbf6"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-product-20261027/capture-r2/independent-runs-comparison.json",
+      "sha256": "cce645a68be40c547120a54e6bccfe9ebf95d95a83512c3c78f9473a241e0454"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-20261027/diagnostics/world-streams-r2.json",
+      "sha256": "f517d3abd149e6c3578e356453c99f869affc1db405ebaccf7264d87a985f87c"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-20261027/diagnostics/view-streams.json",
+      "sha256": "b6a8e38cbd6d766876c8a89f34fda43d22b09ab239b276f81c787a4defd9d375"
+    },
+    {
+      "path": ".cache/roots-dense-renderer-diagnostic-20261027/run-1/report.json",
+      "sha256": "1bf9bbd30699d873e2467a5b6020e377121cd8909915b4d966c65ae807667eea"
+    },
+    {
+      "path": ".cache/roots-dense-terminal-product-20261027/consumer-negative/report.json",
+      "sha256": "261675c1e307d35d8f91fd1513b3827d0c8bd350348e74f3c447e6392dcc58b7"
+    }
+  ]
+}
