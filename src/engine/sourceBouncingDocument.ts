@@ -1,4 +1,4 @@
-import {importSourceBouncingConfig,parseSourceBouncingConfiguration,type SourceBouncingConfiguration,type SourceBouncingError,type SourceBouncingResult,type SourceBouncingImportOptions} from './sourceBouncingConfig';
+import {importSourceBouncingConfig,parseSourceBouncingConfiguration,sourceBouncingEffectiveInitialSpeed,type SourceBouncingConfiguration,type SourceBouncingError,type SourceBouncingResult,type SourceBouncingImportOptions} from './sourceBouncingConfig';
 import {importSourceBouncingVisualConfig,parseSourceBouncingVisualConfiguration,type SourceBouncingVisualConfiguration} from './sourceBouncingVisualConfig';
 import {prepareDomainSourceScalar} from './domainSourceScalar';
 import type {SourceCameraInput} from './sourceCamera';
@@ -10,10 +10,17 @@ export interface SourceBouncingDocumentPayload {
  visual:SourceBouncingVisualConfiguration;
  camera:SourceBouncingCameraAngles;
  recordDuration:number;
+ /** Optional local inspector state. Older documents use the effective speed
+  * as their initial input; raw source provenance is never replayed over edits. */
+ authoring?:{initialSpeed:number};
 }
-/** Shared simulation identity; visual/camera edits do not replace particles. */
-export function sourceBouncingInitializationKey(configuration:SourceBouncingConfiguration):string{
- return JSON.stringify(configuration,(_key,value:unknown)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
+export function sourceBouncingInitialSpeedInput(payload:SourceBouncingDocumentPayload):number{
+ return payload.authoring?.initialSpeed??payload.configuration.initialSpeed;
+}
+/** Shared initialization identity. Author edits 101→102 rebuild the same seed
+ * even though both render with speed100. Visual/camera edits stay hot. */
+export function sourceBouncingInitializationKey(payload:SourceBouncingDocumentPayload):string{
+ return JSON.stringify({configuration:payload.configuration,initialSpeedInput:sourceBouncingInitialSpeedInput(payload)},(_key,value:unknown)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
 }
 export interface SourceBouncingDocumentImportFacts {
  payload:SourceBouncingDocumentPayload;
@@ -64,19 +71,38 @@ export function importSourceBouncingDocument(raw:unknown,options:SourceBouncingI
    for(const key of angles)camera[key]=finite(scalar(root.camera,key,0,['camera',key]),['camera',key]);
   }
  }
- return{payload:{configuration:configuration.configuration,visual:visual.configuration,camera,recordDuration},consumedPaths:uniquePaths(consumedPaths),numericPaths:uniquePaths(numericPaths),diagnostics};
+ // Keep the established direct-render import interpretation. In particular,
+ // ConfigUtils expressions differ from ProjectState.fromJson's literal getter.
+ // Nonfinite pre-clamp values never become editable/saved author numbers.
+ const authoring=configuration.initialSpeedBeforeClamp===undefined?undefined:{initialSpeed:configuration.initialSpeedBeforeClamp};
+ return{payload:{configuration:configuration.configuration,visual:visual.configuration,camera,recordDuration,...(authoring?{authoring}:{})},consumedPaths:uniquePaths(consumedPaths),numericPaths:uniquePaths(numericPaths),diagnostics};
 });}
 /** Detached finite canonical facts. Source normalization happens at import;
  * saved durations below the native minimum fail rather than being repaired.
  * Presence metadata does not override later explicit canonical author edits. */
 export function parseSourceBouncingDocument(raw:unknown):SourceBouncingResult<SourceBouncingDocumentPayload>{return attempt(()=>{
- if(!object(raw))fail('input',[],'源弹跳文档必须为对象');exact(raw,['configuration','visual','camera','recordDuration'],[]);
+ if(!object(raw))fail('input',[],'源弹跳文档必须为对象');exact(raw,['configuration','visual','camera','recordDuration',...(Object.hasOwn(raw,'authoring')?['authoring']:[])],[]);
  const configuration=unwrap(parseSourceBouncingConfiguration(raw.configuration),['configuration']),visual=unwrap(parseSourceBouncingVisualConfiguration(raw.visual),['visual']);
  if(configuration.settingsPresence!==visual.settingsPresence)fail('input',['visual','settingsPresence'],'初始化与视觉配置的 settings 来源状态不一致');
  if(!object(raw.camera))fail('input',['camera'],'源相机必须为对象');exact(raw.camera,angles,['camera']);
  const camera={phi:finite(raw.camera.phi,['camera','phi']),theta:finite(raw.camera.theta,['camera','theta']),gamma:finite(raw.camera.gamma,['camera','gamma'])};
  const recordDuration=finite(raw.recordDuration,['recordDuration']);if(recordDuration<MIN_RECORD_DURATION)fail('input',['recordDuration'],'源录制时长不能小于 Float32(0.1)');
- return{configuration,visual,camera,recordDuration};
+ let authoring:SourceBouncingDocumentPayload['authoring'];
+ if(Object.hasOwn(raw,'authoring')){
+  if(!object(raw.authoring))fail('input',['authoring'],'源弹跳作者输入必须为对象');exact(raw.authoring,['initialSpeed'],['authoring']);
+  const initialSpeed=finite(raw.authoring.initialSpeed,['authoring','initialSpeed']);
+  if(initialSpeed<0)fail('input',['authoring','initialSpeed'],'初始速率输入不能为负数');
+  if(!Object.is(sourceBouncingEffectiveInitialSpeed(initialSpeed),configuration.initialSpeed))fail('input',['authoring','initialSpeed'],'初始速率输入与模拟配置不一致');
+  authoring={initialSpeed};
+ }
+ return{configuration,visual,camera,recordDuration,...(authoring?{authoring}:{})};
+});}
+/** One edit boundary owns the author Float32 and its derived simulation speed.
+ * Keep the optional state sparse when both values agree. */
+export function editSourceBouncingInitialSpeed(payload:SourceBouncingDocumentPayload,raw:unknown):SourceBouncingResult<SourceBouncingDocumentPayload>{return attempt(()=>{
+ const initialSpeed=Math.max(0,finite(raw,['authoring','initialSpeed'])),effective=sourceBouncingEffectiveInitialSpeed(initialSpeed);
+ const {authoring:_previous,...base}=payload;
+ return unwrap(parseSourceBouncingDocument({...base,configuration:{...base.configuration,initialSpeed:effective},...(!Object.is(initialSpeed,effective)?{authoring:{initialSpeed}}:{})}));
 });}
 /** Explicit Bouncing baseline, never an invented ordinary-camera family.
  * Passing all scalars prevents the shared Scene default phi=PI/2 leaking in.

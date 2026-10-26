@@ -1,7 +1,7 @@
 import {useState,type ReactNode} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
-import {usesSourceBouncing,parseSourceBouncingDocument,type SourceBouncingDocumentPayload} from '../engine/sourceBouncingDocument';
+import {usesSourceBouncing,parseSourceBouncingDocument,sourceBouncingInitialSpeedInput,editSourceBouncingInitialSpeed,type SourceBouncingDocumentPayload} from '../engine/sourceBouncingDocument';
 import {SOURCE_BOUNCING_POSITION_MODES,type SourceBouncingConfiguration,type SourceBouncingVelocityMode} from '../engine/sourceBouncingConfig';
 import {sourceBouncingRadiansToDegrees,sourceBouncingDegreesToRadians} from './sourceBouncingAngles';
 import {BouncingPolygonEditor} from './BouncingPolygonEditor';
@@ -20,7 +20,7 @@ function DraftField({id,label,value,commit,multiline=false,numeric=false}:{id:st
 }
 const shapeNames:Record<SourceBouncingConfiguration['initialPositionMode'],string>={BOX:'矩形',CIRCLE:'圆形',HEART:'心形',INFINITY:'无穷形',RING:'圆环',SPIRAL:'螺旋',STAR:'星形',LISSAJOUS:'利萨如曲线',ROSE:'玫瑰曲线',SUPERELLIPSE:'超椭圆',HYPOCYCLOID:'内摆线',EPICYCLOID:'外摆线',ARCHIMEDEAN_SPIRAL:'矩形（ARCHIMEDEAN_SPIRAL）',FORMULA:'公式区域'};
 const velocityNames:Record<SourceBouncingVelocityMode,string>={UNIFORM:'统一方向',RADIAL_OUT:'径向向外',RADIAL_IN:'径向向内',TANGENTIAL_CW:'顺时针切向',TANGENTIAL_CCW:'逆时针切向',RANDOM:'随机方向'};
-/** Edits only canonical source payload. Native omission/provenance and dormant
+/** Edits the source document through its owner. Native omission/provenance and dormant
  * shape fields survive changes; no local billiards or finite trail settings. */
 export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
  const {t}=useI18n(),[error,setError]=useState('');
@@ -37,7 +37,8 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
  const number=(id:string,label:string,value:number,change:(n:number)=>SourceBouncingDocumentPayload)=><DraftField key={id} id={id} label={t(label)} value={numberText(value)} numeric commit={raw=>commitNumber(raw,n=>emit(change(n)))}/>;
  const configNumber=(key:{[K in keyof SourceBouncingConfiguration]:SourceBouncingConfiguration[K] extends number?K:never}[keyof SourceBouncingConfiguration],label:string)=>{
   const change=(n:number)=>({...source,configuration:{...c,[key]:n}});
-  if(key==='particleCount'||key==='subSteps'||key==='timeStep'||key==='initialSpeed')return <SourceBouncingNumberField key={key} id={key} label={t(label)} value={c[key]} rules={bouncingNumberRules[key]} onCommit={n=>emit(change(n))}/>;
+  if(key==='initialSpeed')return <SourceBouncingNumberField key={key} id={key} label={t(label)} value={sourceBouncingInitialSpeedInput(source)} rules={bouncingNumberRules[key]} onCommit={n=>{const edited=editSourceBouncingInitialSpeed(source,n);return edited.ok?emit(edited.value):`${edited.error.path.join('.')}: ${edited.error.reason}`;}}/>;
+  if(key==='particleCount'||key==='subSteps'||key==='timeStep')return <SourceBouncingNumberField key={key} id={key} label={t(label)} value={c[key]} rules={bouncingNumberRules[key]} onCommit={n=>emit(change(n))}/>;
   return number(key,label,c[key],change);
  };
  const configDegrees=(key:'initialAngle'|'initialAngleSpread'|'shapeLissajousDelta',label:string)=><SourceBouncingNumberField key={key} id={key} label={t(label)} value={sourceBouncingRadiansToDegrees(c[key])} rules={bouncingNumberRules[key]} onCommit={n=>emit({...source,configuration:{...c,[key]:sourceBouncingDegreesToRadians(n)}})}/>;

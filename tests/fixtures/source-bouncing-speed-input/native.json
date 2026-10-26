@@ -1,0 +1,256 @@
+{
+  "headless": true,
+  "surfaceAbsent": true,
+  "cases": [
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 0}}",
+      "canonicalInitialSpeed": {
+        "bits": "00000000",
+        "text": "0.0"
+      },
+      "callbackFloat": {
+        "bits": "00000000",
+        "text": "0.0"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "0000000000000000",
+        "text": "0.0"
+      },
+      "inputText": "0",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 0}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 100}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "callbackFloat": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "4059000000000000",
+        "text": "100.0"
+      },
+      "inputText": "100",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 100}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 101}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "callbackFloat": {
+        "bits": "42ca0000",
+        "text": "101.0"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "4059400000000000",
+        "text": "101.0"
+      },
+      "inputText": "101",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 101}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 102}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "callbackFloat": {
+        "bits": "42cc0000",
+        "text": "102.0"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "4059800000000000",
+        "text": "102.0"
+      },
+      "inputText": "102",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 102}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 3.4028234663852886E38}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "callbackFloat": {
+        "bits": "7f7fffff",
+        "text": "3.4028235E38"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "47efffffe0000000",
+        "text": "3.4028234663852886E38"
+      },
+      "inputText": "3.4028235E38",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 3.4028234663852886E38}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 101}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "callbackFloat": {
+        "bits": "42ca0000",
+        "text": "101.0"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "4059400000000000",
+        "text": "101.0"
+      },
+      "inputText": "100+1",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 101}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 0.05000000074505806}}",
+      "canonicalInitialSpeed": {
+        "bits": "3d4ccccd",
+        "text": "0.05"
+      },
+      "callbackFloat": {
+        "bits": "3d4ccccd",
+        "text": "0.05"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "3fa999999999999a",
+        "text": "0.05"
+      },
+      "inputText": "1/20",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 0.05000000074505806}}"
+    },
+    {
+      "callbackCount": 1,
+      "authoredJson": "{\"settings\": {\"initial_speed\": 1024}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "callbackFloat": {
+        "bits": "44800000",
+        "text": "1024.0"
+      },
+      "kind": "original-helper-and-float-wrapper-to-diagnostic-json-sink",
+      "parsedDouble": {
+        "bits": "4090000000000000",
+        "text": "1024.0"
+      },
+      "inputText": "2^10",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 1024}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": 0}}",
+      "canonicalInitialSpeed": {
+        "bits": "00000000",
+        "text": "0.0"
+      },
+      "authoredFloat": {
+        "bits": "00000000",
+        "text": "0.0"
+      },
+      "kind": "direct-original-json-float",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 0}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": 100}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "authoredFloat": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "kind": "direct-original-json-float",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 100}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": 101}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "authoredFloat": {
+        "bits": "42ca0000",
+        "text": "101.0"
+      },
+      "kind": "direct-original-json-float",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 101}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": 102}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "authoredFloat": {
+        "bits": "42cc0000",
+        "text": "102.0"
+      },
+      "kind": "direct-original-json-float",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 102}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": 3.4028234663852886E38}}",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "authoredFloat": {
+        "bits": "7f7fffff",
+        "text": "3.4028235E38"
+      },
+      "kind": "direct-original-json-float",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": 3.4028234663852886E38}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": \"100+1\"}}",
+      "authoredExpression": "100+1",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "kind": "direct-original-json-expression",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": \"100+1\"}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": \"1/20\"}}",
+      "authoredExpression": "1/20",
+      "canonicalInitialSpeed": {
+        "bits": "3d4ccccd",
+        "text": "0.05"
+      },
+      "kind": "direct-original-json-expression",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": \"1/20\"}}"
+    },
+    {
+      "authoredJson": "{\"settings\": {\"initial_speed\": \"2^10\"}}",
+      "authoredExpression": "2^10",
+      "canonicalInitialSpeed": {
+        "bits": "42c80000",
+        "text": "100.0"
+      },
+      "kind": "direct-original-json-expression",
+      "jsonAfterConstructor": "{\"settings\": {\"initial_speed\": \"2^10\"}}"
+    }
+  ],
+  "scope": "Original NumberDragger parse and Float-wrapper methods, diagnostic JSON sink, original JSON round trip, original config constructor/getter; no GUI commit or file save.",
+  "rendererAbsent": true,
+  "windowCount": 0
+}

@@ -18,7 +18,12 @@ export interface SourceBouncingConfiguration {
 }
 export type SourceBouncingError={kind:'input'|'capacity'|'nonfinite'|'cancelled';path:readonly string[];reason:string};
 export type SourceBouncingResult<T>={ok:true;value:T}|{ok:false;error:SourceBouncingError};
-export interface SourceBouncingImportFacts {configuration:SourceBouncingConfiguration;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[];}
+export interface SourceBouncingImportFacts {
+ configuration:SourceBouncingConfiguration;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[];
+ /** Finite direct-ConfigUtils result above the simulation bound. This can seed
+  * local editing; it is not a ProjectState.fromJson author-state observation. */
+ initialSpeedBeforeClamp?:number;
+}
 export interface SourceBouncingImportOptions {numberToken?:(path:readonly string[])=>string|undefined;}
 const F=Math.fround;
 const object=(value:unknown):value is Record<string,unknown>=>value!==null&&typeof value==='object'&&!Array.isArray(value);
@@ -32,6 +37,11 @@ const numericFields={particleCount:'particle_count',subSteps:'sub_steps',timeSte
 type NumericKey=keyof typeof numericFields;
 const integerMin:Partial<Record<NumericKey,number>>={particleCount:1,subSteps:1,shapeNumPoints:3,shapeLissajousA:1,shapeLissajousB:1,shapeRoseK:1,shapeK:2};
 const ranges:Partial<Record<NumericKey,readonly[number,number]>>={timeStep:[F(.0001),F(.25)],particleRadius:[0,F(.25)],circleRadius:[F(.001),10],ellipseSemiMajorAxis:[F(.001),10],ellipseSemiMinorAxis:[F(.001),10],initialCircleRadius:[0,10],initialSpeed:[0,100],velocityNoise:[0,1],initialAngleSpread:[0,F(2*Math.PI)],shapeInnerRatio:[0,1],shapeTightness:[0,1],shapeNumTurns:[F(.1),Infinity],shapeLineWidth:[F(.001),Infinity],shapeSuperellipseN:[F(.01),Infinity]};
+/** JsonBouncingParticlesConfig's simulation bound, distinct from the inspector's
+ * nonnegative Float32 input. Callers validate their input at their boundary. */
+export function sourceBouncingEffectiveInitialSpeed(value:number):number{
+ const [min,max]=ranges.initialSpeed!;return Math.max(min,Math.min(max,value));
+}
 const velocities=['UNIFORM','RADIAL_OUT','RADIAL_IN','TANGENTIAL_CW','TANGENTIAL_CCW','RANDOM'] as const;
 function textBudget(value:string,path:readonly string[]):string{if(value.length>DOMAIN_SOURCE_SCALAR_LIMITS.characters)fail('capacity',path,'初始化文本超过本地 65536 字符预算');return value;}
 /** Initialization projection of JsonBouncingParticlesConfig only. Palette is
@@ -40,7 +50,8 @@ function textBudget(value:string,path:readonly string[]):string{if(value.length>
  * Root settings omission returns before polygon parsing, as native PC10–27. */
 export function importSourceBouncingConfig(rawRoot:unknown,options:SourceBouncingImportOptions={}):SourceBouncingResult<SourceBouncingImportFacts>{return attempt(()=>{
  const configuration=defaults(),consumedPaths:string[][]=[],numericPaths:string[][]=[],diagnostics:string[]=[];
- const facts=()=>({configuration,consumedPaths,numericPaths,diagnostics});
+ let initialSpeedBeforeClamp:number|undefined;
+ const facts=():SourceBouncingImportFacts=>({configuration,consumedPaths,numericPaths,diagnostics,...(initialSpeedBeforeClamp===undefined?{}:{initialSpeedBeforeClamp})});
  if(rawRoot===null||rawRoot===undefined)return facts();if(!object(rawRoot))fail('input',[],'源配置必须为对象');
  if(!Object.hasOwn(rawRoot,'settings'))return facts();
  if(!object(rawRoot.settings))fail('input',['settings'],'源 settings 必须为对象');const settings=rawRoot.settings;configuration.settingsPresence='object';if(!Object.keys(settings).length)consumedPaths.push(['settings']);
@@ -51,7 +62,16 @@ export function importSourceBouncingConfig(rawRoot:unknown,options:SourceBouncin
  // Keep constructor ordering among initialization fields. Shape fields occur
  // after seed; unrelated visual/record/camera interpretation is not repeated.
  const beforeSeed=(Object.keys(numericFields) as NumericKey[]).filter(key=>!key.startsWith('shape'));
- const assignNumber=(key:NumericKey)=>{const rawKey=numericFields[key],minimum=integerMin[key];let value=minimum===undefined?scalar(rawKey,configuration[key]):integer(rawKey,configuration[key]);if(minimum!==undefined)value=Math.max(minimum,key==='subSteps'?Math.min(16,value):value);const bounds=ranges[key];if(bounds)value=Math.max(bounds[0],Math.min(bounds[1],value));configuration[key]=minimum===undefined?finite(value,['settings',rawKey]):value;};
+ const assignNumber=(key:NumericKey)=>{
+  const rawKey=numericFields[key],minimum=integerMin[key];let value=minimum===undefined?scalar(rawKey,configuration[key]):integer(rawKey,configuration[key]);
+  if(minimum!==undefined)value=Math.max(minimum,key==='subSteps'?Math.min(16,value):value);
+  if(key==='initialSpeed'){
+   const effective=sourceBouncingEffectiveInitialSpeed(value);
+   if(Number.isFinite(value)&&value>effective)initialSpeedBeforeClamp=value;
+   value=effective;
+  }else{const bounds=ranges[key];if(bounds)value=Math.max(bounds[0],Math.min(bounds[1],value));}
+  configuration[key]=minimum===undefined?finite(value,['settings',rawKey]):value;
+ };
  const enumText=(key:string,fallback:string,allowed:readonly string[])=>{const value=javaTrim(text(key,fallback)).toUpperCase();return allowed.includes(value)?value:fallback;};
  for(const key of beforeSeed){
   assignNumber(key);

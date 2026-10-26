@@ -1,0 +1,51 @@
+{
+  "at": "2026-10-26T01:17:42.815Z",
+  "status": "passed",
+  "scope": "Original pure helpers and config construction. Actual Float wrapper invokes a diagnostic JSONObject sink, not original ProjectState or UI save.",
+  "caseCount": 16,
+  "classSha256": {
+    "mathart/ui/components/NumberDraggerKt.class": "2232b74b091cb54b5960331e1d5338d35fb15dea6b6bdc9d2b78ae3857571b79",
+    "mathart/bouncing/config/JsonBouncingParticlesConfig.class": "63d58a56d373454b8219bcb4e77bcd9729395403a7eacd1322b5f6cfe51d3e51",
+    "mathart/bouncing/config/BaseBouncingParticlesConfig.class": "655641dfa0b153168808573b9db527f9cc30bd5a5e4f969bb45315670765e386",
+    "mathart/config/AbstractVisualConfig.class": "d14010da3a23da71e35b92a5217fd9466f3547c1ed09d20fddf842afe66dfd1c",
+    "mathart/utils/ConfigUtils.class": "ab0847601571bd0469e73cad05d415df2373fa2eef0196db2258a86d631a0278"
+  },
+  "report": ".cache/bouncing-speed-config-m9qa2su3/report.json",
+  "reportSha256": "2e4b1c7e2be30b9377e96d7fb214efefb670469e968f3d7979fa0ec5b4a48630",
+  "sourceStable": true,
+  "files": {
+    "native.json": "7d915795efa218c7ceebb6f3bb65b17add78d217684f1cf07542dcd809005b90",
+    "SpeedConfigProbe.java": "42de0e25df39fe5d83071fa6fcdfcb03e4a246cd781ed1c29957dfad83675e57"
+  },
+  "harness": {
+    "path": ".cache/bouncing-speed-config-m9qa2su3/run.mjs",
+    "sha256": "9005672e94718cf6df7866f2649ee325bbaa512f94a62ebe42b397e5fdd466df"
+  },
+  "limitations": [
+    "No original Compose, ProjectState, GUI file save, renderer or GPU was invoked.",
+    "The JSON sink is diagnostic; original Float callback and config constructor are real.",
+    "Direct JsonConfig expression import differs from original ProjectState.fromJson literal parsing."
+  ],
+  "productVerification": {
+    "native-r2": {
+      "report": ".cache/bouncing-speed-20261026/native-r2/report.json",
+      "sha256": "dd22bd5b20b550f48d8d6d7d36657a820eca235f193b24f92cf963ec1eb5ecd9",
+      "status": "passed"
+    },
+    "webgl": {
+      "report": ".cache/bouncing-speed-20261026/webgl/report.json",
+      "sha256": "41f044eb6e45a36367df93f22fe6c7afcecc54d6b7505a3b97c1dcad3c757fe9",
+      "status": "passed"
+    },
+    "desktop": {
+      "report": ".cache/bouncing-speed-20261026/desktop/report.json",
+      "sha256": "30991b182e22854406764bad54ca8f73fbeb3bc59eddbd71751e5a255c13aa4c",
+      "status": "passed"
+    },
+    "tests": {
+      "passed": 200,
+      "files": 18,
+      "fullSuite": false
+    }
+  }
+}

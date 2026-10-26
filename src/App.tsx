@@ -415,7 +415,7 @@ export default function App() {
 
     if(usesSourceBouncing(next)){
       bouncingPresented.current=false;
-      if(!usesSourceBouncing(current)||sourceBouncingInitializationKey(current.bouncingSource!.configuration)!==sourceBouncingInitializationKey(next.bouncingSource!.configuration)){
+      if(!usesSourceBouncing(current)||sourceBouncingInitializationKey(current.bouncingSource!)!==sourceBouncingInitializationKey(next.bouncingSource!)){
         playingRef.current=false;setPlaying(false);autoPlayPending.current=false;
         showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);
       }else if((['phi','theta','gamma'] as const).some(key=>!Object.is(current.bouncingSource!.camera[key],next.bouncingSource!.camera[key]))){

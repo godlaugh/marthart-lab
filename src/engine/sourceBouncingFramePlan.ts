@@ -22,5 +22,5 @@ export function prepareSourceBouncingFrame(scene:SceneDocument,context:GenerateC
  const pixelDensity=context.sourcePointPixelDensity;
  if(typeof pixelDensity!=='number'||!Number.isSafeInteger(pixelDensity)||pixelDensity<1)throw new SourceBouncingGpuError('input','源弹跳需要已测量的正整数像素密度');
  if(context.width!==viewport.logicalWidth*pixelDensity||context.height!==viewport.logicalHeight*pixelDensity)throw new SourceBouncingGpuError('input','源弹跳物理尺寸必须等于逻辑尺寸乘以已测量的像素密度');
- return{payload,checkpoint,viewport,pixelDensity,formulas:formulaPresentation(scene,viewport),camera:camera.value.plan,key:sourceBouncingInitializationKey(payload.configuration)};
+ return{payload,checkpoint,viewport,pixelDensity,formulas:formulaPresentation(scene,viewport),camera:camera.value.plan,key:sourceBouncingInitializationKey(payload)};
 }
