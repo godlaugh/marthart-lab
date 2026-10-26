@@ -14,6 +14,8 @@ export interface PreparedSourceAttractorEquation {
  create():SourceAttractorEquation;
 }
 const object=(v:unknown):v is Record<string,unknown>=>v!==null&&typeof v==='object'&&!Array.isArray(v);
+/** Shared slot identity for numeric evaluation and the symbolic source label. */
+export const sourceAttractorVariableNames=(parameters:Readonly<Record<string,unknown>>):string[]=>['x','y','z',...Object.keys(parameters).sort()];
 /** JsonAttractorConfig.createGenericEquation and GenericDifferentialEquation.
  * Parameters are a construction-time double snapshot, including names which
  * shadow x/y/z. Sorting only chooses local slot layout; it does not reorder
@@ -21,7 +23,7 @@ const object=(v:unknown):v is Record<string,unknown>=>v!==null&&typeof v==='obje
 export function prepareSourceAttractorEquation(input:unknown):SourceAttractorEquationResult<PreparedSourceAttractorEquation>{
  const bad=(kind:'input'|'capacity',path:readonly string[],reason:string):SourceAttractorEquationResult<never>=>({ok:false,error:{kind,path,reason}});
  if(!object(input)||!object(input.equations)||!object(input.parameters))return bad('input',[],'原版吸引子需要公式与参数对象');
- const keys=Object.keys(input.parameters).sort(),names=['x','y','z',...keys];
+ const names=sourceAttractorVariableNames(input.parameters),keys=names.slice(3);
  if(names.length>8194)return bad('capacity',['parameters'],'原版吸引子变量槽超过本地 8194 项容量');
  const initial=new Float64Array(names.length);
  for(let i=0;i<keys.length;i++){

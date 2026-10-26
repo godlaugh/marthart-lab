@@ -23,7 +23,8 @@ describe('source Attractor production Worker handoff',()=>{
   await scope.onmessage!({data:request(1,0)} as MessageEvent<GenerationWorkerRequest>);
   const first=responses.find(x=>x.id===1&&x.operation==='generate');expect(first).toHaveProperty('output');if(!first||!('output'in first)||first.output.type!=='geometry')throw Error('geometry expected');
   const positions=first.output.positions.slice();expect(workers).toBeGreaterThan(1);expect(terminated).toBe(workers);
-  expect(first.output.formulaPresentation?.labels).toHaveLength(1);expect(first.output.formulaPresentation?.labels[0].latex).toContain('\\frac{dx}{dt}');
+  expect(first.output.formulaPresentation).toMatchObject({layout:'source-surface-centered-v1',primaryLogicalHeight:60});
+  expect(first.output.formulaPresentation?.labels).toHaveLength(1);expect(first.output.formulaPresentation?.labels[0].latex).toBe(String.raw`\text{Worker warmup}=\begin{cases} \dot{x} = y - x \\ \dot{y} = x - z \\ \dot{z} = x y - z \end{cases}`);
   await scope.onmessage!({data:request(2,.1)} as MessageEvent<GenerationWorkerRequest>);
   await scope.onmessage!({data:request(3,0)} as MessageEvent<GenerationWorkerRequest>);
   const third=responses.find(x=>x.id===3&&x.operation==='generate');if(!third||!('output'in third)||third.output.type!=='geometry')throw Error('geometry expected');

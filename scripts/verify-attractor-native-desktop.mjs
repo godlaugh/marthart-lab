@@ -1,8 +1,8 @@
 /** Packaged Attractor controls, bundled-native v13 acknowledgements and actual PNG
  * downloads, followed by complete exit/reopen. No source substitution or GUI focus; a passive fetch observer copies receipts.
- * Usage: node scripts/verify-attractor-native-desktop.mjs BUNDLE SOURCE_CONFIG OUTPUT
+ * Usage: node scripts/verify-attractor-native-desktop.mjs BUNDLE SOURCE_CONFIG OUTPUT ORIGINAL_LABELS_JSON
  * OUTPUT must be new; its private profile is reused only for this verifier's
- * second launch. Only the source name is changed to identify the imported scene. */
+ * second launch. The source JSON bytes and name remain unchanged. */
 import {_electron} from '@playwright/test';
 import assert from 'node:assert/strict';
 import {readFile,writeFile,mkdir,realpath} from 'node:fs/promises';
@@ -15,22 +15,28 @@ import net from 'node:net';
 import {inspectSourceFrameHeader} from '../server/source-renderer.mjs';
 import {pngFacts} from './domain-native-production-ui.mjs';
 
-const [bundleArg,configArg,outArg]=process.argv.slice(2);
-assert(bundleArg&&configArg&&outArg,'Supply BUNDLE SOURCE_CONFIG OUTPUT');
+const [bundleArg,configArg,outArg,labelsArg]=process.argv.slice(2);
+assert(bundleArg&&configArg&&outArg&&labelsArg,'Supply BUNDLE SOURCE_CONFIG OUTPUT ORIGINAL_LABELS_JSON');
 const bundle=path.resolve(bundleArg),config=path.resolve(configArg),out=path.resolve(outArg),profile=path.join(out,'profile');
 const originalBytes=await readFile(config),original=JSON.parse(originalBytes);
 assert(original&&typeof original==='object'&&!Array.isArray(original),'Expected original Attractor JSON');
 assert(String(original.type).toUpperCase()==='ATTRACTOR','Expected original ATTRACTOR type');
-const source=structuredClone(original);source.name='Packaged Attractor acceptance';
-const withoutName=({name:_,...rest})=>rest;assert.deepEqual(withoutName(source),withoutName(original),'Only the source name may change');
+const source=structuredClone(original);assert.equal(typeof source.name,'string');assert(source.name.length);
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),resources=path.join(bundle,'Contents/Resources'),asar=path.join(resources,'app.asar');
+const labelsPath=path.resolve(labelsArg),labelsBytes=await readFile(labelsPath),originalLabels=JSON.parse(labelsBytes),referenceRun=JSON.parse(await readFile(path.join(path.dirname(labelsPath),'run.json'),'utf8'));
+assert.equal(referenceRun.exit,0);assert.equal(referenceRun.jarUnchanged,true);assert.equal(referenceRun.sourceUnchanged,true);assert.equal(referenceRun.plan.sourceSha256,sha(originalBytes));
+const expectedGlyphs=await Promise.all(originalLabels.map(async label=>{assert.equal(label.colorArgb>>>24,255);assert.equal(label.fontSize,50);assert.equal(label.glyphRowOrder,'top-down');return{latex:label.latex,color:'#'+(label.colorArgb&0xffffff).toString(16).padStart(6,'0'),width:label.glyphSize[0],height:label.glyphSize[1],rgbaSha256:sha(await readFile(path.join(path.dirname(labelsPath),label.glyphRgba)))};}));
 const manifestPath=path.join(resources,'source-renderer/manifest.json'),manifestBytes=await readFile(manifestPath),manifest=JSON.parse(manifestBytes);
 assert.equal(manifest.schemaVersion,1);assert.equal(manifest.platform,process.platform);assert.equal(manifest.arch,process.arch);assert.equal(manifest.executable,'source-cgl-renderer');
 const nativeExecutable=await realpath(path.join(resources,'source-renderer',manifest.executable));assert.equal(sha(await readFile(nativeExecutable)),manifest.sha256);
+const glyphDirectory=path.join(resources,'formula-glyph'),glyphManifest=JSON.parse(await readFile(path.join(glyphDirectory,'manifest.json'),'utf8'));
+assert.equal(glyphManifest.schemaVersion,1);assert.equal(glyphManifest.platform,process.platform);assert.equal(glyphManifest.arch,process.arch);
+const glyphHashes=async()=>Object.fromEntries(await Promise.all(['manifest.json',glyphManifest.jar,glyphManifest.helper,glyphManifest.runtime+'/bin/java'].map(async file=>[file,sha(await readFile(path.join(glyphDirectory,file)))])));
+const glyphBefore=await glyphHashes();assert.equal(glyphBefore[glyphManifest.helper],glyphManifest.helperJarSha256);
 // Same sealed executable/path/host identity contract as the actual service.
 const expectedRenderer=sha(JSON.stringify({executable:nativeExecutable,executableSha256:manifest.sha256,host:[process.platform,process.arch,os.release(),os.version()]}));
-await mkdir(out,{recursive:false});await writeFile(path.join(out,'input.json'),JSON.stringify(source,null,2)+'\n');
-const report={status:'running',at:new Date().toISOString(),bundle,sourceConfig:config,sourceSha256:sha(originalBytes),source,manifest,manifestSha256:sha(manifestBytes),expectedRenderer,asarSha256:sha(await readFile(asar)),runs:[],wire:[],errors:[],scope:'Hidden packaged preview.11 Attractor import, native preview, 96x80 replay PNG, Save, complete exit, reopen and aligned replay PNG on the same Mac. Both launches use public Return to start; this does not claim persistence of the playhead or original GUI/cross-device parity. The original JSON is unchanged except its name.'};
+await mkdir(out,{recursive:false});await writeFile(path.join(out,'input.json'),originalBytes);
+const report={status:'running',at:new Date().toISOString(),bundle,sourceConfig:config,sourceSha256:sha(originalBytes),source,manifest,manifestSha256:sha(manifestBytes),glyphManifest,glyphBefore,expectedRenderer,asarSha256:sha(await readFile(asar)),labelsPath,labelsSha256:sha(labelsBytes),expectedGlyphs,runs:[],wire:[],glyphWire:[],errors:[],scope:'Hidden packaged preview.12 Attractor import, native preview, original-bound source glyph receipts, 96x80 replay PNG, Save, complete exit, reopen and aligned replay PNG on the same Mac. After reopen readiness, a renderer reload installs the observer before a cold glyph request. Both launches use public Return to start; this does not claim persistence of the playhead or original GUI/cross-device parity. The original JSON bytes and name remain unchanged.'};
 const env={...process.env};for(const key of ['ELECTRON_RUN_AS_NODE','MATHART_SOURCE_RENDERER_BACKEND','MATHART_GLYPH_BACKEND','VITE_SOURCE_RENDERER'])delete env[key];
 const exec=promisify(execFile),started=performance.now();let app,page,processOwner,run;
 const rows=async()=>{const{stdout}=await exec('/bin/ps',['-axo','pid=,ppid=,pgid=,lstart='],{maxBuffer:2*1024*1024});return stdout.trim().split('\n').map(line=>{const m=line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/);assert(m,'Invalid process observation');return{pid:+m[1],ppid:+m[2],pgid:+m[3],start:m[4]};});};
@@ -95,8 +101,11 @@ try{
    session.fromPartition('persist:mathart-lab').on('will-download',(_event,item)=>{const row={state:'pending'};globalThis.__attractorDownloads.push(row);item.once('done',(_event,state)=>{row.state=state;row.path=item.getSavePath();});});
    return{name:app.getName(),version:app.getVersion(),userData:app.getPath('userData'),platform:process.platform,arch:process.arch,visibleWindows:BrowserWindow.getAllWindows().filter(w=>w.isVisible()).length};
   });
-  assert.equal(run.runtime.name,'MathArt Lab 2 Preview');assert.equal(run.runtime.version,'2.0.0-preview.11');assert.equal(run.runtime.visibleWindows,0);assert.equal(path.resolve(run.runtime.userData),profile);assert.equal(run.runtime.platform,process.platform);assert.equal(run.runtime.arch,process.arch);
+  assert.equal(run.runtime.name,'MathArt Lab 2 Preview');assert.equal(run.runtime.version,'2.0.0-preview.12');assert.equal(run.runtime.visibleWindows,0);assert.equal(path.resolve(run.runtime.userData),profile);assert.equal(run.runtime.platform,process.platform);assert.equal(run.runtime.arch,process.arch);
   page=await app.firstWindow();page.setDefaultTimeout(30000);run.origin=new URL(page.url()).origin;assert.equal(new URL(run.origin).hostname,'127.0.0.1');page.on('pageerror',error=>report.errors.push(String(error)));
+  await page.exposeFunction('__attractorGlyphEvidence',evidence=>{
+   try{const headers=evidence.headers,row={phase,...evidence};report.glyphWire.push(row);assert.equal(evidence.status,200);assert.equal(headers['x-glyph-font-size'],'50');assert.equal(headers['x-glyph-format'],'straight-rgba8');assert.match(headers['x-glyph-renderer'],/^[a-f0-9]{64}$/);const width=Number(headers['x-glyph-width']),height=Number(headers['x-glyph-height']);assert(Number.isSafeInteger(width)&&width>0&&Number.isSafeInteger(height)&&height>0);assert.equal(evidence.payloadBytes,width*height*4);assert.equal(Number(headers['content-length']),evidence.payloadBytes);assert.match(evidence.rgbaSha256,/^[a-f0-9]{64}$/);row.validated=true;}catch(error){report.errors.push(String(error.stack??error));}
+  });
   await page.exposeFunction('__attractorNativeEvidence',async evidence=>{
    try{
    const packet=Buffer.from(evidence.packet,'base64'),parsed=inspectSourceFrameHeader(packet);assert(parsed.ok,'Malformed native request header');
@@ -117,13 +126,17 @@ try{
    }
    }catch(error){report.errors.push(String(error.stack??error));}
   });
-  await page.evaluate(()=>{
+  const installObserver=()=>{
    // Electron may evict Network.getResponseBody before CDP reads it. Clone
    // the actual response here instead; return the original response unchanged.
    const originalFetch=window.fetch;
    const encode=bytes=>{let text='';for(let i=0;i<bytes.length;i+=16384)text+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(text);};
    window.fetch=async function(input,init){
     const url=new URL(typeof input==='string'?input:input instanceof URL?input.href:input.url,location.href);
+    if(url.pathname==='/api/formula-glyph'&&init?.method==='POST'){
+     const response=await originalFetch.call(this,input,init),raw=new Uint8Array(await response.clone().arrayBuffer()),rgbaSha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw)),x=>x.toString(16).padStart(2,'0')).join('');
+     await window.__attractorGlyphEvidence({request:JSON.parse(init.body),status:response.status,payloadBytes:raw.length,rgbaSha256,headers:Object.fromEntries(response.headers)});return response;
+    }
     if(url.pathname!=='/api/source-renderer/frames')return originalFetch.call(this,input,init);
     if(!ArrayBuffer.isView(init?.body))throw Error('Expected actual native packet bytes');
     const packet=encode(new Uint8Array(init.body.buffer,init.body.byteOffset,init.body.byteLength));
@@ -132,11 +145,13 @@ try{
     await window.__attractorNativeEvidence({packet,responseHeader:encode(raw.subarray(0,64)),payloadBytes:raw.length,pixelsSha256,status:response.status,errorText:response.ok?undefined:new TextDecoder().decode(raw),headers:Object.fromEntries(response.headers)});
     return response;
    };
-  });
-  await ready();run.health=await page.evaluate(()=>fetch('/api/source-renderer/health').then(response=>response.json()));assert.equal(run.health.available,true);assert.equal(run.health.rendererIdentity,expectedRenderer);
+  };await page.addInitScript(installObserver);await page.evaluate(installObserver);
+  await ready();run.health=await page.evaluate(()=>fetch('/api/source-renderer/health').then(response=>response.json()));assert.equal(run.health.available,true);assert.equal(run.health.rendererIdentity,expectedRenderer);run.glyphHealth=await page.evaluate(()=>fetch('/api/formula-glyph/health').then(response=>response.json()));assert.equal(run.glyphHealth.available,true);assert.equal(run.glyphHealth.fontSize,50);assert.equal(run.glyphHealth.format,'straight-rgba8');
+  const glyphMark=report.glyphWire.length;
+  if(phase==='reopen'){run.observerReload={readyBeforeReload:true,reason:'Install passive observer before a fresh module glyph cache is created.'};await page.reload({waitUntil:'domcontentloaded'});await ready();assert.equal(run.glyphHealth.rendererIdentity,report.runs[0].glyphHealth.rendererIdentity);}
   if(phase==='initial'){
    await page.getByTitle('工作区设置',{exact:true}).click();await page.getByRole('combobox',{name:'界面语言',exact:true}).selectOption('en');await page.getByRole('button',{name:'Close settings',exact:true}).click();
-   const importMark=report.wire.length;await page.locator('input[type=file][accept=".json"]').setInputFiles({name:'attractor.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});await waitForNative(importMark,'Imported Attractor preview');
+   const importMark=report.wire.length;await page.locator('input[type=file][accept=".json"]').setInputFiles({name:'attractor.json',mimeType:'application/json',buffer:originalBytes});await waitForNative(importMark,'Imported Attractor preview');
   }
   await page.waitForFunction(name=>document.querySelector('.project-title')?.textContent.includes(name),source.name);await ready();await page.getByTestId('native-art-canvas').waitFor({state:'visible'});
   assert(await page.getByRole('button',{name:'Play',exact:true}).count(),'Attractor preview must remain paused');
@@ -154,6 +169,10 @@ try{
   }
   run.saved=await page.evaluate(()=>{const workspace=JSON.parse(localStorage.getItem('mathart-lab-v1'));return workspace.drafts?.[workspace.active]??workspace.scenes.find(scene=>scene.id===workspace.active);});
   assert.equal(run.saved.kind,'attractor');assert.equal(run.saved.name,source.name);assert.equal(run.saved.attractorSource?.configuration?.nativeBackend,'cpu');
+  assert.equal(run.saved.formulas?.layout,'source-surface-centered-v1');
+  const glyphs=report.glyphWire.slice(glyphMark).filter(row=>row.phase===phase&&row.validated);for(const glyph of glyphs)assert.equal(glyph.headers['x-glyph-renderer'],run.glyphHealth.rendererIdentity);
+  for(const expected of expectedGlyphs){const actual=glyphs.find(g=>g.request.latex===expected.latex&&g.request.color===expected.color);assert(actual,'Original formula has no matching actual bundled glyph receipt');assert.equal(Number(actual.headers['x-glyph-width']),expected.width);assert.equal(Number(actual.headers['x-glyph-height']),expected.height);assert.equal(actual.rgbaSha256,expected.rgbaSha256);}
+  run.glyphReceipts=glyphs.length;run.matchedOriginalGlyphs=expectedGlyphs.length;
   if(phase==='reopen'){
    assert.deepEqual(run.saved,report.runs[0].saved,'Saved Attractor source data changed after exit/reopen');
    assert.equal(run.images[0].decoded.rgbaSha256,report.runs[0].images[0].decoded.rgbaSha256,'Save/exit/reopen and Return to start changed the replay PNG');
@@ -166,6 +185,7 @@ try{
 }finally{
  try{await closeApp();}catch(error){report.status='failed';report.cleanupError=String(error.stack??error);process.exitCode=1;}
  report.asarUnchanged=report.asarSha256===sha(await readFile(asar));report.nativeUnchanged=manifest.sha256===sha(await readFile(nativeExecutable));report.manifestUnchanged=report.manifestSha256===sha(await readFile(manifestPath));report.sourceUnchanged=report.sourceSha256===sha(await readFile(config));
- if(!report.asarUnchanged||!report.nativeUnchanged||!report.manifestUnchanged||!report.sourceUnchanged){report.status='failed';process.exitCode=1;}
+ report.glyphAfter=await glyphHashes();report.glyphUnchanged=JSON.stringify(report.glyphBefore)===JSON.stringify(report.glyphAfter);
+ if(!report.asarUnchanged||!report.nativeUnchanged||!report.manifestUnchanged||!report.sourceUnchanged||!report.glyphUnchanged){report.status='failed';process.exitCode=1;}
  report.seconds=(performance.now()-started)/1000;await writeFile(path.join(out,'report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error,report:path.join(out,'report.json')}));
 }

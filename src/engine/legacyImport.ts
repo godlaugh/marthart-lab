@@ -333,7 +333,47 @@ function sourceFractalFormulaAnnotations(r:Reader,s:SceneDocument){
  try{s.formulas=validateFormulas(config);}catch(error){fail(error instanceof Error?error.message:String(error));}
  r.warnings.push('源分形公式保留居中偏移与 Float32 缩放，由实际帧提供主画布逻辑高度并使用源字形后端。');
 }
+/** JsonAttractorConfig appends extras before its automatic main equation.
+ * JSONObject.getFloat and getString(default) are distinct from authoring math. */
+function sourceAttractorFormulaAnnotations(r:Reader,s:SceneDocument){
+ const config:FormulaConfig={layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]};
+ const sourceString=(path:string,fallback:string)=>{
+  r.retainNumberToken(path);
+  const parsed=prepareRootsSourceJsonString(r.use(path),fallback,r.numberToken(path));
+  if(!parsed.ok)fail(`${path} 原版字符串转换失败：${JSON.stringify(parsed.error)}`);
+  if(parsed.value.status==='unknown')fail(`${path} 原版字符串表示尚未确认：${parsed.value.reason}`);
+  return parsed.value.value;
+ };
+ const scalar=(path:string,fallback:number)=>{r.retainNumberToken(path);const value=Math.fround(r.domainDouble(path,fallback));if(!Number.isFinite(value))fail(`${path} 原版公式数值非有限，不能保存或绘制`);return value;};
+ const style=(path:string,additional:boolean)=>{
+  if(additional)r.acknowledge(path+'.enabled','原版吸引子附加公式不读取 enabled');
+  else if(!r.domainBoolean(path+'.enabled',false,'default')){
+   for(const key of ['position','scale','color'])r.acknowledge(path+'.'+key,'原版关闭的主公式不读取此字段');
+   return{...config.main};
+  }
+  const position=r.use(path+'.position');
+  if(position!==undefined&&(!Array.isArray(position)||!additional&&position.length<2))fail(`${path}.position 需要源坐标数组${additional?'':'且至少两项'}`);
+  const hasPosition=Array.isArray(position)&&position.length>=2;
+  const x=hasPosition?scalar(path+'.position.0',NaN):0,y=hasPosition?scalar(path+'.position.1',NaN):(additional?0:200);
+  const scale=scalar(path+'.scale',additional?1:.25),rawColor=sourceString(path+'.color','#FFFFFF');let packed=0xffffffff;
+  if(rawColor.length>SOURCE_COLOR_TEXT_BUDGET)fail(`${path}.color 超出源颜色文本预算`);
+  try{packed=sourceConfigPackedColor(rawColor);}catch(error){if(!(error instanceof SourceConfigColorError))throw error;r.warnings.push(`${path}.color 按原版规则回退到白色；原值保留在 source。`);}
+  if((packed>>>24)!==255)fail(`${path}.color 的源透明颜色尚不支持公式字形呈现`);
+  return{visible:true,x,y,scale,color:'#'+(packed&0xffffff).toString(16).padStart(6,'0'),anchor:'center' as const};
+ };
+ if(r.has('formulas')){
+  const formulas=r.peek('formulas');if(!Array.isArray(formulas)||formulas.length>32)fail('formulas 应为最多 32 条公式的数组');
+  config.additional=formulas.map((_,i)=>{const path=`formulas.${i}`;r.object(path);const latex=sourceString(path+'.latex','');if(latex.length>8192)fail(`${path}.latex 超过 8192 字符`);return{...style(path,true),id:`imported-formula-${i+1}`,latex};});
+  if(!formulas.length)r.use('formulas');
+ }
+ if(r.has('main_equation')){
+  r.object('main_equation');r.acknowledge('main_equation.latex','原版吸引子忽略主方程 latex，按初始源表达式生成文字');config.main=style('main_equation',false);
+ }
+ try{s.formulas=validateFormulas(config);}catch(error){fail(error instanceof Error?error.message:String(error));}
+ r.warnings.push('源吸引子公式保留附加公式优先、居中偏移与 Float32 缩放，由实际帧提供主画布逻辑高度并使用源字形后端。');
+}
 function formulaAnnotations(r:Reader,s:SceneDocument){
+ if(usesSourceAttractor(s)){sourceAttractorFormulaAnnotations(r,s);return;}
  if(!r.has('main_equation')&&!r.has('formulas'))return;
  if(usesSourceFractal(s)){sourceFractalFormulaAnnotations(r,s);return;}
  const sourceImplicit=usesSourceImplicitPresentation(s),sourceCentered=usesSourceCenteredFormulaLayout(s),config:FormulaConfig=sourceCentered?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();

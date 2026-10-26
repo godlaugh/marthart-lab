@@ -8,6 +8,7 @@ import {generateScene,generateSceneAsync,TemporalGenerationSession} from '../src
 import type {GenerateContext,SceneOutput} from '../src/types';
 import {outputBuffers} from '../src/engine/outputBuffers';
 import {defaultFormulas,formulaPresentation} from '../src/engine/formulas';
+import * as sourceAttractorFormula from '../src/engine/sourceAttractorFormulaLatex';
 
 function scene(){return parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'ATTRACTOR',name:'Async CPU',settings:{render_mode:'CPU',particle_count_cpu:8,time_step:.01,sub_steps:3},initialization:{warmup_steps:30,stagger_min:5,stagger_max:20},equations:{dx:'y-x',dy:'x-z',dz:'x*y-z'},parameters:{},timeline:[{type:'wait',duration:2}]})).scene;}
 const context:GenerateContext={time:0,width:80,height:60,quality:'preview',sourceViewport:{logicalWidth:80,logicalHeight:60,referenceLogicalHeight:60,target:'primary',projectionPass:'perspective'}};
@@ -90,5 +91,32 @@ describe('source Attractor async initialization with unchanged timeline owner',(
  it('rejects malformed formula configuration before creating any warmup Worker',async()=>{
   let count=0;const owner=new SourceAttractorSession({warmupWorkerFactory:()=>{count++;return new Port();}}),s=scene();s.formulas=defaultFormulas();s.formulas.main.scale=NaN;
   try{await expect(owner.generateAsync(s,context)).rejects.toThrow();expect(count).toBe(0);expect(owner.diagnostics().retainedBytes).toBe(0);s.formulas.main.scale=1;expect((await owner.generateAsync(s,context)).formulaPresentation!.labels).toEqual([]);}finally{await owner.resetAsync();}
+ });
+ it('snapshots source automatic labels before ACK and rebinds only presentation on label edit/primary resize',async()=>{
+  const ports:Port[]=[],owner=new SourceAttractorSession({warmupWorkerFactory:()=>{const p=new Port(false);ports.push(p);return p;}}),s=scene();s.formulas!.main.visible=true;
+  s.timeline.tracks.unshift({id:'track',type:'animate',target:'camera.actions',from:0,to:0,start:0,duration:0,easing:'linear',enabled:true,pingPong:false,actions:[{id:'t',method:'track',args:{index:0}}]});
+  try{
+   const expected=formulaPresentation(s,context.sourceViewport),pending=owner.generateAsync(s,context);s.name='Changed_title';
+   for(const p of ports)while(p.pending.length)p.complete();const first=await pending;
+   expect(first.formulaPresentation).toEqual(expected);expect(expected).toMatchObject({layout:'source-surface-centered-v1',primaryLogicalHeight:60});
+   const count=ports.length,nextContext={...context,width:160,height:120,sourceViewport:{...context.sourceViewport!,logicalWidth:160,logicalHeight:120,referenceLogicalHeight:120}};
+   const next=await owner.generateAsync(s,nextContext),sync=generateScene(s,nextContext);
+   expect(comparable(next)).toEqual(comparable(sync));expect(next.formulaPresentation).toMatchObject({layout:'source-surface-centered-v1',primaryLogicalHeight:120});
+   expect(next.formulaPresentation!.labels[0].latex).toContain(String.raw`\text{Changed\_title}`);expect(ports).toHaveLength(count);expect(owner.diagnostics().constructions).toBe(1);
+   if(next.type!=='geometry'||first.type!=='geometry')throw Error('geometry expected');expect(next.positions).toEqual(first.positions);expect(next.sourceCameraFrame!.camera).toEqual(first.sourceCameraFrame!.camera);
+  }finally{await owner.resetAsync();}
+ });
+ it('reuses constructed formula text across animation/resize while explicitly authored text updates without new motion',async()=>{
+  const emitted=vi.spyOn(sourceAttractorFormula,'sourceAttractorFormulaLatex'),owner=new SourceAttractorSession({warmupWorkerFactory:()=>new Port()}),s=scene();s.formulas!.main.visible=true;
+  try{
+   await owner.generateAsync(s,context);expect(emitted).toHaveBeenCalledTimes(1);
+   await owner.generateAsync(s,{...context,time:.1});await owner.generateAsync(s,{...context,time:.1,width:160,height:120,sourceViewport:{...context.sourceViewport!,logicalWidth:160,logicalHeight:120,referenceLogicalHeight:120}});
+   expect(emitted).toHaveBeenCalledTimes(1);expect(owner.diagnostics().constructions).toBe(1);
+   s.formulas!.main.latex='local';expect((await owner.generateAsync(s,{...context,time:.1})).formulaPresentation!.labels[0].latex).toBe('local');expect(emitted).toHaveBeenCalledTimes(1);
+   delete s.formulas!.main.latex;s.name='New title';await owner.generateAsync(s,{...context,time:.1});expect(emitted).toHaveBeenCalledTimes(2);expect(owner.diagnostics().constructions).toBe(1);
+   s.parameters.p=2;await owner.generateAsync(s,context);expect(emitted).toHaveBeenCalledTimes(3);
+   s.equations.dx='x + p';expect((await owner.generateAsync(s,context)).formulaPresentation!.labels[0].latex).toContain(String.raw`\dot{x} = x + p`);expect(emitted).toHaveBeenCalledTimes(4);
+   s.formulas!.main.x=10;await owner.generateAsync(s,context);expect(emitted).toHaveBeenCalledTimes(5);expect(owner.diagnostics().constructions).toBe(1);
+  }finally{await owner.resetAsync();emitted.mockRestore();}
  });
 });

@@ -9,6 +9,8 @@ import type {SceneDocument,FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresen
 import {fractalEquationLatex} from '../scenes/complex';
 import {sourceFractalFormulaLatex} from './sourceFractalFormulaLatex';
 import {sourceSurfaceFormulaLatex} from './sourceSurfaceFormulaLatex';
+import {sourceAttractorFormulaLatex} from './sourceAttractorFormulaLatex';
+import {usesSourceAttractor} from './sourceAttractorDocument';
 import {symmetryEquationLatex} from '../scenes/symmetryFormula';
 import {hasSymmetryCustom} from './symmetryCustom';
 export type {FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation,FormulaContent} from '../types';
@@ -18,6 +20,7 @@ import {validateFormulas,validateFormulaPresentation,sourceFormulaPrimaryHeight}
 export function mainEquation(scene:SceneDocument):string {
   if(usesSourceSurfaceGeometry(scene))return sourceSurfaceFormulaLatex(scene);
   if(usesSourceImplicitPresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return sourceImplicitFormulaLatex(scene);
+  if(usesSourceAttractor(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return sourceAttractorFormulaLatex(scene);
   if(scene.kind==='fractal')return scene.fractalSource?sourceFractalFormulaLatex(scene.fractalSource.formula):fractalEquationLatex(scene.settings);
   if(scene.kind==='symmetry')return hasSymmetryCustom(scene)?'z_{k+1}=\\operatorname{calculate\\_next}(z_k)':symmetryEquationLatex(scene.settings);
   const symbol=(s:string)=>s.replace(/[^a-zA-Z0-9_]/g,'');
@@ -34,10 +37,10 @@ export function formulaLabels(scene:SceneDocument):FormulaLabel[]{return [...res
 export function resolveFormulaContent(scene:SceneDocument):FormulaContent {
   const config=scene.formulas?validateFormulas(scene.formulas):defaultFormulas(),extra=config.additional.filter(f=>f.visible&&f.latex.trim());
   const main=config.main.visible?[{...config.main,id:'main-equation',latex:config.main.latex?.trim()?config.main.latex:mainEquation(scene)}]:[];
-  // ComplexRootsConfig appends its main equation after authored extra formulas.
+  // ComplexRootsConfig and JsonAttractorConfig append main after extra formulas.
   // Frame order owns overlap for preview, capture and recording alike. Existing
   // generic saved layouts keep their original main-first ordering.
-  const labels=config.layout==='source-surface-centered-v1'&&usesRootsNativePresentation(scene)?[...extra,...main]:[...main,...extra];
+  const labels=config.layout==='source-surface-centered-v1'&&(usesRootsNativePresentation(scene)||usesSourceAttractor(scene))?[...extra,...main]:[...main,...extra];
   if(config.layout==='source-surface-centered-v1'){
     if(!usesSourceCenteredFormulaLayout(scene))throw new Error('源曲面公式布局需要已确认的源曲面项目');
     return{layout:config.layout,labels};

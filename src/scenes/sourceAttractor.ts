@@ -2,7 +2,7 @@ import {runGenerationEffects,runGenerationEffectsAsync} from '../engine/generati
 import {SourceAttractorWarmupPool,type SourceAttractorWarmupWorkerFactory} from '../engine/sourceAttractorWarmupPool';
 import type {OrdinarySourceCameraFrame} from '../engine/ordinarySourceCameraTimeline';
 import {GenerationCleanupState,withGenerationCleanup} from '../engine/generationCleanup';
-import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
+import type {FormulaContent,GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareSourceAttractorScene} from '../engine/sourceAttractorDocument';
 import {composeSourceAttractorCpu,validateSourceAttractorCpuDisplay} from '../engine/sourceAttractorScene';
 import {SourceAttractorCpuParticles} from '../engine/sourceAttractorCpuParticles';
@@ -10,7 +10,10 @@ import {OrdinarySourceCameraTimelineSession} from '../engine/ordinarySourceCamer
 import {sourceAttractorWorkBudget} from '../engine/sourceAttractorWork';
 import {SourceAttractorGpuReplaySession} from '../engine/sourceAttractorGpuReplay';
 import {ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
-import {formulaPresentation} from '../engine/formulas';
+import {defaultFormulas,presentFormulas,resolveFormulaContent,validateFormulas} from '../engine/formulas';
+import {sourceAttractorVariableNames} from '../engine/sourceAttractorEquation';
+
+const identityNumber=(_key:string,value:unknown)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value;
 
 /** One Worker/export lifetime owns both CPU motion and camera. Inputs are
  * validated on every request; only immutable prepared facts enter the replay.
@@ -21,6 +24,7 @@ export class SourceAttractorSession {
  private readonly cleanup=new GenerationCleanupState();
  private timeline?:OrdinarySourceCameraTimelineSession;
  private particles?:SourceAttractorCpuParticles;
+ private formulas?:{key:string;content:FormulaContent};
  private cancelled?:()=>boolean;
  private reserve?:(units:number)=>void;
  private constructions=0;private busy=false;private revoked=false;private active?:Promise<SceneOutput>;private resetting?:Promise<void>;
@@ -28,7 +32,7 @@ export class SourceAttractorSession {
  constructor(private readonly options:{warmupWorkerFactory?:SourceAttractorWarmupWorkerFactory;maximumWarmupWorkers?:number}={}){this.warmupPool=new SourceAttractorWarmupPool(options.warmupWorkerFactory);}
 
  reset(failures:readonly unknown[]=[]):void{if(this.busy||this.resetting)throw Error('源吸引子预热尚未结束；需要 resetAsync');this.clear(failures);}
- private clear(failures:readonly unknown[]=[]):void{this.cleanup.reset(()=>{this.warmupPool.reset();this.gpu?.reset();this.gpu=undefined;this.timeline?.reset();this.timeline=undefined;this.particles=undefined;this.key='';this.cancelled=undefined;this.reserve=undefined;this.constructions=0;},failures);}
+ private clear(failures:readonly unknown[]=[]):void{this.cleanup.reset(()=>{this.warmupPool.reset();this.gpu?.reset();this.gpu=undefined;this.timeline?.reset();this.timeline=undefined;this.particles=undefined;this.formulas=undefined;this.key='';this.cancelled=undefined;this.reserve=undefined;this.constructions=0;},failures);}
  diagnostics(){return{warmup:this.warmupPool.diagnostics(),motionWarmup:this.particles?.diagnostics().warmup,constructions:this.constructions,retainedBytes:(this.particles?.diagnostics().retainedBytes??0)+(this.gpu?.diagnostics().retainedBytes??0),workUnits:this.particles?.diagnostics().workUnits??0,gpu:this.gpu?.diagnostics()};}
  generate(scene:SceneDocument,context:GenerateContext):SceneOutput {
   this.enter();try{return runGenerationEffects(this.generateOperation(scene,context),time=>this.timeline!.evaluate(time));}finally{this.busy=false;}
@@ -49,18 +53,22 @@ export class SourceAttractorSession {
   try{
    const prepared=prepareSourceAttractorScene(scene);
    const initial=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:prepared.camera}},context);
+   // Snapshot labels before CPU warmup or GPU allocation; presentation is not
+   // motion identity and must not replace the replay's tracked camera.
+   const config=validateFormulas(scene.formulas??defaultFormulas());
+   const formulaKey=JSON.stringify([scene.name,scene.equations,sourceAttractorVariableNames(scene.parameters),config],identityNumber);
+   const formulaState=this.formulas?.key===formulaKey?this.formulas:{key:formulaKey,content:resolveFormulaContent({...scene,formulas:config})};
+   const formulas=presentFormulas(formulaState.content,initial.viewport);
    // Include all simulation inputs, not compiled function identity. Preserve
    // -0, which JSON's default numeric encoding would conflate with +0.
    const key=JSON.stringify([scene.id,prepared.configuration,prepared.visualConfiguration,prepared.camera,prepared.backgroundColor,
-    scene.equations,scene.parameters,scene.timeline.tracks,scene.timeline.fps],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
+    scene.equations,scene.parameters,scene.timeline.tracks,scene.timeline.fps],identityNumber);
    if(prepared.backend==='gpu'){
     if(key!==this.key){this.clear();this.key=key;this.gpu=new SourceAttractorGpuReplaySession({...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time});}
-    return this.gpu!.generate({time:context.time,viewport:initial.viewport,width:context.width,height:context.height,backgroundColor:prepared.backgroundColor,isCancelled:()=>this.revoked||!!context.isCancelled?.()});
+    this.formulas=formulaState;
+    const output=this.gpu!.generate({time:context.time,viewport:initial.viewport,width:context.width,height:context.height,backgroundColor:prepared.backgroundColor,isCancelled:()=>this.revoked||!!context.isCancelled?.()});
+    output.formulaPresentation=formulas;return output;
    }
-   // Capture and validate presentation before asynchronous warmup. Labels are
-   // not motion identity; their edits must not reseed particles or replace the
-   // camera subsequently paired with that same replay's tracked particle.
-   const formulas=structuredClone(formulaPresentation(scene,initial.viewport));
    const options={...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time,
     viewport:initial.viewport,referencePixelDensity:context.sourcePointPixelDensity};
    validateSourceAttractorCpuDisplay(options);
@@ -81,6 +89,7 @@ export class SourceAttractorSession {
      },
     });
    }
+   this.formulas=formulaState;
    // This request owns construction (if any), every skipped frame and the
    // final snapshot. Reuse never divides a large seek into unbounded requests.
    this.cancelled=()=>this.revoked||!!context.isCancelled?.();this.reserve=sourceAttractorWorkBudget();

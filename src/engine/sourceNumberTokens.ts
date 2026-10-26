@@ -96,7 +96,7 @@ function bouncingField(path:readonly unknown[]):boolean {
 const attractorSettingFields=new Set<string>(SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS);
 const attractorWarmupFields=new Set(['warmup_steps','warmup_stagger_min','warmup_stagger_max']);
 const attractorBoundsFields=new Set(['min_x','max_x','min_y','max_y','min_z','max_z']);
-const attractorStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+attractorSettingFields.size+attractorWarmupFields.size+attractorBoundsFields.size;
+const attractorStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+attractorSettingFields.size+attractorWarmupFields.size+attractorBoundsFields.size+4+5*32;
 const surfaceStaticFields=new Set<string>([...SOURCE_SURFACE_NUMBER_FIELDS,...SOURCE_SURFACE_MESH_NUMBER_FIELDS]);
 const ordinaryStaticMaximum=Math.max(attractorStaticMaximum,3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_MESH_NUMBER_FIELDS.length+SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS.length);
 // Every retained token requires at least one source JSON value node. Clip and
@@ -126,7 +126,8 @@ function perlinParameterPath(path:readonly unknown[]):boolean {
 const mapSettingFields=new Set([...SOURCE_MAP_PRESENTATION_NUMBER_FIELDS,...SOURCE_MAP_SPLAT_NUMBER_FIELDS,'batch_size','iterations_per_frame','burn_in_steps','dimension','x0_min','x0_max','y0_min','y0_max']);
 const symmetrySettingFields=new Set([...SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS,'batch_size','iterations_per_frame','burn_in_steps','x0_min','x0_max','y0_min','y0_max']);
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
- if(family==='implicit'){const tail=path[0]==='main_equation'?path.slice(1):path[0]==='formulas'&&index(path[1],32)?path.slice(2):undefined;if(tail&&(tail.length===1&&tail[0]==='scale'||tail.length===2&&tail[0]==='position'&&(tail[1]==='0'||tail[1]==='1')))return true;}
+ if(family==='implicit'||family==='attractor'){const tail=path[0]==='main_equation'?path.slice(1):path[0]==='formulas'&&index(path[1],32)?path.slice(2):undefined;if(tail&&(tail.length===1&&tail[0]==='scale'||tail.length===2&&tail[0]==='position'&&(tail[1]==='0'||tail[1]==='1')))return true;}
+ if(family==='attractor'&&(path.length===2&&path[0]==='main_equation'&&path[1]==='color'||path.length===3&&path[0]==='formulas'&&index(path[1],32)&&(path[2]==='color'||path[2]==='latex')))return true;
  if(family==='map'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&mapSettingFields.has(path[1]))return true;
  if(family==='symmetry'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&symmetrySettingFields.has(path[1]))return true;
  if(family==='perlin'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&perlinFields.has(path[1])||perlinParameterPath(path)))return true;

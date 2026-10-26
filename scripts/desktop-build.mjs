@@ -14,7 +14,7 @@ if(!preview&&values['glyph-backend'])throw Error('--glyph-backend packaging requ
 if(preview&&(process.platform!=='darwin'||process.arch!=='arm64'))throw Error('2.0 native preview packaging currently requires this Apple Silicon Mac');
 if(preview&&(!glyphConfiguration||!path.isAbsolute(glyphConfiguration)))throw Error('2.0 packaging requires an absolute --glyph-backend configuration (or MATHART_GLYPH_BACKEND) selecting an independent JDK and official JLaTeXMath JAR');
 if(preview)await readFile(glyphConfiguration);
-const productName=preview?'MathArt Lab 2 Preview':'MathArt Lab',version=preview?'2.0.0-preview.11':manifest.version;
+const productName=preview?'MathArt Lab 2 Preview':'MathArt Lab',version=preview?'2.0.0-preview.12':manifest.version;
 async function run(command,args,options={}){await new Promise((resolve,reject)=>{const child=spawn(command,args,{cwd:root,stdio:'inherit',...options});child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(new Error(`${command} failed (${code})`)));});}
 await run('npm',['run',preview?'build:v2':'build'],preview?{env:{...process.env,VITE_SOURCE_RENDERER:'native'}}:{});
 await mkdir(path.join(root,'.cache'),{recursive:true});
