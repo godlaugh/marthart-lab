@@ -17,6 +17,7 @@ export const SOURCE_ATTRACTOR_CLIP_TYPES:readonly string[]=['wait','animate','al
 export const SOURCE_ATTRACTOR_ACTION_METHODS:readonly string[]=['rotatePhi','rotateTheta','zoom','focal','ambient','stopAmbient','track','stopTracking','gradientStart','gradientStop'];
 const object=(raw:unknown):raw is Record<string,unknown>=>raw!==null&&typeof raw==='object'&&!Array.isArray(raw);
 export const usesSourceAttractor=(scene:Pick<SceneDocument,'kind'|'attractorSource'>):boolean=>scene.kind==='attractor'&&scene.attractorSource!==undefined;
+export const usesSourceAttractorCpu=(scene:Pick<SceneDocument,'kind'|'attractorSource'>):boolean=>usesSourceAttractor(scene)&&scene.attractorSource!.configuration.nativeBackend==='cpu';
 export class SourceAttractorDocumentError extends Error {
  constructor(readonly code:'input'|'capacity',message:string){super(message);this.name='SourceAttractorDocumentError';}
 }

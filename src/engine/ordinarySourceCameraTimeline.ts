@@ -1,3 +1,4 @@
+import {runGenerationEffects,runGenerationEffectsAsync} from './generationEffects';
 import type {SourceIteratedParameterAction} from './sourceIteratedParameterRuntime';
 import {normalizeSourceSamilaParameterAction,type SourceSamilaParameterAction} from './sourceSamilaParameter';
 import {sourceSurfaceFadeRatio,sourceSurfaceTransitionFrame,type SourceSurfaceMode} from './sourceSurfaceTransition';
@@ -83,6 +84,8 @@ export interface OrdinarySourceCameraTimelineOptions {
   * may borrow its identity or history. CPU/GPU trajectory ownership belongs to
   * the producer; local orbit samplers are not native particle implementations. */
  readonly createParticles?:()=>OrdinarySourceCameraParticles;
+ /** Only initialization may await; all timeline/update/display ordering is shared. */
+ readonly createParticlesAsync?:()=>Promise<OrdinarySourceCameraParticles>;
 }
 export interface OrdinarySourceCameraFrame {
  readonly time:number;readonly camera:SourceCameraScalars;readonly frameIndex:number;
@@ -262,16 +265,28 @@ export function clearOrdinarySourceCameraTimelineCache():void {replays.clear();l
 export class OrdinarySourceCameraTimelineSession {
  private readonly cache=new Map<string,Replay>();
  private mode?:'fixed'|'live';
+ private pending?:Promise<OrdinarySourceCameraFrame>;private asyncBusy=false;private revision=0;
  private readonly initial:SourceCameraScalars;
  private readonly tracks:readonly AnimationTrack[];
  private readonly options:OrdinarySourceCameraTimelineOptions;
  constructor(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],private readonly fps:number,options:OrdinarySourceCameraTimelineOptions){
   this.initial=structuredClone(initial);this.tracks=structuredClone(tracks);this.options={...options};
  }
- evaluate(time:number):OrdinarySourceCameraFrame{if(this.mode==='live')throw new OrdinarySourceCameraTimelineError('input','实时队列不能按固定帧重新求值');this.mode='fixed';try{return evaluateTimeline(this.initial,this.tracks,this.fps,time,this.options,this.cache);}catch(error){this.reset();throw error;}}
+ evaluate(time:number):OrdinarySourceCameraFrame{if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');if(this.mode==='live')throw new OrdinarySourceCameraTimelineError('input','实时队列不能按固定帧重新求值');this.mode='fixed';try{return evaluateTimeline(this.initial,this.tracks,this.fps,time,this.options,this.cache);}catch(error){this.reset();throw error;}}
+ async evaluateAsync(time:number):Promise<OrdinarySourceCameraFrame>{
+  if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');
+  if(this.mode==='live')throw new OrdinarySourceCameraTimelineError('input','实时队列不能按固定帧重新求值');
+  this.mode='fixed';this.asyncBusy=true;const revision=this.revision;
+  const options={...this.options,isCancelled:()=>revision!==this.revision||!!this.options.isCancelled?.()};
+  const operation=runGenerationEffectsAsync(evaluateTimelineOperation(this.initial,this.tracks,this.fps,time,options,this.cache),()=>options.createParticlesAsync?options.createParticlesAsync():options.createParticles?.());
+  this.pending=operation;
+  try{return await operation;}catch(error){this.cache.clear();this.mode=undefined;throw error;}finally{if(this.pending===operation)this.pending=undefined;this.asyncBusy=false;}
+ }
+ async settle():Promise<void>{await this.pending?.then(()=>undefined,()=>undefined);}
  /** Explicit hot angle write; queued destinations and captured child starts
   * remain unchanged, as on CameraController. Only an owned replay is writable. */
  writeAngles(angles:Partial<Pick<SourceCameraScalars,'phi'|'theta'|'gamma'>>):void {
+  if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');
   const values:{phi?:number;theta?:number;gamma?:number}={};for(const axis of axes)if(angles[axis]!==undefined)values[axis]=float(angles[axis]!,`源相机热 ${axis}`);
   if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');for(const replay of this.cache.values())Object.assign(replay.camera,values);
  }
@@ -279,37 +294,38 @@ export class OrdinarySourceCameraTimelineSession {
   * Zoom is owned by the queue clock; writing only the presentation copy would
   * silently revert it on the next unpaused update. */
  writeViewport(camera:SourceCameraScalars):void {
+  if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');
   const parsed=resolveSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:camera});
   if(!parsed.ok)throw parsed.error;if(parsed.value.kind!=='known')throw new OrdinarySourceCameraTimelineError('input','源相机视口未知');
   if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');
   const next=parsed.value.state.value;
   for(const replay of this.cache.values()){replay.clock.writeZoom(next.zoom);Object.assign(replay.camera,copy(next));}
  }
- private live():Replay {check(this.options);if(this.mode==='fixed')throw new OrdinarySourceCameraTimelineError('input','固定帧回放不能作为实时队列续接');this.mode='live';let state=this.cache.get('owned');if(!state){state=createReplay(this.initial,this.tracks,this.fps,this.options);this.cache.set('owned',state);}return state;}
+ private live():Replay {if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');check(this.options);if(this.mode==='fixed')throw new OrdinarySourceCameraTimelineError('input','固定帧回放不能作为实时队列续接');this.mode='live';let state=this.cache.get('owned');if(!state){state=runGenerationEffects(createReplay(this.initial,this.tracks,this.fps,this.options),()=>this.options.createParticles?.());this.cache.set('owned',state);}return state;}
  snapshot():OrdinarySourceCameraFrame {const state=this.live();return snapshotReplay(state,state.facts.sceneTime);}
  /** Render the current owned state without Scene.update or clock advancement. */
- display():OrdinarySourceCameraFrame {try{const state=this.live();if(state.frameIndex<0)throw new OrdinarySourceCameraTimelineError('input','显示需要已初始化的场景');state.particles?.displayFrame?.(state.frameIndex,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
+ display():OrdinarySourceCameraFrame {if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');try{const state=this.live();if(state.frameIndex<0)throw new OrdinarySourceCameraTimelineError('input','显示需要已初始化的场景');state.particles?.displayFrame?.(state.frameIndex,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
  /** Explicit local seek reconstruction; not a native Scene seek operation. */
- reconstruct(time:number):OrdinarySourceCameraFrame {this.reset();this.evaluate(time);return this.resumeLive();}
+ reconstruct(time:number):OrdinarySourceCameraFrame {if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');this.reset();this.evaluate(time);return this.resumeLive();}
  /** Explicit fixed-to-live handoff. Retain the exact queue, captured starts,
   * particles and target history; neither update nor display is performed. */
  resumeLive():OrdinarySourceCameraFrame {
-  check(this.options);const state=this.cache.get('owned');
+  if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');check(this.options);const state=this.cache.get('owned');
   if(this.mode!=='fixed'||!state)throw new OrdinarySourceCameraTimelineError('input','续接实时队列需要已完成的固定帧实例');
   this.mode='live';return snapshotReplay(state,state.facts.sceneTime);
  }
- step(dt:number,options:{paused?:boolean;actualFrameRate?:number}={}):OrdinarySourceCameraFrame {if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true,options.actualFrameRate);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
+ step(dt:number,options:{paused?:boolean;actualFrameRate?:number}={}):OrdinarySourceCameraFrame {if(this.asyncBusy)throw new OrdinarySourceCameraTimelineError('input','源回放初始化正在进行');if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true,options.actualFrameRate);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
 
- reset():void{this.cache.clear();this.mode=undefined;}
+ reset():void{this.revision++;this.cache.clear();this.mode=undefined;}
 }
 export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions={}):OrdinarySourceCameraFrame {
  return evaluateTimeline(initial,tracks,fps,time,options);
 }
-function createReplay(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:OrdinarySourceCameraTimelineOptions):Replay {
+function* createReplay(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:OrdinarySourceCameraTimelineOptions):Generator<'create-particles',Replay,OrdinarySourceCameraParticles|undefined> {
   check(options);const plan=prepare(initial,tracks,fps,options.particleActions,options.surfaceMode);
-  if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
-  check(options);const particles=options.createParticles?.();
-  if(options.createParticles&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
+  if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles&&!options.createParticlesAsync)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
+  check(options);const particles=(options.createParticles||options.createParticlesAsync)?yield 'create-particles':undefined;check(options);
+  if((options.createParticles||options.createParticlesAsync)&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
   if(plan.clips.some(c=>c.trailAction?.kind==='record')&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
   if(plan.clips.some(c=>c.trailAction?.kind==='show')&&typeof particles?.setShowTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源 Perlin 拖尾片段需要支持显示与记录开关的生产者');
   if(plan.clips.some(c=>c.gradientActions?.length)&&(typeof particles?.beginGradientActions!=='function'||typeof particles?.interpolateGradientActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源粒子渐变需要支持完整生命周期的粒子生产者');
@@ -413,15 +429,18 @@ function snapshotReplay(replay:Replay,time:number):OrdinarySourceCameraFrame {co
  return{time,camera:copy(replay.camera),frameIndex:replay.frameIndex,sceneTime:replay.facts.sceneTime,queueIndex:replay.facts.queueIndex,queueComplete:replay.facts.queueComplete,activeDt:replay.activeDt,rawDt:replay.facts.rawDt,rates:[...replay.rates],diagnostics:plan.diagnostics.map(item=>({...item})),...(replay.surfaceMode?{surfaceTransition:{mode:replay.surfaceMode,overlayAlpha:replay.overlayAlpha}}:{})};
 }
 function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions,ownedCache?:Map<string,Replay>):OrdinarySourceCameraFrame {
+ return runGenerationEffects(evaluateTimelineOperation(initial,tracks,fps,time,options,ownedCache),()=>options.createParticles?.());
+}
+function* evaluateTimelineOperation(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions,ownedCache?:Map<string,Replay>):Generator<'create-particles',OrdinarySourceCameraFrame,OrdinarySourceCameraParticles|undefined> {
  check(options);
  if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
  const target=targetFrame(time,fps),reserve=budget();
- const key=ownedCache?'owned':options.createParticles?undefined:inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode);
+ const key=ownedCache?'owned':(options.createParticles||options.createParticlesAsync)?undefined:inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode);
  const replayCache=ownedCache??replays;
  let state=key===undefined?undefined:replayCache.get(key);
  if(state&&state.frameIndex>target){if(key!==undefined)replayCache.delete(key);state=undefined;}
  if(!state){
-  state=createReplay(initial,tracks,fps,options);
+  state=yield* createReplay(initial,tracks,fps,options);
  }
  const replay=state,{plan}=replay;
  try{

@@ -7,7 +7,7 @@ import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {planFractalFreshRecording} from './sourceFractalRecording';
 import {planPerlinFreshRecording} from './sourcePerlinRecording';
 import { definition } from "../scenes";
-import { generateScene, TemporalGenerationSession } from './temporal';
+import { generateScene, generateSceneAsync, TemporalGenerationSession } from './temporal';
 import { searchStableAttractor } from './stableSearch';
 import { exploreComplex } from './complexExplore';
 import type { GenerationRequest, GenerationPayload } from './generationProtocol';
@@ -320,7 +320,7 @@ self.onmessage = async (
     } } satisfies GenerateContext;
     const native=nativePerlinScene(scene);
     if(!native&&nativePerlinActive){await nativePerlin.resetAsync();nativePerlinActive=false;}
-    const output = native?await generateNativePerlin(scene,executionContext):generateScene(scene, executionContext, temporalSession);
+    const output = native?await generateNativePerlin(scene,executionContext):await generateSceneAsync(scene, executionContext, temporalSession);
     output.dimension ??= definition(scene.kind).dimension;
     output.stats.elapsedMs = performance.now() - start;
     if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive&&!context.implicitControls)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}

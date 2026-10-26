@@ -6,7 +6,10 @@ export interface SourceAttractorEquation {
   * mutates any axis. Nonfinite results remain part of the numeric state. */
  compute(x:number,y:number,z:number,out:Float32Array):void;
 }
+export interface SourceAttractorEquationSource {readonly equations:Readonly<Record<'dx'|'dy'|'dz',string>>;readonly parameters:Readonly<Record<string,number>>;}
 export interface PreparedSourceAttractorEquation {
+ /** Compiler-owned serializable input; every warmup lane compiles its own variables/scratch. */
+ readonly source?:SourceAttractorEquationSource;
  readonly operations:number;
  create():SourceAttractorEquation;
 }
@@ -33,7 +36,9 @@ export function prepareSourceAttractorEquation(input:unknown):SourceAttractorEqu
   compiled.push(parsed.value);
  }
  const F=Math.fround;
- return{ok:true,value:Object.freeze({operations:compiled.reduce((n,e)=>n+e.operations,0),create(){
+ const equations=input.equations,parameters=input.parameters;
+ const source:SourceAttractorEquationSource=Object.freeze({equations:Object.freeze(Object.fromEntries(['dx','dy','dz'].map(axis=>[axis,equations[axis]]))) as SourceAttractorEquationSource['equations'],parameters:Object.freeze(Object.fromEntries(keys.map(key=>[key,parameters[key]]))) as Readonly<Record<string,number>>});
+ return{ok:true,value:Object.freeze({source,operations:compiled.reduce((n,e)=>n+e.operations,0),create(){
   const variables=initial.slice();
   return Object.freeze({compute(x:number,y:number,z:number,out:Float32Array){
    variables[0]=F(x);variables[1]=F(y);variables[2]=F(z);

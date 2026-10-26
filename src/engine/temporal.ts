@@ -15,7 +15,7 @@ import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
 import {SourcePerlinSession} from '../scenes/sourcePerlin';
 import {usesSourcePerlinGpu} from './sourcePerlinIdentity';
 import {SourcePerlinGpuSession} from '../scenes/sourcePerlinGpu';
-import {usesSourceAttractor} from './sourceAttractorDocument';
+import {usesSourceAttractor,usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {SourceBouncingSession} from '../scenes/sourceBouncing';
 import {generateSourceAttractor,SourceAttractorSession} from '../scenes/sourceAttractor';
@@ -404,7 +404,7 @@ function generateImplicitFrame(scene:SceneDocument,context:GenerateContext):Extr
       };
       return bind(definition(scene.kind).generate(current,{...context,onProgress:context.onProgress?output=>context.onProgress!(bind(output)):undefined}));
 }
-export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
+function generationSceneInput(scene:SceneDocument,context:GenerateContext):SceneDocument{
   scene=sourcePaletteRuntimeScene(scene);
   if(context.fractalRecording!==undefined&&!usesSourceFractal(scene))throw Error('分形录制帧只能用于完整源分形场景');
   if((context.sourceBouncingFrame!==undefined||context.sourceBouncingView!==undefined)&&!usesSourceBouncing(scene))throw new Error('源弹跳检查点只能用于带源弹跳配置的场景');
@@ -421,6 +421,18 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(!usesSourceImplicitCpuMesh(scene))throw Error('隐式控制需要源 CPU 网格场景');
     if([context.rootsLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.perlinLive,context.fractalRecording].some(value=>value!==undefined))throw Error('隐式控制不能共用其它场景的时钟');
   }
+  return scene;
+}
+export async function generateSceneAsync(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):Promise<SceneOutput>{
+ scene=generationSceneInput(scene,context);
+ // Only source CPU Attractor initialization is asynchronous here. Existing
+ // live/recording dispatch and every other scene retain their own owners.
+ if(!usesSourceAttractorCpu(scene)||[context.implicitControls,context.rootsLive,context.implicitLive,context.surfaceLive,context.domainLive,context.fractalLive,context.mapLive,context.symmetryLive,context.samilaLive,context.perlinLive,context.fractalRecording].some(value=>value!==undefined))return generateScene(scene,context,session);
+ const owner=session??new TemporalGenerationSession();
+ try{owner.select(scene,context);return await owner.sourceAttractor.generateAsync(scene,context);}finally{if(!session){await owner.sourceAttractor.resetAsync();owner.reset();}}
+}
+export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
+ scene=generationSceneInput(scene,context);
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
     if(context.implicitControls!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateControlled(scene,context,(effective,palette)=>generateImplicitFrame(effective,{...context,implicitPalettePrepared:palette,onProgress:undefined}));}

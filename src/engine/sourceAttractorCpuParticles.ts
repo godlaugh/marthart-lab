@@ -4,7 +4,8 @@ import {parseSourceAttractorVisualConfiguration,type SourceAttractorVisualConfig
 import {SourceAttractorColorRuntime} from './sourceAttractorColorRuntime';
 import type {SourceGradientAction} from './sourceGradientRuntime';
 import {parseSourceAttractorConfiguration,type SourceAttractorConfiguration} from './sourceAttractorConfig';
-import {createSourceAttractorSeedStream} from './sourceAttractorSeeds';
+import {prepareSourceAttractorWarmup,runSourceAttractorWarmupSerial,type SourceAttractorWarmupMotion,type SourceAttractorWarmupPlan} from './sourceAttractorWarmup';
+import {SourceAttractorWarmupPool} from './sourceAttractorWarmupPool';
 import {sourceAttractorEulerStep,type PreparedSourceAttractorEquation} from './sourceAttractorEquation';
 import {attractorParticleId} from './particleCamera';
 import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
@@ -34,7 +35,8 @@ export interface SourceAttractorCpuSnapshot {
  readonly colors?:Float32Array;readonly pointAlphas?:Float32Array;readonly packedColors?:Uint32Array;
  readonly particleIds?:Uint32Array;readonly trails?:SourceParticleTrails;readonly diagnostics?:string[];
 }
-const F=Math.fround;
+const F=Math.fround,completedWarmup=Symbol('completed-warmup');
+interface CompletedWarmup {readonly token:typeof completedWarmup;readonly plan:SourceAttractorWarmupPlan;readonly motion:SourceAttractorWarmupMotion;}
 /** Motion owner for source CPU particles: displayed geometry and bound camera
  * targets read the same state. Optional source display owns live colors and
  * every substep trail; public document integration remains separate work. */
@@ -47,8 +49,18 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
  private readonly operations:number;private readonly options:SourceAttractorCpuOptions;
  private readonly scales:number[];private readonly offsets:number[];
  private operationBudget=sourceAttractorWorkBudget();private operationDepth=0;
+ private readonly warmup:Pick<SourceAttractorWarmupMotion,'execution'|'workers'|'slices'|'work'|'reservedBytes'>;
  private frameIndex=-1;private used=0;private failed=false;private failure:unknown;
- constructor(options:SourceAttractorCpuOptions){
+ static async createAsync(options:SourceAttractorCpuOptions,pool:SourceAttractorWarmupPool,maximumWorkers?:number):Promise<SourceAttractorCpuParticles>{
+  // Snapshot authoring inputs before worker ACK; callbacks remain runtime controls.
+  const snapshot={...options,configuration:structuredClone(options.configuration),visualConfiguration:options.visualConfiguration===undefined?undefined:structuredClone(options.visualConfiguration)};
+  if(snapshot.visualConfiguration!==undefined){const visual=parseSourceAttractorVisualConfiguration(snapshot.visualConfiguration);if(!visual.ok)throw new SourceAttractorCpuError(visual.error.kind==='capacity'?'capacity':'input',visual.error.reason);}
+  const plan=prepareSourceAttractorWarmup(snapshot.configuration,snapshot.equation,{parallel:true,maximumWorkers,isCancelled:snapshot.isCancelled});
+  const motion=await pool.run(plan,snapshot.isCancelled);
+  if(snapshot.isCancelled?.())throw new SourceAttractorCpuError('cancelled','原版吸引子预热已取消');
+  return new SourceAttractorCpuParticles(snapshot,{token:completedWarmup,plan,motion});
+ }
+ constructor(options:SourceAttractorCpuOptions,completed?:CompletedWarmup){
   this.options={...options};
   if(options.visualConfiguration!==undefined){
    const visual=parseSourceAttractorVisualConfiguration(options.visualConfiguration);
@@ -65,23 +77,16 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
   if(this.configuration.nativeBackend!=='cpu')throw new SourceAttractorCpuError('input','CPU 粒子生产者不能代替原版 GPU 积分');
   if(!options.equation||!Number.isSafeInteger(options.equation.operations)||options.equation.operations<1)throw new SourceAttractorCpuError('input','原版吸引子导数工作量无效');
   this.operations=options.equation.operations;this.field=options.equation.create();
-  const stream=createSourceAttractorSeedStream(this.configuration);
-  if(!stream.ok)throw new SourceAttractorCpuError(stream.error.kind==='capacity'?'capacity':'input',stream.error.reason);
-  this.count=stream.value.count;
-  // Source clamps CPU count at its configuration boundary; the owner still
-  // admits only a bounded allocation before creating any particle buffer.
-  if(!Number.isInteger(this.count)||this.count<0||this.count>10000)throw new SourceAttractorCpuError('capacity','原版 CPU 粒子最多 10000 个');
-  this.reserve(this.count*9);this.raw=new Float32Array(this.count*3);this.positions=new Float32Array(this.count*3);this.dt=new Float32Array(this.count);this.steps=new Float64Array(this.count);
+  if(completed&&completed.token!==completedWarmup)throw new SourceAttractorCpuError('input','预热结果不属于完整 ACK owner');
+  const plan=completed?.plan??prepareSourceAttractorWarmup(this.configuration,options.equation,{isCancelled:options.isCancelled});
+  // Async warmup is separately admitted as one bounded job. Do not charge it
+  // again to the synchronous update/snapshot budget or integrate it twice.
+  if(!completed)this.reserve(plan.work);else this.used=plan.work;
+  const motion=completed?.motion??runSourceAttractorWarmupSerial(plan,options.isCancelled);
+  this.warmup={execution:motion.execution,workers:motion.workers,slices:motion.slices,work:motion.work,reservedBytes:motion.reservedBytes};
+  this.count=motion.dt.length;this.raw=motion.raw;this.dt=motion.dt;this.steps=motion.steps;this.positions=new Float32Array(this.count*3);
   const t=this.configuration.transform;this.scales=[t.scaleX,t.scaleY,t.scaleZ].map(F);this.offsets=[t.offsetX,t.offsetY,t.offsetZ].map(F);
-  for(let i=0;i<this.count;i++){
-   this.check();const next=stream.value.next();
-   if(!next.ok)throw new SourceAttractorCpuError(next.error.kind==='capacity'?'capacity':'input',next.error.reason);
-   const seed=next.value;if(!seed||seed.index!==i)throw new SourceAttractorCpuError('input','原版吸引子种子槽位不连续');
-   this.raw.set(seed.raw,i*3);this.dt[i]=seed.dt;
-   this.reserve(Math.max(0,seed.warmupSteps)*(this.operations+6));
-   for(let step=0;step<seed.warmupSteps;step++){if((step&255)===0)this.check();this.integrate(i);}
-   this.transform(i);
-  }
+  for(let i=0;i<this.count;i++){this.check();this.transform(i);}
   if(this.visualConfiguration){
    const v=this.visualConfiguration;
    this.color=new SourceAttractorColorRuntime({count:this.count,nativeBackend:'cpu',showTrails:v.trails.show,palette:v.palette,reserve:n=>this.reserve(n),isCancelled:this.options.isCancelled});
@@ -95,7 +100,7 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
  private guarded<T>(run:()=>T):T{if(this.operationDepth++===0)this.operationBudget=sourceAttractorWorkBudget();try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}finally{this.operationDepth--;}}
  private integrate(index:number){sourceAttractorEulerStep(this.field,this.raw,index*3,this.dt[index],this.scratch);this.steps[index]++;}
  private transform(index:number){for(let axis=0;axis<3;axis++){const at=index*3+axis;this.positions[at]=F(F(this.raw[at]*this.scales[axis])+this.offsets[axis]);}}
- diagnostics(){return{frameIndex:this.frameIndex,workUnits:this.used,retainedBytes:this.raw.byteLength+this.positions.byteLength+this.dt.byteLength+this.steps.byteLength+this.scratch.byteLength+(this.color?.retainedBytes??0)+(this.history?.retainedBytes??0)};}
+ diagnostics(){return{warmup:{...this.warmup},frameIndex:this.frameIndex,workUnits:this.used,retainedBytes:this.raw.byteLength+this.positions.byteLength+this.dt.byteLength+this.steps.byteLength+this.scratch.byteLength+(this.color?.retainedBytes??0)+(this.history?.retainedBytes??0)};}
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding{return this.guarded(()=>{
   if(this.frameIndex!==-1)throw new SourceAttractorCpuError('input','原版吸引子跟踪必须在播放前绑定');
   const index=request.action.args?.index;
