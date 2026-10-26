@@ -1,6 +1,8 @@
-/** Packaged Attractor controls, bundled-native v13 acknowledgements and actual PNG
+/** Packaged CPU/GPU Attractor controls, bundled-native v13/v14 ACKs and actual PNG
  * downloads, followed by complete exit/reopen. No source substitution or GUI focus; a passive fetch observer copies receipts.
  * Usage: node scripts/verify-attractor-native-desktop.mjs BUNDLE SOURCE_CONFIG OUTPUT ORIGINAL_LABELS_JSON
+ * GPU: node scripts/verify-attractor-native-desktop.mjs BUNDLE CONSTRUCTED_GPU_CONFIG OUTPUT --gpu
+ * GPU inputs keep their authored disabled formulas; native bytes must equal PNG.
  * OUTPUT must be new; its private profile is reused only for this verifier's
  * second launch. The source JSON bytes and name remain unchanged. */
 import {_electron} from '@playwright/test';
@@ -8,23 +10,25 @@ import assert from 'node:assert/strict';
 import {readFile,writeFile,mkdir,realpath} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {execFile} from 'node:child_process';
-import {promisify} from 'node:util';
+import {promisify,parseArgs} from 'node:util';
 import path from 'node:path';
 import os from 'node:os';
 import net from 'node:net';
 import {inspectSourceFrameHeader} from '../server/source-renderer.mjs';
+import {inspectAttractorResponse,admitAttractorRequest} from '../server/source-attractor-protocol.mjs';
 import {pngFacts} from './domain-native-production-ui.mjs';
 
-const [bundleArg,configArg,outArg,labelsArg]=process.argv.slice(2);
-assert(bundleArg&&configArg&&outArg&&labelsArg,'Supply BUNDLE SOURCE_CONFIG OUTPUT ORIGINAL_LABELS_JSON');
+const {values,positionals}=parseArgs({options:{gpu:{type:'boolean'}},allowPositionals:true}),gpu=values.gpu===true;
+const [bundleArg,configArg,outArg,labelsArg]=positionals;
+assert(positionals.length===(gpu?3:4)&&bundleArg&&configArg&&outArg&&(gpu||labelsArg),'Supply BUNDLE SOURCE_CONFIG OUTPUT ORIGINAL_LABELS_JSON, or BUNDLE CONSTRUCTED_GPU_CONFIG OUTPUT --gpu');
 const bundle=path.resolve(bundleArg),config=path.resolve(configArg),out=path.resolve(outArg),profile=path.join(out,'profile');
 const originalBytes=await readFile(config),original=JSON.parse(originalBytes);
 assert(original&&typeof original==='object'&&!Array.isArray(original),'Expected original Attractor JSON');
 assert(String(original.type).toUpperCase()==='ATTRACTOR','Expected original ATTRACTOR type');
 const source=structuredClone(original);assert.equal(typeof source.name,'string');assert(source.name.length);
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),resources=path.join(bundle,'Contents/Resources'),asar=path.join(resources,'app.asar');
-const labelsPath=path.resolve(labelsArg),labelsBytes=await readFile(labelsPath),originalLabels=JSON.parse(labelsBytes),referenceRun=JSON.parse(await readFile(path.join(path.dirname(labelsPath),'run.json'),'utf8'));
-assert.equal(referenceRun.exit,0);assert.equal(referenceRun.jarUnchanged,true);assert.equal(referenceRun.sourceUnchanged,true);assert.equal(referenceRun.plan.sourceSha256,sha(originalBytes));
+const labelsPath=gpu?undefined:path.resolve(labelsArg),labelsBytes=gpu?undefined:await readFile(labelsPath),originalLabels=gpu?[]:JSON.parse(labelsBytes);
+if(!gpu){const referenceRun=JSON.parse(await readFile(path.join(path.dirname(labelsPath),'run.json'),'utf8'));assert.equal(referenceRun.exit,0);assert.equal(referenceRun.jarUnchanged,true);assert.equal(referenceRun.sourceUnchanged,true);assert.equal(referenceRun.plan.sourceSha256,sha(originalBytes));}
 const expectedGlyphs=await Promise.all(originalLabels.map(async label=>{assert.equal(label.colorArgb>>>24,255);assert.equal(label.fontSize,50);assert.equal(label.glyphRowOrder,'top-down');return{latex:label.latex,color:'#'+(label.colorArgb&0xffffff).toString(16).padStart(6,'0'),width:label.glyphSize[0],height:label.glyphSize[1],rgbaSha256:sha(await readFile(path.join(path.dirname(labelsPath),label.glyphRgba)))};}));
 const manifestPath=path.join(resources,'source-renderer/manifest.json'),manifestBytes=await readFile(manifestPath),manifest=JSON.parse(manifestBytes);
 assert.equal(manifest.schemaVersion,1);assert.equal(manifest.platform,process.platform);assert.equal(manifest.arch,process.arch);assert.equal(manifest.executable,'source-cgl-renderer');
@@ -36,9 +40,12 @@ const glyphBefore=await glyphHashes();assert.equal(glyphBefore[glyphManifest.hel
 // Same sealed executable/path/host identity contract as the actual service.
 const expectedRenderer=sha(JSON.stringify({executable:nativeExecutable,executableSha256:manifest.sha256,host:[process.platform,process.arch,os.release(),os.version()]}));
 await mkdir(out,{recursive:false});await writeFile(path.join(out,'input.json'),originalBytes);
-const report={status:'running',at:new Date().toISOString(),bundle,sourceConfig:config,sourceSha256:sha(originalBytes),source,manifest,manifestSha256:sha(manifestBytes),glyphManifest,glyphBefore,expectedRenderer,asarSha256:sha(await readFile(asar)),labelsPath,labelsSha256:sha(labelsBytes),expectedGlyphs,runs:[],wire:[],glyphWire:[],errors:[],scope:'Hidden packaged Attractor import, native preview, original-bound source glyph receipts, 96x80 replay PNG, Save, complete exit, reopen and aligned replay PNG on the same Mac. After reopen readiness, a renderer reload installs the observer before a cold glyph request. Both launches use public Return to start; this does not claim persistence of the playhead or original GUI/cross-device parity. The original JSON bytes and name remain unchanged.'};
+const verifierFiles=['scripts/verify-attractor-native-desktop.mjs','scripts/domain-native-production-ui.mjs','server/source-renderer.mjs','server/source-attractor-protocol.mjs','server/source-drawing-protocol.mjs'];
+const verifierHashes=async()=>Object.fromEntries(await Promise.all(verifierFiles.map(async file=>[file,sha(await readFile(file))])));
+const verifierBefore=await verifierHashes();
+const report={verifierBefore,status:'running',at:new Date().toISOString(),bundle,sourceConfig:config,sourceSha256:sha(originalBytes),source,manifest,manifestSha256:sha(manifestBytes),glyphManifest,glyphBefore,expectedRenderer,asarSha256:sha(await readFile(asar)),labelsPath,labelsSha256:labelsBytes?sha(labelsBytes):undefined,expectedGlyphs,runs:[],wire:[],glyphWire:[],errors:[],mode:gpu?'gpu-v14':'cpu-v13',limits:gpu?['输入是显式构造 GPU 场景，不是原包附带的 CPU preset。','本验收仅覆盖本机隐藏桌面导入、公开跳转、PNG、保存与重开；不新增原版字形或整图一致性结论。','GPU 构型按作者输入保持公式关闭；PNG 严格绑定实际 bundled-native RGBA。未覆盖桌面视频/JPEG、跨设备或任意粒子数。','旁路读取和哈希有额外开销，不用于宣称生产性能。']:[],scope:gpu?'Hidden packaged explicit GPU input, bundled v14 initialization/pass/render ACKs, 96x80 PNG equal to actual native RGBA, Save, complete exit and reopen PNG equality. Original JSON bytes and name stay unchanged. No new original shader/glyph/whole-window parity claim.':'Hidden packaged Attractor import, native preview, original-bound source glyph receipts, 96x80 replay PNG, Save, complete exit, reopen and aligned replay PNG on the same Mac. After reopen readiness, a renderer reload installs the observer before a cold glyph request. Both launches use public Return to start; this does not claim persistence of the playhead or original GUI/cross-device parity. The original JSON bytes and name remain unchanged.'};
 const env={...process.env};for(const key of ['ELECTRON_RUN_AS_NODE','MATHART_SOURCE_RENDERER_BACKEND','MATHART_GLYPH_BACKEND','VITE_SOURCE_RENDERER'])delete env[key];
-const exec=promisify(execFile),started=performance.now();let app,page,processOwner,run;
+const exec=promisify(execFile),started=performance.now(),gpuOwners=new Map();let app,page,processOwner,run;
 const rows=async()=>{const{stdout}=await exec('/bin/ps',['-axo','pid=,ppid=,pgid=,lstart='],{maxBuffer:2*1024*1024});return stdout.trim().split('\n').map(line=>{const m=line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/);assert(m,'Invalid process observation');return{pid:+m[1],ppid:+m[2],pgid:+m[3],start:m[4]};});};
 const portClosed=async origin=>new Promise((resolve,reject)=>{
  const socket=net.createConnection({host:'127.0.0.1',port:Number(new URL(origin).port)});
@@ -47,6 +54,7 @@ const portClosed=async origin=>new Promise((resolve,reject)=>{
 });
 async function closeApp(){
  if(!app)return;
+ if(gpu)run.retainedBeforeExit=[...gpuOwners.values()].map(({resource,passIndex,renderIndex,uploaded,count,texSize})=>({resource,passIndex,renderIndex,uploaded,count,texSize}));
  await app.close();app=undefined;
  run.exitCode=processOwner.exitCode;run.signalCode=processOwner.signalCode;assert.equal(run.exitCode,0,'Application shutdown failed');
  if(run.owner){run.processGroupAfter=(await rows()).filter(p=>p.pgid===run.owner.pgid);assert.deepEqual(run.processGroupAfter,[],'Owned Electron/native process group remains');}
@@ -57,19 +65,20 @@ async function assertHidden(){
  assert.equal(observed.visibleWindows,0);assert.deepEqual(observed.showEvents,[],'A hidden test window became visible');return observed;
 }
 const ready=()=>page.waitForFunction(()=>{const text=document.querySelector('.status-bar')?.textContent;return(text?.includes('Ready')||text?.includes('就绪'))&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card');});
-const nativeRows=mark=>report.wire.slice(mark).filter(row=>row.version===13&&row.status===200&&row.renderer===expectedRenderer&&row.validated);
+const nativeRows=mark=>report.wire.slice(mark).filter(row=>row.version===(gpu?14:13)&&row.status===200&&row.renderer===expectedRenderer&&row.validated);
 function completedFrames(mark){
  const wires=nativeRows(mark);
+ if(gpu)return wires.filter(row=>row.operation===4&&row.bound&&row.ack.uploaded===row.ack.texSize**2&&row.ack.renderedPassIndex===row.ack.passIndex);
  return wires.filter((row,i)=>row.operation===3&&wires.slice(0,i).some(begin=>begin.operation===1&&begin.resource===row.resource&&begin.chunks===row.ack.chunks)&&wires.slice(i+1).some(release=>release.operation===4&&release.resource===row.resource&&release.ack.disposition===1&&release.ack.index===row.ack.index&&release.ack.finished));
 }
 async function waitForNative(mark,label){
  const deadline=performance.now()+30000;
  while(!completedFrames(mark).length&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,50));
- assert(completedFrames(mark).length,label+' did not complete and release a bundled native v13 frame');
+ assert(completedFrames(mark).length,label+(gpu?' did not produce a bound bundled native v14 render':' did not complete and release a bundled native v13 frame'));
 }
 async function downloadPng(mode){
  await page.getByRole('button',{name:'Export artwork',exact:true}).click();
- // Source CPU Attractor currently uses a fixed replay image, with no retained-mode selector.
+ // Both Attractor backends use the public fixed replay image, not a live capture selector.
  assert.equal(mode,'replay');
  await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');
  await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('96');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('80');
@@ -84,14 +93,24 @@ async function downloadPng(mode){
  const completedPath=await realpath(download.path),downloads=await realpath(path.join(profile,'downloads'));
  assert(completedPath.startsWith(downloads+path.sep),'Download escaped the explicitly owned profile');
  const bytes=await readFile(completedPath),decoded=pngFacts(bytes);assert.equal(decoded.width,96);assert.equal(decoded.height,80);assert(decoded.colors>1,'Attractor PNG is a single color');
- const wires=completedFrames(mark).filter(row=>row.width===96&&row.height===80); assert(wires.length,mode+' PNG had no matching 96x80 native acknowledgement');
+ let wires=completedFrames(mark).filter(row=>row.width===96&&row.height===80); assert(wires.length,mode+' PNG had no matching 96x80 native acknowledgement');
+ if(gpu){
+  // Start export creates a cold owner after this mark. A same-size preview
+  // created earlier must not stand in for the downloaded image's renderer.
+  const created=row=>report.wire.slice(mark,row.ordinal).find(begin=>begin.version===14&&begin.operation===1&&begin.validated&&begin.resource===row.resource&&begin.generation===row.generation&&begin.sequence<row.sequence&&begin.context===row.context&&begin.session===row.session);
+  wires=wires.filter(row=>created(row));assert.equal(wires.length,1,'PNG requires exactly one render from this export newly created owner');
+  const rendered=wires[0];assert.equal(rendered.rgbaTopDownSha256,decoded.rgbaSha256,'PNG pixels differ from the actual bundled native v14 export render');
+  run.exportBindings??=[];run.exportBindings.push({resource:rendered.resource,generation:rendered.generation,sequence:rendered.sequence,context:rendered.context,session:rendered.session,createOrdinal:created(rendered).ordinal,renderOrdinal:rendered.ordinal,rgbaTopDownSha256:rendered.rgbaTopDownSha256});
+  const deadline=performance.now()+30000;while(wires.some(row=>gpuOwners.has(row.resource))&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,50));
+  for(const row of wires){assert(!gpuOwners.has(row.resource),'Export cold native resource was not released');assert(report.wire.some(release=>release.phase===run.phase&&release.version===14&&release.operation===6&&release.resource===row.resource&&release.ordinal>row.ordinal&&release.generation===row.generation&&release.sequence>row.sequence&&release.context===row.context&&release.session===row.session&&release.validated&&release.ack.disposition===1),'Export resource lacks its actual release ACK');}
+ }
  const file=path.join(out,run.phase+'-'+mode+'.png');await writeFile(file,bytes);
  run.images.push({mode,file,download:completedPath,pngSha256:sha(bytes),decoded,native: wires});
  await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();await assertHidden();
 }
 try{
  for(const phase of ['initial','reopen']){
-  const mark=report.wire.length;run={phase,images:[]};report.runs.push(run);
+  const mark=report.wire.length;gpuOwners.clear();run={phase,images:[]};report.runs.push(run);
   app=await _electron.launch({executablePath:path.join(bundle,'Contents/MacOS/MathArt Lab 2 Preview'),args:['--mathart-hidden','--mathart-user-data='+profile],env,timeout:30000});
   processOwner=app.process();run.owner=(await rows()).find(row=>row.pid===processOwner.pid);assert(run.owner,'Launched application owner missing');assert.equal(run.owner.pgid,run.owner.pid,'Expected a dedicated owned Electron process group');
   run.runtime=await app.evaluate(({app,BrowserWindow,session})=>{
@@ -101,7 +120,7 @@ try{
    session.fromPartition('persist:mathart-lab').on('will-download',(_event,item)=>{const row={state:'pending'};globalThis.__attractorDownloads.push(row);item.once('done',(_event,state)=>{row.state=state;row.path=item.getSavePath();});});
    return{name:app.getName(),version:app.getVersion(),userData:app.getPath('userData'),platform:process.platform,arch:process.arch,visibleWindows:BrowserWindow.getAllWindows().filter(w=>w.isVisible()).length};
   });
-  assert.equal(run.runtime.name,'MathArt Lab 2 Preview');assert.equal(run.runtime.version,'2.0.0-preview.13');assert.equal(run.runtime.visibleWindows,0);assert.equal(path.resolve(run.runtime.userData),profile);assert.equal(run.runtime.platform,process.platform);assert.equal(run.runtime.arch,process.arch);
+  assert.equal(run.runtime.name,'MathArt Lab 2 Preview');assert.equal(run.runtime.version,'2.0.0-preview.14');assert.equal(run.runtime.visibleWindows,0);assert.equal(path.resolve(run.runtime.userData),profile);assert.equal(run.runtime.platform,process.platform);assert.equal(run.runtime.arch,process.arch);
   page=await app.firstWindow();page.setDefaultTimeout(30000);run.origin=new URL(page.url()).origin;assert.equal(new URL(run.origin).hostname,'127.0.0.1');page.on('pageerror',error=>report.errors.push(String(error)));
   await page.exposeFunction('__attractorGlyphEvidence',evidence=>{
    try{const headers=evidence.headers,row={phase,...evidence};report.glyphWire.push(row);assert.equal(evidence.status,200);assert.equal(headers['x-glyph-font-size'],'50');assert.equal(headers['x-glyph-format'],'straight-rgba8');assert.match(headers['x-glyph-renderer'],/^[a-f0-9]{64}$/);const width=Number(headers['x-glyph-width']),height=Number(headers['x-glyph-height']);assert(Number.isSafeInteger(width)&&width>0&&Number.isSafeInteger(height)&&height>0);assert.equal(evidence.payloadBytes,width*height*4);assert.equal(Number(headers['content-length']),evidence.payloadBytes);assert.match(evidence.rgbaSha256,/^[a-f0-9]{64}$/);row.validated=true;}catch(error){report.errors.push(String(error.stack??error));}
@@ -109,9 +128,21 @@ try{
   await page.exposeFunction('__attractorNativeEvidence',async evidence=>{
    try{
    const packet=Buffer.from(evidence.packet,'base64'),parsed=inspectSourceFrameHeader(packet);assert(parsed.ok,'Malformed native request header');
-   const headers=evidence.headers,row={phase,version:packet.readUInt32LE(4),...parsed.value,status:evidence.status,renderer:headers['x-source-renderer']};report.wire.push(row);
-   if(row.status===429&&row.operation===4){const failure=JSON.parse(evidence.errorText);if(failure.kind==='capacity'&&failure.retryable===true){row.retryableBusy=true;return;}}
+   const headers=evidence.headers,row={phase,version:packet.readUInt32LE(4),...parsed.value,ordinal:report.wire.length,status:evidence.status,renderer:headers['x-source-renderer']};report.wire.push(row);
+   if(row.status===429&&(row.version===14?row.operation===6:row.operation===4)){const failure=JSON.parse(evidence.errorText);if(failure.kind==='capacity'&&failure.retryable===true){row.retryableBusy=true;return;}}
    assert.equal(row.status,200);assert.equal(row.renderer,expectedRenderer,'Native response did not come from the sealed bundled executable');
+   if(row.version===14){
+    assert.equal(row.family,'attractor');assert.equal(row.samples,0);assert.equal(headers['x-source-format'],'attractor-v1');assert.equal(headers['x-source-row-order'],row.operation===4?'bottom-up':'none');
+    for(const key of ['generation','sequence','width','height'])assert.equal(Number(headers['x-source-'+key]),row[key],'Native v14 ACK '+key+' mismatch');
+    const context=Number(headers['x-source-context']),session=Number(headers['x-source-session']);assert(Number.isSafeInteger(context)&&context>0);assert(Number.isSafeInteger(session)&&session>0);
+    const payload=Buffer.from(evidence.response,'base64');assert.equal(payload.length,evidence.payloadBytes);assert.equal(Number(headers['content-length']),payload.length);
+    const owned=gpuOwners.get(row.resource),expectation={...parsed.value,...(owned?{owned}:{})};row.bound=row.operation===1||!!owned;
+    if(row.bound){const admitted=admitAttractorRequest(expectation,gpuOwners);assert(admitted.ok,admitted.error?.message);if(owned){assert.equal(context,owned.context);assert.equal(session,owned.session);}}
+    const decoded=inspectAttractorResponse(payload,expectation);assert(decoded.ok,decoded.error?.message);row.ack=decoded.value;row.context=context;row.session=session;
+    if(row.operation===6)gpuOwners.delete(row.resource);else if(row.bound)gpuOwners.set(row.resource,{...row.ack,context,session});
+    if(row.operation===4){const bottom=payload.subarray(96),top=Buffer.alloc(bottom.length),stride=row.width*4;for(let y=0;y<row.height;y++)bottom.copy(top,y*stride,(row.height-1-y)*stride,(row.height-y)*stride);row.rgbaBottomUpSha256=sha(bottom);row.rgbaTopDownSha256=sha(top);}
+    row.validated=true;
+   }
    if(row.version===13){
     assert.equal(row.family,'drawing');assert([0,4].includes(row.samples));assert.equal(headers['x-source-format'],'drawing-v1');assert.equal(headers['x-source-row-order'],row.operation===3?'bottom-up':'none');
     for(const key of ['generation','sequence','width','height'])assert.equal(Number(headers['x-source-'+key]),row[key],'Native ACK '+key+' mismatch');
@@ -139,16 +170,22 @@ try{
     }
     if(url.pathname!=='/api/source-renderer/frames')return originalFetch.call(this,input,init);
     if(!ArrayBuffer.isView(init?.body))throw Error('Expected actual native packet bytes');
-    const packet=encode(new Uint8Array(init.body.buffer,init.body.byteOffset,init.body.byteLength));
+    const requestBytes=new Uint8Array(init.body.buffer,init.body.byteOffset,init.body.byteLength),version=new DataView(requestBytes.buffer,requestBytes.byteOffset,requestBytes.byteLength).getUint32(4,true),headerBytes=version===14?96:64,packet=encode(requestBytes);
     const response=await originalFetch.call(this,input,init),raw=new Uint8Array(await response.clone().arrayBuffer());
-    const pixelsSha256=raw.length>64?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw.subarray(64))),x=>x.toString(16).padStart(2,'0')).join(''):undefined;
-    await window.__attractorNativeEvidence({packet,responseHeader:encode(raw.subarray(0,64)),payloadBytes:raw.length,pixelsSha256,status:response.status,errorText:response.ok?undefined:new TextDecoder().decode(raw),headers:Object.fromEntries(response.headers)});
+    const pixelsSha256=raw.length>headerBytes?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw.subarray(headerBytes))),x=>x.toString(16).padStart(2,'0')).join(''):undefined;
+    await window.__attractorNativeEvidence({packet,responseHeader:encode(raw.subarray(0,headerBytes)),...(version===14?{response:encode(raw)}:{}),payloadBytes:raw.length,pixelsSha256,status:response.status,errorText:response.ok?undefined:new TextDecoder().decode(raw),headers:Object.fromEntries(response.headers)});
     return response;
    };
   };await page.addInitScript(installObserver);await page.evaluate(installObserver);
   await ready();run.health=await page.evaluate(()=>fetch('/api/source-renderer/health').then(response=>response.json()));assert.equal(run.health.available,true);assert.equal(run.health.rendererIdentity,expectedRenderer);run.glyphHealth=await page.evaluate(()=>fetch('/api/formula-glyph/health').then(response=>response.json()));assert.equal(run.glyphHealth.available,true);assert.equal(run.glyphHealth.fontSize,50);assert.equal(run.glyphHealth.format,'straight-rgba8');
   const glyphMark=report.glyphWire.length;
-  if(phase==='reopen'){run.observerReload={readyBeforeReload:true,reason:'Install passive observer before a fresh module glyph cache is created.'};await page.reload({waitUntil:'domcontentloaded'});await ready();assert.equal(run.glyphHealth.rendererIdentity,report.runs[0].glyphHealth.rendererIdentity);}
+  if(phase==='reopen'){
+   run.observerReload={readyBeforeReload:true,reason:'Install passive observer before a fresh module glyph cache is created.',...(gpu?{previousNativeOwners:[...gpuOwners.values()].map(({resource,context,session})=>({resource,context,session})),nativeRetirement:'The explicit page reload closes the old page lease; this is not a per-resource release ACK.'}:{})};
+   // pagehide closes the source-native lease. Retained old-session receipts
+   // remain in report.wire, but cannot count against the fresh page's registry.
+   if(gpu)gpuOwners.clear();await page.reload({waitUntil:'domcontentloaded'});await ready();assert.equal(run.glyphHealth.rendererIdentity,report.runs[0].glyphHealth.rendererIdentity);
+   if(gpu){assert(gpuOwners.size>0,'Reload produced no observed native resource');const previous=new Set(run.observerReload.previousNativeOwners.map(owner=>owner.session));for(const owner of gpuOwners.values())assert(!previous.has(owner.session),'Reload reused the retired native page session');run.observerReload.newNativeSessions=[...new Set([...gpuOwners.values()].map(owner=>owner.session))];}
+  }
   if(phase==='initial'){
    await page.getByTitle('工作区设置',{exact:true}).click();await page.getByRole('combobox',{name:'界面语言',exact:true}).selectOption('en');await page.getByRole('button',{name:'Close settings',exact:true}).click();
    const importMark=report.wire.length;await page.locator('input[type=file][accept=".json"]').setInputFiles({name:'attractor.json',mimeType:'application/json',buffer:originalBytes});await waitForNative(importMark,'Imported Attractor preview');
@@ -168,7 +205,8 @@ try{
    await page.waitForFunction(name=>{const workspace=JSON.parse(localStorage.getItem('mathart-lab-v1'));return workspace.scenes.some(scene=>scene.id===workspace.active&&scene.name===name&&scene.kind==='attractor');},source.name);
   }
   run.saved=await page.evaluate(()=>{const workspace=JSON.parse(localStorage.getItem('mathart-lab-v1'));return workspace.drafts?.[workspace.active]??workspace.scenes.find(scene=>scene.id===workspace.active);});
-  assert.equal(run.saved.kind,'attractor');assert.equal(run.saved.name,source.name);assert.equal(run.saved.attractorSource?.configuration?.nativeBackend,'cpu');
+  assert.equal(run.saved.kind,'attractor');assert.equal(run.saved.name,source.name);assert.equal(run.saved.attractorSource?.configuration?.nativeBackend,gpu?'gpu':'cpu');
+  if(gpu){assert.equal(run.saved.formulas?.main?.visible,false,'GPU fixture must retain its authored hidden main formula');assert(run.saved.formulas?.additional.every(label=>!label.visible||!label.latex.trim()),'GPU byte comparison requires authored empty additional formulas');}
   assert.equal(run.saved.formulas?.layout,'source-surface-centered-v1');
   const glyphs=report.glyphWire.slice(glyphMark).filter(row=>row.phase===phase&&row.validated);for(const glyph of glyphs)assert.equal(glyph.headers['x-glyph-renderer'],run.glyphHealth.rendererIdentity);
   for(const expected of expectedGlyphs){const actual=glyphs.find(g=>g.request.latex===expected.latex&&g.request.color===expected.color);assert(actual,'Original formula has no matching actual bundled glyph receipt');assert.equal(Number(actual.headers['x-glyph-width']),expected.width);assert.equal(Number(actual.headers['x-glyph-height']),expected.height);assert.equal(actual.rgbaSha256,expected.rgbaSha256);}
@@ -177,7 +215,7 @@ try{
    assert.deepEqual(run.saved,report.runs[0].saved,'Saved Attractor source data changed after exit/reopen');
    assert.equal(run.images[0].decoded.rgbaSha256,report.runs[0].images[0].decoded.rgbaSha256,'Save/exit/reopen and Return to start changed the replay PNG');
   }
-  assert(completedFrames(mark).length,'Launch completed no released bundled native v13 frame');run.hidden=await assertHidden();await page.screenshot({path:path.join(out,phase+'.png')});await closeApp();
+  assert(completedFrames(mark).length,gpu?'Launch completed no bound bundled native v14 frame':'Launch completed no released bundled native v13 frame');run.hidden=await assertHidden();await page.screenshot({path:path.join(out,phase+'.png')});await closeApp();
  }
  assert.deepEqual(report.errors,[]);report.status='passed';
 }catch(error){
@@ -187,5 +225,6 @@ try{
  report.asarUnchanged=report.asarSha256===sha(await readFile(asar));report.nativeUnchanged=manifest.sha256===sha(await readFile(nativeExecutable));report.manifestUnchanged=report.manifestSha256===sha(await readFile(manifestPath));report.sourceUnchanged=report.sourceSha256===sha(await readFile(config));
  report.glyphAfter=await glyphHashes();report.glyphUnchanged=JSON.stringify(report.glyphBefore)===JSON.stringify(report.glyphAfter);
  if(!report.asarUnchanged||!report.nativeUnchanged||!report.manifestUnchanged||!report.sourceUnchanged||!report.glyphUnchanged){report.status='failed';process.exitCode=1;}
+ report.verifierAfter=await verifierHashes();report.verifierStable=JSON.stringify(report.verifierBefore)===JSON.stringify(report.verifierAfter);if(!report.verifierStable){report.status='failed';process.exitCode=1;}
  report.seconds=(performance.now()-started)/1000;await writeFile(path.join(out,'report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error,report:path.join(out,'report.json')}));
 }

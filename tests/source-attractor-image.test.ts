@@ -6,7 +6,7 @@ import {formulaPresentation} from '../src/engine/formulas';
 import {prepareSourceDrawingPlan} from '../src/engine/sourceDrawingSnapshot';
 import {generateScene} from '../src/engine/temporal';
 import {artExportPurpose,type ArtRenderer} from '../src/engine/renderer';
-import {usesNativeSourceViewport,nativeGeometryPreviewEnabled} from '../src/engine/sourceNativeViewport';
+import {usesNativeSourceViewport,nativeSourceFramePreviewEnabled} from '../src/engine/sourceNativeViewport';
 import type {RasterOutput,SceneOutput} from '../src/types';
 import type {FormulaCompositeOptions} from '../src/engine/formulaCanvas';
 
@@ -30,8 +30,9 @@ beforeEach(()=>{vi.stubEnv('VITE_SOURCE_RENDERER','native');state.encode.mockCle
 afterEach(()=>{vi.unstubAllGlobals();vi.unstubAllEnvs();});
 describe('CPU Attractor shared geometry image boundary (mock transport; no native pixel parity claim)',()=>{
  it('admits only explicitly sourced CPU geometry, not local or source GPU Attractor',()=>{
-  const {scene,output}=setup();expect(usesSourceGeometryImage(scene)).toBe(true);expect(nativeGeometryPreviewEnabled(scene)).toBe(true);expect(usesNativeSourceViewport(scene,output)).toBe(true);expect(artExportPurpose(scene)).toBe('source-offscreen-export');
-  scene.attractorSource!.configuration.nativeBackend='gpu';expect(usesSourceGeometryImage(scene)).toBe(false);expect(nativeGeometryPreviewEnabled(scene)).toBe(false);expect(usesNativeSourceViewport(scene,output)).toBe(false);expect(artExportPurpose(scene)).toBe('local-export');
+  const {scene,output}=setup();expect(usesSourceGeometryImage(scene)).toBe(true);expect(nativeSourceFramePreviewEnabled(scene)).toBe(true);expect(usesNativeSourceViewport(scene,output)).toBe(true);expect(artExportPurpose(scene)).toBe('source-offscreen-export');
+  scene.attractorSource!.configuration.nativeBackend='gpu';expect(usesSourceGeometryImage(scene)).toBe(false);expect(nativeSourceFramePreviewEnabled(scene)).toBe(true);expect(usesNativeSourceViewport(scene,output)).toBe(false);
+  expect(usesNativeSourceViewport(scene,{...output,type:'raster',width:4,height:4,pixels:new Uint8ClampedArray(64),backend:'native'} as SceneOutput)).toBe(true);expect(artExportPurpose(scene)).toBe('local-export');
   delete scene.attractorSource;expect(usesSourceGeometryImage(scene)).toBe(false);
  });
  it('uses Processing physical-to-logical rounding and primary reference height without recording scale',()=>{

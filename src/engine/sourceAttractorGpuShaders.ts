@@ -1,11 +1,11 @@
+import {gpuShaderHeader,type GpuShaderProfile} from './gpuShaderProfile';
+import type {SourceAttractorGpuFunction} from './sourceAttractorGpuFunction';
+
 /** Retained MathArt 1.7.8 shaders (JAR a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018).
  * OpenGL 4.10 -> WebGL2 adaptation: version and explicit highp only.
  * Formula injection belongs to sourceAttractorGpuFunction. Same-GPU agreement
  * with these sources is not an original JVM/JOGL full-frame comparison. */
-export const sourceAttractorQuad=`#version 300 es
-precision highp float;
-precision highp int;
-
+const sourceAttractorQuadBody=`
 out vec2 texCoord;
 
 void main() {
@@ -15,10 +15,7 @@ void main() {
   texCoord = vec2((x + 1.0) * 0.5, (y + 1.0) * 0.5);
 }
 `;
-export const sourceAttractorUpdate=`#version 300 es
-precision highp float;
-precision highp int;
-
+const sourceAttractorUpdateBody=`
 uniform sampler2D posTex;
 uniform int steps; // Number of integration steps per frame
 
@@ -81,10 +78,7 @@ void main() {
   newPos = vec4(pos, current.w);
 }
 `;
-export const sourceAttractorAccumulateVertex=`#version 300 es
-precision highp float;
-precision highp int;
-
+const sourceAttractorAccumulateVertexBody=`
 uniform mat4 projection;
 uniform mat4 modelview;
 uniform float radius;
@@ -106,10 +100,7 @@ void main() {
   vertColor = color;
 }
 `;
-export const sourceAttractorAccumulateFragment=`#version 300 es
-precision highp float;
-precision highp int;
-
+const sourceAttractorAccumulateFragmentBody=`
 in vec4 vertColor;
 out vec4 fragColor;
 
@@ -128,10 +119,7 @@ void main() {
   fragColor = vec4(weight, vertColor.rgb * weight);
 }
 `;
-export const sourceAttractorPresent=`#version 300 es
-precision highp float;
-precision highp int;
-
+const sourceAttractorPresentBody=`
 uniform sampler2D accumTex;
 uniform vec3 backgroundRgb;
 uniform float exposure;
@@ -182,3 +170,16 @@ void main() {
   fragColor = vec4(rgb, 1.0);
 }
 `;
+
+const header=(profile:GpuShaderProfile)=>gpuShaderHeader(profile,'precision highp float;\nprecision highp int;\n');
+export const sourceAttractorQuad=header('webgl2')+sourceAttractorQuadBody;
+export const sourceAttractorUpdate=header('webgl2')+sourceAttractorUpdateBody;
+export const sourceAttractorAccumulateVertex=header('webgl2')+sourceAttractorAccumulateVertexBody;
+export const sourceAttractorAccumulateFragment=header('webgl2')+sourceAttractorAccumulateFragmentBody;
+export const sourceAttractorPresent=header('webgl2')+sourceAttractorPresentBody;
+export function sourceAttractorGpuPrograms(shader:SourceAttractorGpuFunction,profile:GpuShaderProfile){
+ const prefix=header(profile),quad=prefix+sourceAttractorQuadBody;
+ return{update:{vertex:quad,fragment:prefix+sourceAttractorUpdateBody.replace('// %ATTRACTOR_FUNCTION_BODY%',shader.code)},
+  accumulate:{vertex:prefix+sourceAttractorAccumulateVertexBody,fragment:prefix+sourceAttractorAccumulateFragmentBody},
+  present:{vertex:quad,fragment:prefix+sourceAttractorPresentBody}};
+}

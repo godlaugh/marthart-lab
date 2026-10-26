@@ -226,7 +226,7 @@ export async function createExportServer(options={}){
     if(controller.signal.aborted||closing)throw new HttpError(499,'原生帧请求已取消');
     if(lease&&(lease.closed||nativeLease!==lease))return json(res,409,{kind:'state-lost',error:'原生页面连接已失效'});
     const parsed=inspectSourceFrameHeader(bytes);if(!parsed.ok)return json(res,400,{error:parsed.error.message,kind:parsed.error.kind});
-    if(parsed.value.family==='drawing'&&!lease)return json(res,409,{kind:'ownership',error:'分块原生绘制需要当前页面连接'});
+    if((parsed.value.family==='drawing'||parsed.value.family==='attractor')&&!lease)return json(res,409,{kind:'ownership',error:'持久原生绘制需要当前页面连接'});
     // The gateway owns transport ordering across windows. Preserve the caller's
     // identity in the response; rewrite only an owned wire copy for the child.
     if(nativeSequence===0xffffffff){if(nativeGeneration===0xffffffff)throw new HttpError(503,'原生请求编号已耗尽，请重启服务');nativeGeneration++;nativeSequence=0;}

@@ -34,6 +34,7 @@ import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimension
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import {encodeSourcePausedPng} from '../engine/sourcePausedPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
+import {sourceDrawingPolicy} from '../engine/sourceDrawingPixels';
 import {usesSourceAttractor,usesSourceAttractorCpu} from '../engine/sourceAttractorDocument';
 import {sourceAttractorImageTarget} from '../engine/sourceAttractorImageTarget';
 import {encodeSourceGeometryImage,usesSourceGeometryImage} from '../engine/sourceGeometryImage';
@@ -345,7 +346,8 @@ export function ExportDialog({
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
       const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width:attractorTarget?.width??width,height:attractorTarget?.height??height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:attractorTarget?.sourceViewport??ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:undefined;
-      if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(attractorTarget?.logicalWidth??width,attractorTarget?.logicalHeight??height,attractorTarget?.density??1);}
+      const nativeAttractor=sourceDrawingPolicy()==='native'&&usesSourceAttractor(exportScene)&&!usesSourceAttractorCpu(exportScene);
+      if(!bouncing&&!sourceFractal&&!nativeAttractor&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(attractorTarget?.logicalWidth??width,attractorTarget?.logicalHeight??height,attractorTarget?.density??1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));
         checkCancelled();assertSourceBouncingExportFrame(warmup,bouncing,bouncing.warmup);
@@ -430,6 +432,9 @@ export function ExportDialog({
         if(sourceFractal){
           if(output.type!=='raster')throw new Error('分形没有生成图像');
           blob=await encodeFormulaRaster(output,kind==='image'&&format==='jpg'?'image/jpeg':'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current});
+        }else if(nativeAttractor){
+          if(output.type!=='raster'||output.backend!=='native'||output.sourcePixelRenderer?.backend!=='native')throw new Error('原生吸引子导出缺少像素来源');
+          blob=await encodeFormulaRaster(output,kind==='image'&&format==='jpg'?'image/jpeg':'image/png',{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
         }else if(bouncing||perlinRecording){
           if(bouncing)assertSourceBouncingExportFrame(output,bouncing,bouncing.frames[frame]);
           if(output.type!=='raster')throw new Error('录制帧没有生成图像');

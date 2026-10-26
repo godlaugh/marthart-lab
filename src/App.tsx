@@ -17,9 +17,10 @@ import {usesSourceImplicitCpuMesh} from './engine/sourceImplicitPresentation';
 import {implicitCameraFrame} from './engine/sourceImplicitResponse';
 import type {SourceImplicitLiveContext} from './engine/sourceImplicitLive';
 import {hasFormulaComposition} from './engine/formulaConfig';
-import {nativeGeometryPreviewEnabled,usesNativeSourceViewport} from './engine/sourceNativeViewport';
+import {nativeAttractorRasterPreviewEnabled,nativeSourceFramePreviewEnabled,usesNativeSourceViewport} from './engine/sourceNativeViewport';
 import {sourceDrawingPolicy} from './engine/sourceDrawingPixels';
 import {SourceNativeExportPreview} from './engine/sourceNativeExportPreview';
+import {exportSessionCleanup} from './engine/exportSessionCleanup';
 import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
 import {applyFractalJuliaSeed} from './engine/complexViewport';
 import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
@@ -296,7 +297,7 @@ export default function App() {
     bouncingNavigationRef=useRef(bouncingNavigation),
     bouncingLastFrameAt=useRef<number|undefined>(undefined),
     bouncingPresented=useRef(false),
-    nativeGeometryPresented=useRef(false),
+    nativeSourceFramePresented=useRef(false),
     file = useRef<HTMLInputElement>(null),
     camera = useRef<CameraState>(scene.camera),
     sceneRef = useRef(scene),
@@ -899,6 +900,7 @@ export default function App() {
     if(previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
     playbackClock.current=value;
+    if(nativeAttractorRasterPreviewEnabled(sceneRef.current)&&value!==timeRef.current)nativeExportPreview.current.reserveFixedInput(sceneRef.current,value);
     setTime(value);
   }
   function restartTimeline(){
@@ -945,18 +947,24 @@ export default function App() {
     if(value&&!continuousBouncing(scene)&&!playingRef.current&&(playbackScene.timeline.playbackMode==='once'||(!playbackScene.timeline.playbackMode&&!playbackScene.timeline.loop))&&timeRef.current>=resolveTimeline(playbackScene).duration){playbackClock.current=0;setTime(0);}
     setPlaying(value);
   }
-  function nativePreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision];}
-  function pauseForExport(){
-    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current)||!!sceneRef.current.perlinSource||usesSourceAttractorCpu(sceneRef.current))?nativeExportPreview.current.open(nativePreviewInput()):undefined;
+  function nativePreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision,...(nativeAttractorRasterPreviewEnabled(scene)?[timeRef.current]:[])];}
+  function nativeFixedPreviewInput(){return nativeAttractorRasterPreviewEnabled(scene)?{scope:scene,time:timeRef.current}:undefined;}
+  function pauseForExport(independent=false){
+    const queue=generationQueue.current;
+    const lending=independent&&nativeAttractorRasterPreviewEnabled(sceneRef.current)?{releasePreview:async()=>{if(!queue)throw Error('原生预览队列尚未就绪');await queue.releaseNativePreview();}}:undefined;
+    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current)||!!sceneRef.current.perlinSource||usesSourceAttractorCpu(sceneRef.current)||independent&&usesSourceAttractor(sceneRef.current))?nativeExportPreview.current.open(nativePreviewInput(),{...lending,fixedInput:nativeFixedPreviewInput()}):undefined;
     if(ticket)setNativeExportPaused(false);
     const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
     if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}
-    if(ticket)void Promise.resolve(paused).then(()=>{if(nativeExportPreview.current.owns(ticket))setNativeExportPaused(true);});
+    if(ticket&&!lending)void Promise.resolve(paused).then(()=>{if(nativeExportPreview.current.owns(ticket))setNativeExportPaused(true);});
   }
   function closeExport(){
-    if(exportWorking.current)return;
-    const deferred=nativeExportPreview.current.close();setExporting(false);setRecording(false);
-    if(deferred)setGenerationRevision(value=>value+1);
+    if(exportWorking.current||nativeExportPreview.current.closing)return;
+    const finish=(redraw:boolean)=>{setExporting(false);setRecording(false);if(redraw)setGenerationRevision(value=>value+1);};
+    if(nativeExportPreview.current.requiresRelease){
+      setNativeExportPaused(false);
+      void nativeExportPreview.current.closeAfterCleanup(()=>exportSessionCleanup.flush()).then(finish).catch(error=>notify(error instanceof Error?error.message:String(error)));
+    }else finish(nativeExportPreview.current.close());
   }
   function cameraChanged(next:CameraState) {
     camera.current=next;
@@ -1076,7 +1084,7 @@ export default function App() {
       const now=performance.now();
       if(previewLiveKind(sceneRef.current)){
         const last=liveLastFrameAt.current;
-        if(!generationPending.current&&!livePlaybackTransition.current&&(!nativeGeometryPreviewEnabled(sceneRef.current)||nativeGeometryPresented.current)&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
+        if(!generationPending.current&&!livePlaybackTransition.current&&(!nativeSourceFramePreviewEnabled(sceneRef.current)||nativeSourceFramePresented.current)&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
           if(sourceLivePreviewKind(sceneRef.current)==='fractal')fractalActualFps.current=last===undefined?undefined:1000/(now-last);
           if(previewLiveKind(sceneRef.current)==='implicit')implicitActualFps.current=last===undefined?undefined:1000/(now-last);
           if(sourceLivePreviewKind(sceneRef.current)==='surface')surfaceActualFps.current=last===undefined?undefined:1000/(now-last);
@@ -1093,11 +1101,15 @@ export default function App() {
         bouncingLastFrameAt.current=now;generationPending.current=true;showBouncingCheckpoint(next.value);
         id=requestAnimationFrame(tick);return;
       }
-      // Fixed-time source geometry must finish native presentation before
+      // Fixed-time source frames must finish native presentation before
       // another seek can supersede it. Keep elapsed wall time for the next
       // ready frame, matching the existing fixed-time preview clock.
-      const nativeGeometry=nativeGeometryPreviewEnabled(sceneRef.current);
-      if(nativeGeometry&&(generationPending.current||!nativeGeometryPresented.current)){id=requestAnimationFrame(tick);return;}
+      const nativeSourceFrame=nativeSourceFramePreviewEnabled(sceneRef.current);
+      if(nativeSourceFrame&&(generationPending.current||!nativeSourceFramePresented.current)){id=requestAnimationFrame(tick);return;}
+      // Exact native request identity must not turn the generation effect's
+      // former frame bucket into an unrestricted display on every RAF. Reuse
+      // this same elapsed-time anchor for the selected preview frame rate.
+      if(nativeAttractorRasterPreviewEnabled(sceneRef.current)&&now-prev<1000/renderPreferences.frameRate){id=requestAnimationFrame(tick);return;}
       if(rootSamplingFps!==undefined){
         const step=readyPlaybackStep(playbackClock.current,prev,now,rootSamplingFps,renderPreferences.frameRate,generationPending.current);
         if(!step.advanced){id=requestAnimationFrame(tick);return;}
@@ -1106,7 +1118,8 @@ export default function App() {
       const next=scenePlaybackTime(implicitAppliedScene(scene),playbackClock.current),nextTime=next.time;
       // Reserve the next request before React commits its generation effect;
       // another animation frame must not advance the work clock twice.
-      if((rootSamplingFps!==undefined||nativeGeometry)&&nextTime!==timeRef.current)generationPending.current=true;
+      if((rootSamplingFps!==undefined||nativeSourceFrame)&&nextTime!==timeRef.current)generationPending.current=true;
+      if(nativeAttractorRasterPreviewEnabled(sceneRef.current)&&nextTime!==timeRef.current)nativeExportPreview.current.reserveFixedInput(sceneRef.current,nextTime);
       setTime(nextTime);
       if(next.finished){setPlaying(false);if(experience.continuous)setToast(t('连续预览已到达 24 小时上限；可返回起点重新运行。'));}
       prev = now;
@@ -1134,7 +1147,7 @@ export default function App() {
         if(output.implicitControls?.sessionId===implicitEditor.current?.sessionId&&!output.implicitLive){
           implicitContinuation.current=undefined;implicitActualFps.current=undefined;
         }
-        if(nativeGeometryPreviewEnabled(source))nativeGeometryPresented.current=false;
+        if(nativeSourceFramePreviewEnabled(source))nativeSourceFramePresented.current=false;
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
@@ -1245,17 +1258,17 @@ export default function App() {
     // A provisional size would consume progressive samples before the first
     // measured viewport, whose resize then legitimately clears their ink.
     if(!viewportSize||implicitRecordingScene.current!==undefined&&usesSourceImplicitCpuMesh(scene)&&generationScene.current===scene&&!implicitEditor.current?.pendingCount||usesSourceImplicitCpuMesh(scene)&&implicitNeedsApply.current||sourceLivePreviewKind(scene)==='roots'&&rootsNeedsApply.current)return;
-    if(nativeExportPreview.current.defer(nativePreviewInput()))return;
+    if(nativeExportPreview.current.defer(nativePreviewInput(),nativeFixedPreviewInput()))return;
     setPreviewCancelled(false);
     const changed=generationScene.current!==scene;
     if(generationScene.current?.id!==scene.id)setOutput(null);
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
-    if(nativeGeometryPreviewEnabled(scene))nativeGeometryPresented.current=false;
-    const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
+    if(nativeSourceFramePreviewEnabled(scene))nativeSourceFramePresented.current=false;
+    const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||nativeAttractorRasterPreviewEnabled(scene)||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
     generationQueue.current?.request(scene,{time:timeRef.current,...(usesSourceImplicitCpuMesh(scene)?{implicitControls:{sessionId:implicitEditor.current!.sessionId,...implicitEditor.current!.request()}}:{}),...(hasImplicitContinuation(scene)?{implicitLive:{...implicitContinuation.current!.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,controls:rootsEditor.current!.request(),clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,runtimeRevision:scene.samilaPaletteSession?.runtimeRevision??0,parameterRevisions:scene.samilaPaletteSession?.parameterRevisions,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(implicitAppliedScene(scene),viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
-  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:previewLiveKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:previewLiveKind(scene)?liveTickRevision:nativeAttractorRasterPreviewEnabled(scene)?time:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;play(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
@@ -1293,6 +1306,11 @@ export default function App() {
   const implicitOwnerReady=!usesSourceImplicitCpuMesh(scene)||!!implicitEditor.current&&!implicitNeedsApply.current&&!implicitEditor.current.pendingCount&&output?.implicitControls?.sessionId===implicitEditor.current.sessionId&&output.implicitControls.revision===implicitEditor.current.receipt.revision&&output.implicitControls.resetRevision===implicitEditor.current.receipt.resetRevision;
   const completedFrameAvailable=implicitOwnerReady&&!playing&&!generationActive&&!previewCancelled&&!error&&output!==null&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&renderTime===time&&(!sourceBouncing||output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingCheckpoint.simulationUpdates&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view)&&output.sourceBouncingFrame.pixelDensity===viewportMeasurement?.pixelRatio&&output.sourceBouncingFrame.viewport.logicalWidth===viewportSize?.[0]&&output.sourceBouncingFrame.viewport.logicalHeight===viewportSize?.[1]);
   const completedFrameReady=!recording&&completedFrameAvailable;
+  useEffect(()=>{
+    const owner=nativeExportPreview.current;
+    if(!(exporting||recording)||!completedFrameAvailable||generationPending.current||!owner.requiresRelease)return;
+    void owner.preparePresented().then(ready=>{if(ready)setNativeExportPaused(true);}).catch(error=>notify(error instanceof Error?error.message:String(error)));
+  },[exporting,recording,completedFrameAvailable]);
   const implicitExportCheckpoint=usesSourceImplicitCpuMesh(scene)?implicitEditor.current?.checkpoint():undefined;
   const implicitExport=useMemo(()=>{
     if(!exporting||!implicitExportCheckpoint||hasImplicitContinuation(scene))return undefined;
@@ -1335,7 +1353,7 @@ export default function App() {
           className="primary-button"
           onClick={() => {
             autoPlayPending.current=false;
-            pauseForExport();
+            pauseForExport(true);
             setExporting(true);
           }}
         >
@@ -1562,7 +1580,7 @@ export default function App() {
               output={output}
               outputScene={outputScene}
               onPresented={frame=>{
-                nativeGeometryPresented.current=!!frame?.composited&&frame.source===sceneRef.current;
+                nativeSourceFramePresented.current=!!frame?.composited&&frame.source===sceneRef.current;
                 setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);
                 if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view);
               }}
@@ -2031,7 +2049,7 @@ export default function App() {
         <ExportDialog
           mode={recording?(usesSourceImplicitCpuMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':sourceSamilaRecording?'samila-recording':'fractal-recording'):'export'}
           scene={{ ...(implicitExport?.scene??scene),id:scene.id,name:scene.name,projectResolution:scene.projectResolution,camera:camera.current }}
-          previewReady={implicitExport?.error?false:nativeExportPreview.current.active?nativeExportPaused&&!generationPending.current&&completedFrameAvailable:nativeGeometryPreviewEnabled(scene)?completedFrameAvailable:undefined}
+          previewReady={implicitExport?.error?false:nativeExportPreview.current.active?nativeExportPaused&&nativeExportPreview.current.ready&&!generationPending.current&&completedFrameAvailable:nativeSourceFramePreviewEnabled(scene)?completedFrameAvailable:undefined}
           time={time}
           currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}

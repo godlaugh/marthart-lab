@@ -21,6 +21,7 @@ import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCapture
 import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError,DomainLiveGenerationError,RootsLiveGenerationError,ImplicitControlGenerationError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
+import {usesSourceAttractor} from './sourceAttractorDocument';
 type Context=GenerationInput;
 interface GeneratorPort {
   navigateDomainPaused?(output:SceneOutput,event:SourceDomainNavigationEvent):Promise<SceneOutput>;
@@ -236,6 +237,10 @@ export class GenerationQueue {
     if(receipt.revision>=queued.acknowledgedRevision)latest.context={...latest.context,implicitControls:{sessionId:sent.sessionId,acknowledgedRevision:receipt.revision,commands:queued.commands.filter(command=>command.revision>receipt.revision)}};
   }
   private outputTime(output:SceneOutput,request:Request):number{
+    // Fixed-time Attractor requests may fall between source frame boundaries.
+    // This callback identifies the completed request, while temporal/camera
+    // facts retain the exact source frame time (including CPU and WebGL).
+    if(usesSourceAttractor(request.scene))return request.context.time;
     const fallback=output.implicitLive?implicitCameraFrame(output).sceneTime:output.temporal?.time??request.context.time;
     return output.type==='raster'?(output.rootsLive?.sceneTime??output.perlinLive?.sceneTime??output.domainLive?.sceneTime??output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
   }
@@ -534,6 +539,15 @@ export class GenerationQueue {
     clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     this.generator.cancel();this.callbacks.busy(false);
+  }
+  /** Lend a completed deterministic preview's native resources to independent
+   * export. The caller retains presented pixels and requests the same time
+   * again after export. Never interrupt a live recording or capture owner. */
+  async releaseNativePreview():Promise<void>{
+    if(this.disposed||this.running||this.timer||this.recordingOwner||this.captureOwner||this.playbackOwner||this.navigationOwner)throw Error('原生预览尚未完成，无法交接导出资源');
+    if(!this.generator.settledNativeCleanup)throw Error('原生预览缺少可确认的资源释放接口');
+    this.cancel();
+    await this.generator.settledNativeCleanup();
   }
   dispose(){this.rejectPlayback();this.completedLive=undefined;this.navigationOwner=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}

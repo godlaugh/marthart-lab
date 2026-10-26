@@ -25,6 +25,8 @@ import {sourceSamilaOwnerScene} from './sourceSamilaPaletteEditing';
 import {assertSourceSamilaRecordingFrame} from './sourceSamilaRecording';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourceAttractor,usesSourceAttractorCpu} from './sourceAttractorDocument';
+import {SourceAttractorSession} from '../scenes/sourceAttractor';
+import {SourceAttractorNativeBackend} from './sourceAttractorNativeBackend';
 import {validSourceAttractorRasterDensity} from './sourceAttractorImageTarget';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
@@ -321,6 +323,8 @@ export class Generator {
     void done.then(()=>{if(this.perlinBroker===owned)this.perlinBroker=undefined;},()=>{if(this.perlinBroker===owned)this.perlinBroker=undefined;});
   }
 
+  private nativeAttractor?:{session:SourceAttractorSession;retained:{bytes:number}};
+  private async releaseAttractor(){const owned=this.nativeAttractor;if(!owned)return;await owned.session.resetAsync();if(this.nativeAttractor===owned)this.nativeAttractor=undefined;}
   private nativeDomain?:{session:SourceDomainLiveSession;retained:{bytes:number}};
   private nativeDomainCold?:{session:DomainRenderSession;inFlight?:Promise<SceneOutput>};
   private async releaseDomain(){
@@ -348,7 +352,7 @@ export class Generator {
   private async releaseSamila(){const owned=this.nativeSamila;if(!owned)return;await owned.session.release();if(this.nativeSamila===owned)this.nativeSamila=undefined;}
   private releaseNative(){
     const previous=this.nativeCleanup,perlin=this.perlinBroker?.done;this.nativeSamila?.backend.cancel();
-    this.nativeCleanup=(async()=>{await perlin?.catch(()=>{});await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();})();void this.nativeCleanup.catch(()=>{});
+    this.nativeCleanup=(async()=>{await perlin?.catch(()=>{});await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();await this.releaseAttractor();})();void this.nativeCleanup.catch(()=>{});
   }
   private sessionId = 0;
   private pending = new Map<number, Pending>();
@@ -670,6 +674,7 @@ export class Generator {
     let domainNative:boolean;
     try{domainNative=sourceDrawingPolicy()==='native'&&scene.kind==='domain'&&(!!context.domainLive&&usesSourceDomain(scene)||usesDomainNativeRendering(scene));}
     catch(error){return Promise.reject(error);}
+    const attractorNative=sourceDrawingPolicy()==='native'&&usesSourceAttractor(scene)&&scene.attractorSource!.configuration.nativeBackend==='gpu';
     const fractalNative=sourceDrawingPolicy()==='native'&&scene.kind==='fractal'&&usesSourceFractal(scene)&&!!parseFractalSourceColorProfile(scene.settings.fractalColorProfile);
     const samilaNative=sourceDrawingPolicy()==='native'&&scene.kind==='samila'&&(!!context.samilaLive||usesSourceSamilaSampling(scene)&&usesSourceSamilaPresentation(scene)&&usesSourceSamilaSplat(scene));
     // Live and fixed reconstruction have distinct semantic/resource owners.
@@ -679,7 +684,7 @@ export class Generator {
     const iteratedFamily=nativeKind&&sourceIteratedLiveKind(scene)===nativeKind?nativeKind:undefined;
     const iteratedNative=iteratedFamily==='map'&&context.mapLive?'map':iteratedFamily==='symmetry'&&context.symmetryLive?'symmetry':undefined;
     const iteratedCold=!context.mapLive&&!context.symmetryLive?nativeKind:undefined;
-    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold||fractalNative||domainNative)){
+    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold||fractalNative||domainNative||attractorNative)){
       if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
       this.retireWorker();
       const previous=this.completed,id=++this.counter;this.currentInputId=id;this.completed=undefined;
@@ -693,6 +698,23 @@ export class Generator {
             if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});
             await sourceBouncingNativeSession.settleCancellation();
             if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
+            if(attractorNative){
+              if([input.rootsLive,input.perlinLive,input.domainLive,input.fractalLive,input.fractalRecording,input.surfaceLive,input.implicitLive,input.implicitControls,input.mapLive,input.symmetryLive,input.samilaLive].some(value=>value!==undefined))throw Error('源吸引子固定时间线不能接受其它场景的实时或录制时钟');
+              await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();
+              const cancelled=()=>this.pending.get(id)!==pending;
+              // A new explicit request may retry cleanup; a failed request
+              // never silently rebuilds while its exact resource is retained.
+              if(this.nativeAttractor?.session.diagnostics().cleanupPending)await this.releaseAttractor();
+              if(cancelled())throw new DOMException('已取消','AbortError');
+              if(!this.nativeAttractor){const retained={bytes:0};this.nativeAttractor={retained,session:new SourceAttractorSession({asyncBackend:options=>new SourceAttractorNativeBackend(options,{retainedBytes:()=>retained.bytes})})};}
+              const owned=this.nativeAttractor;owned.retained.bytes=previous?.output.type==='raster'?previous.output.pixels.byteLength:0;
+              try{
+                const output=await owned.session.generateAsync(snapshot,{...input,isCancelled:cancelled}),receipt=output.type==='raster'?output.sourcePixelRenderer:undefined;
+                if(output.type!=='raster'||output.backend!=='native'||output.width!==input.width||output.height!==input.height||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.length!==input.width*input.height*4||!receipt||receipt.backend!=='native'||!/^[0-9a-f]{64}$/.test(receipt.identity)||!Number.isSafeInteger(receipt.generation)||receipt.generation<1||!Number.isSafeInteger(receipt.sequence)||receipt.sequence<1||receipt.samples!==0||!validOutputFormulas(output,generationFormulaContract(snapshot,input)))throw new SourceNativeError('protocol','源吸引子原生像素、相机或公式事实无效');
+                return output;
+              }finally{owned.retained.bytes=0;}
+            }
+            await this.releaseAttractor();
             if(domainNative){
               if([input.rootsLive,input.perlinLive,input.fractalLive,input.fractalRecording,input.surfaceLive,input.implicitLive,input.implicitControls,input.mapLive,input.symmetryLive,input.samilaLive].some(value=>value!==undefined))throw Error('一次生成只能拥有一个域着色实时或录制时钟');
               await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();
@@ -793,7 +815,7 @@ export class Generator {
         }catch(error){this.pending.delete(id);if(domainNative&&context.domainLive){const retained=!!previous&&this.matchesDomainPrimary(previous.scene,previous.context);if(retained)this.completed=previous;reject(new DomainLiveGenerationError(error instanceof Error?error.message:String(error),retained));}else reject(error);}
       });
     }
-    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeIterated||this.nativeIteratedCold||this.nativeFractal||this.nativeFractalCold||this.nativeDomain||this.nativeDomainCold){
+    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeIterated||this.nativeIteratedCold||this.nativeFractal||this.nativeFractalCold||this.nativeDomain||this.nativeDomainCold||this.nativeAttractor){
       const transition=this.nativeTransition;this.releaseNative();
       return this.nativeCleanup!.then(()=>{if(this.nativeTransition!==transition)throw new DOMException('已取消','AbortError');return this.generate(scene,context,onProgress,onStatus);});
     }
@@ -1417,7 +1439,7 @@ export class Generator {
     }
     this.pending.clear();
   }
-  async settledNativeCleanup(){await this.perlinBroker?.done.catch(()=>{});if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();}
+  async settledNativeCleanup(){await this.perlinBroker?.done.catch(()=>{});if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();await this.releaseAttractor();}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

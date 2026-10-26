@@ -8,7 +8,8 @@ import {composeSourceAttractorCpu,validateSourceAttractorCpuDisplay} from '../en
 import {SourceAttractorCpuParticles} from '../engine/sourceAttractorCpuParticles';
 import {OrdinarySourceCameraTimelineSession} from '../engine/ordinarySourceCameraTimeline';
 import {sourceAttractorWorkBudget} from '../engine/sourceAttractorWork';
-import {SourceAttractorGpuReplaySession} from '../engine/sourceAttractorGpuReplay';
+import {SourceAttractorGpuReplaySession,type SourceAttractorGpuDisplayRequest} from '../engine/sourceAttractorGpuReplay';
+import type {SourceAttractorGpuAsyncFactory} from '../engine/sourceAttractorGpuPrepared';
 import {ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
 import {defaultFormulas,presentFormulas,resolveFormulaContent,validateFormulas} from '../engine/formulas';
 import {sourceAttractorVariableNames} from '../engine/sourceAttractorEquation';
@@ -19,6 +20,7 @@ const identityNumber=(_key:string,value:unknown)=>typeof value==='number'?{numbe
 /** One Worker/export lifetime owns both CPU motion and camera. Inputs are
  * validated on every request; only immutable prepared facts enter the replay.
  * Viewport/quality changes consume the same motion, backwards seeks rebuild. */
+type AttractorEffect={kind:'timeline';time:number}|{kind:'gpu';request:SourceAttractorGpuDisplayRequest}|{kind:'clear';failures:readonly unknown[]};
 export class SourceAttractorSession {
  private key='';
  private gpu?:SourceAttractorGpuReplaySession;
@@ -28,29 +30,39 @@ export class SourceAttractorSession {
  private formulas?:{key:string;content:FormulaContent};
  private cancelled?:()=>boolean;
  private reserve?:(units:number)=>void;
- private constructions=0;private busy=false;private revoked=false;private active?:Promise<SceneOutput>;private resetting?:Promise<void>;
+ private constructions=0;private busy=false;private revoked=false;private active?:Promise<SceneOutput>;private resetting?:Promise<void>;private cleanupFailure?:unknown;
  private readonly warmupPool:SourceAttractorWarmupPool;
- constructor(private readonly options:{warmupWorkerFactory?:SourceAttractorWarmupWorkerFactory;maximumWarmupWorkers?:number}={}){this.warmupPool=new SourceAttractorWarmupPool(options.warmupWorkerFactory);}
+ constructor(private readonly options:{warmupWorkerFactory?:SourceAttractorWarmupWorkerFactory;maximumWarmupWorkers?:number;asyncBackend?:SourceAttractorGpuAsyncFactory}={}){this.warmupPool=new SourceAttractorWarmupPool(options.warmupWorkerFactory);}
 
  reset(failures:readonly unknown[]=[]):void{if(this.busy||this.resetting)throw Error('源吸引子预热尚未结束；需要 resetAsync');this.clear(failures);}
- private clear(failures:readonly unknown[]=[]):void{this.cleanup.reset(()=>{this.warmupPool.reset();this.gpu?.reset();this.gpu=undefined;this.timeline?.reset();this.timeline=undefined;this.particles=undefined;this.formulas=undefined;this.key='';this.cancelled=undefined;this.reserve=undefined;this.constructions=0;},failures);}
- diagnostics(){return{warmup:this.warmupPool.diagnostics(),motionWarmup:this.particles?.diagnostics().warmup,constructions:this.constructions,retainedBytes:(this.particles?.diagnostics().retainedBytes??0)+(this.gpu?.diagnostics().retainedBytes??0),workUnits:this.particles?.diagnostics().workUnits??0,gpu:this.gpu?.diagnostics()};}
+ private clearState(){this.gpu=undefined;this.timeline?.reset();this.timeline=undefined;this.particles=undefined;this.formulas=undefined;this.key='';this.cancelled=undefined;this.reserve=undefined;this.constructions=0;}
+ private clear(failures:readonly unknown[]=[]):void{this.cleanup.reset(()=>{this.warmupPool.reset();this.gpu?.reset();this.clearState();},failures);}
+ private async clearAsync(failures:readonly unknown[]=[]):Promise<void>{
+  try{this.warmupPool.reset();await this.gpu?.resetAsync();this.clearState();this.cleanupFailure=undefined;}
+  catch(error){this.cleanupFailure=failures.length?new AggregateError([...failures,error],'原生吸引子清理未完成；请重试 resetAsync'):error;throw this.cleanupFailure;}
+ }
+ private *clearOperation(failures:readonly unknown[]=[]):Generator<AttractorEffect,void,unknown>{if(this.options.asyncBackend)yield{kind:'clear',failures};else this.clear(failures);}
+ private perform(effect:AttractorEffect):unknown{switch(effect.kind){case'timeline':return this.timeline!.evaluate(effect.time);case'gpu':return this.gpu!.generate(effect.request);case'clear':return this.clear(effect.failures);}}
+ private performAsync(effect:AttractorEffect):unknown|Promise<unknown>{switch(effect.kind){case'timeline':return this.timeline!.evaluateAsync(effect.time);case'gpu':return this.options.asyncBackend?this.gpu!.generateAsync(effect.request):this.gpu!.generate(effect.request);case'clear':return this.clearAsync(effect.failures);}}
+ diagnostics(){return{warmup:this.warmupPool.diagnostics(),motionWarmup:this.particles?.diagnostics().warmup,constructions:this.constructions,retainedBytes:(this.particles?.diagnostics().retainedBytes??0)+(this.gpu?.diagnostics().retainedBytes??0),workUnits:this.particles?.diagnostics().workUnits??0,cleanupPending:!!this.cleanupFailure,gpu:this.gpu?.diagnostics()};}
  generate(scene:SceneDocument,context:GenerateContext):SceneOutput {
-  this.enter();try{return runGenerationEffects(this.generateOperation(scene,context),time=>this.timeline!.evaluate(time));}finally{this.busy=false;}
+  if(this.options.asyncBackend)throw Error('源原生吸引子需要 generateAsync');this.enter();try{return runGenerationEffects(this.generateOperation(scene,context),effect=>this.perform(effect));}finally{this.busy=false;}
  }
  generateAsync(scene:SceneDocument,context:GenerateContext):Promise<SceneOutput> {
-  this.enter();const operation=runGenerationEffectsAsync(this.generateOperation(scene,context),time=>this.timeline!.evaluateAsync(time));
+  this.enter();const operation=runGenerationEffectsAsync(this.generateOperation(scene,context),effect=>this.performAsync(effect));
   const settled=operation.finally(()=>{this.busy=false;if(this.active===settled)this.active=undefined;});this.active=settled;return settled;
  }
- private enter(){if(this.busy||this.resetting)throw Error('源吸引子请求正在进行');if(this.warmupPool.diagnostics().ownedWorkers)throw Error('源吸引子预热清理未完成；需要 reset');this.cleanup.prepare();this.busy=true;this.revoked=false;}
+ private enter(){if(this.cleanupFailure)throw this.cleanupFailure;if(this.busy||this.resetting)throw Error('源吸引子请求正在进行');if(this.warmupPool.diagnostics().ownedWorkers)throw Error('源吸引子预热清理未完成；需要 reset');this.cleanup.prepare();this.busy=true;this.revoked=false;}
  async settle():Promise<void>{await this.active?.then(()=>undefined,()=>undefined);}
  resetAsync():Promise<void>{
   if(this.resetting)return this.resetting;this.revoked=true;
-  const operation=(async()=>{if(this.active){this.warmupPool.reset();await this.settle();}this.clear();})();
+  const operation=(async()=>{if(this.active){this.warmupPool.reset();await this.settle();if(this.cleanupFailure)throw this.cleanupFailure;}if(this.options.asyncBackend)await this.clearAsync();else this.clear();})();
   const settled=operation.finally(()=>{if(this.resetting===settled)this.resetting=undefined;});this.resetting=settled;return settled;
  }
- private *generateOperation(scene:SceneDocument,context:GenerateContext):Generator<number,SceneOutput,OrdinarySourceCameraFrame> {
+ private *generateOperation(scene:SceneDocument,context:GenerateContext):Generator<AttractorEffect,SceneOutput,unknown> {
   this.cleanup.prepare();const started=performance.now();
+  context={...context,sourceViewport:context.sourceViewport?{...context.sourceViewport}:undefined};
+  const tracks=structuredClone(scene.timeline.tracks),fps=scene.timeline.fps;
   try{
    const prepared=prepareSourceAttractorScene(scene);
    const initial=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:prepared.camera}},context);
@@ -63,22 +75,23 @@ export class SourceAttractorSession {
    // Include all simulation inputs, not compiled function identity. Preserve
    // -0, which JSON's default numeric encoding would conflate with +0.
    const key=JSON.stringify([scene.id,prepared.configuration,prepared.visualConfiguration,prepared.camera,prepared.backgroundColor,
-    scene.equations,scene.parameters,scene.timeline.tracks,scene.timeline.fps],identityNumber);
+    scene.equations,scene.parameters,tracks,fps],identityNumber);
    if(prepared.backend==='gpu'){
     const pixelDensity=sourceAttractorPixelDensity(context.sourcePointPixelDensity);
-    if(key!==this.key){this.clear();this.key=key;this.gpu=new SourceAttractorGpuReplaySession({...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time});}
+    if(key!==this.key){yield* this.clearOperation();this.key=key;this.gpu=new SourceAttractorGpuReplaySession({...prepared,tracks,fps,time:context.time},{asyncBackend:this.options.asyncBackend});}
     this.formulas=formulaState;
-    const output=this.gpu!.generate({time:context.time,viewport:initial.viewport,width:context.width,height:context.height,backgroundColor:prepared.backgroundColor,isCancelled:()=>this.revoked||!!context.isCancelled?.()});
+    const output=(yield{kind:'gpu',request:{time:context.time,viewport:initial.viewport,width:context.width,height:context.height,backgroundColor:prepared.backgroundColor,isCancelled:()=>this.revoked||!!context.isCancelled?.()}}) as SceneOutput;
+    if(this.revoked||context.isCancelled?.())throw Object.assign(Error('原版吸引子回放已取消'),{name:'AbortError'});
     if(output.type!=='raster')throw Error('源 GPU 吸引子没有生成像素帧');
     if(pixelDensity!==undefined)output.sourceAttractorPixelDensity=pixelDensity;
     output.formulaPresentation=formulas;return output;
    }
-   const options={...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time,
+   const options={...prepared,tracks,fps,time:context.time,
     viewport:initial.viewport,referencePixelDensity:context.sourcePointPixelDensity};
    validateSourceAttractorCpuDisplay(options);
    if(key!==this.key){
-    this.clear();this.key=key;
-    this.timeline=new OrdinarySourceCameraTimelineSession(prepared.camera,scene.timeline.tracks,scene.timeline.fps,{
+    yield* this.clearOperation();this.key=key;
+    this.timeline=new OrdinarySourceCameraTimelineSession(prepared.camera,tracks,fps,{
      particleActions:'attractor',isCancelled:()=>this.cancelled?.()??false,
      createParticlesAsync:async()=>{
       this.particles=undefined;
@@ -97,12 +110,12 @@ export class SourceAttractorSession {
    // This request owns construction (if any), every skipped frame and the
    // final snapshot. Reuse never divides a large seek into unbounded requests.
    this.cancelled=()=>this.revoked||!!context.isCancelled?.();this.reserve=sourceAttractorWorkBudget();
-   const frame=yield context.time;
+   const frame=(yield{kind:'timeline',time:context.time}) as OrdinarySourceCameraFrame;
    if(this.cancelled())throw Object.assign(Error('原版吸引子回放已取消'),{name:'AbortError'});
    const output=composeSourceAttractorCpu(options,{frame,particles:this.particles!},started);
    output.formulaPresentation=formulas;
    return output;
-  }catch(error){if(!this.warmupPool.diagnostics().ownedWorkers)this.clear([error]);throw error;}
+  }catch(error){if(this.gpu?.diagnostics().cleanupPending)this.cleanupFailure=error;else if(!this.warmupPool.diagnostics().ownedWorkers&&!this.cleanupFailure)yield* this.clearOperation([error]);throw error;}
   finally{this.cancelled=undefined;this.reserve=undefined;}
  }
 }
