@@ -13,18 +13,25 @@ export type SourceShaderUniform =
   | {readonly kind:'sampler2d'; value:THREE.DataTexture};
 export type SourceShaderUniforms = Record<string,SourceShaderUniform>;
 
-const owners=new WeakMap<THREE.RawShaderMaterial,SourceShaderUniforms>();
+/** The producer explicitly promises that rebasing a draw range cannot change
+ * shader identity: attributes own vertex/instance identity, not GL built-ins. */
+export interface SourceShaderDrawContract {readonly rangeIdentity:'attribute-only';}
+const owners=new WeakMap<THREE.RawShaderMaterial,{uniforms:SourceShaderUniforms;draw?:SourceShaderDrawContract}>();
 
 export function createSourceShaderMaterial<U extends SourceShaderUniforms>(
   parameters:Omit<THREE.ShaderMaterialParameters,'uniforms'> & {uniforms:U},
+  draw?:SourceShaderDrawContract,
 ):THREE.RawShaderMaterial & {uniforms:U} {
+  if(draw&&draw.rangeIdentity!=='attribute-only')throw Error('未知源着色器绘制范围合同');
   const material=new THREE.RawShaderMaterial(parameters);
   // RawShaderMaterial retains the supplied cells, including later value edits.
-  owners.set(material,parameters.uniforms);
+  owners.set(material,{uniforms:parameters.uniforms,...(draw?{draw:Object.freeze({...draw})}:{})});
   material.addEventListener('dispose',()=>owners.delete(material));
   return material as THREE.RawShaderMaterial & {uniforms:U};
 }
 
 export function sourceShaderUniformOwner(material:THREE.RawShaderMaterial):SourceShaderUniforms|undefined {
-  return owners.get(material);
+  return owners.get(material)?.uniforms;
 }
+
+export function sourceShaderDrawContract(material:THREE.RawShaderMaterial):SourceShaderDrawContract|undefined{return owners.get(material)?.draw;}

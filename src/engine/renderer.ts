@@ -1,7 +1,8 @@
 import {hasFormulaComposition} from './formulaConfig';
-import {snapshotSourceDrawings,type SourceDrawingResult} from './sourceDrawingSnapshot';
+import {snapshotSourceDrawings,prepareSourceDrawingPlan,type SourceDrawingResult,type SourceDrawingPlan,type SourceDrawingPlanOptions} from './sourceDrawingSnapshot';
 import type {SourceDrawingFrame} from './sourceDrawingFrame';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {createSourceImplicitMesh} from './sourceImplicitRenderer';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
 import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
@@ -35,11 +36,13 @@ import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {fitGeometryCamera} from './cameraFit';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 export type ArtRendererPurpose='display'|'local-export'|'source-offscreen-export';
+export type SourceDrawingPlannedFrame=Omit<SourceDrawingFrame,'drawing'|'bouncing'>&{plan:SourceDrawingPlan};
+export type SourceDrawingPlanOwnerOptions=Omit<SourceDrawingPlanOptions,'frameBytes'|'retainedBuffers'|'additionalBytes'>&{retainedBuffers:readonly ArrayBuffer[];additionalBytes:number};
 /** Context attributes are fixed at allocation. MathArt.ensureRenderBuffer(F)
  * calls noSmooth before beginDraw; primary display smoothing is separate.
- * Source Surface and CPU Implicit use this verified offscreen policy. */
+ * Source Surface, CPU Implicit and CPU Attractor use this offscreen policy. */
 export function artExportPurpose(scene:SceneDocument):ArtRendererPurpose {
-  return usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene)?'source-offscreen-export':'local-export';
+  return usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene)||usesSourceAttractorCpu(scene)?'source-offscreen-export':'local-export';
 }
 export class ArtRenderer {
   readonly renderer: THREE.WebGLRenderer;
@@ -53,6 +56,7 @@ export class ArtRenderer {
   private raster = false;
   private cameraResolved = false;
   private sourceCameraPlan?:SourceCameraPlan;
+  private drawingRevision=0;
   private sourceClear?:readonly [number,number,number,number];
   private sourceCompositedRaster?:RasterOutput;
   private samilaRecordingPreview?:SourceSamilaRecordingPreviewRenderer;
@@ -117,6 +121,7 @@ export class ArtRenderer {
     };
   }
   setSize(width: number, height: number, pixelRatio?: number) {
+    this.drawingRevision++;
     this.size = [width, height];
     if (pixelRatio) this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(width, height, false);
@@ -143,7 +148,6 @@ export class ArtRenderer {
     this.shaderFailure=undefined;
     this.samilaRecordingPreview?.dispose();this.samilaRecordingPreview=undefined;
     for (const obj of [...this.group.children]) {
-      this.group.remove(obj);
       const item = obj as THREE.Mesh;
       item.geometry?.dispose();
       const materials = Array.isArray(item.material)
@@ -156,9 +160,17 @@ export class ArtRenderer {
           m.dispose();
         }
       }
+      this.group.remove(obj);
     }
   }
+  /** Exclusive export consumers can drop completed geometry before formula
+   * composition. The context remains reusable for the next setOutput; preview
+   * callers retain their geometry and must not use this phase transition. */
+  releaseSourceDrawing():void {
+    this.drawingRevision++;this.clear();this.renderer.renderLists.dispose();
+  }
   setOutput(output: SceneOutput, document: SceneDocument, fit = false,optics?:{roll:number;focalLength:number;camera?:CameraState}) {
+    this.drawingRevision++;
     if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(usesSourceBouncing(document)!==!!output.sourceBouncingFrame||output.sourceBouncingFrame&&(output.type!=='raster'||!output.cameraResolved))throw new Error('源弹跳需要与文档配对的已投影图像');
@@ -456,6 +468,24 @@ export class ArtRenderer {
   /** Capture the render lists owned and sorted by Three, including the final
    * overlay pass. Unsupported draw types fail rather than disappearing. */
   sourceDrawingFrame(generation:number,sequence:number):SourceDrawingResult<SourceDrawingFrame>{
+    const input=this.sourceDrawingInput(generation,sequence);if(!input.ok)return input;
+    const drawing=snapshotSourceDrawings(input.value.meshes);if(!drawing.ok)return drawing;
+    return{ok:true,value:{...input.value.frame,drawing:drawing.value}};
+  }
+  /** Borrow only this renderer revision. Changing output, target or disposal
+   * invalidates all unread ranges; an outstanding native chunk still owns its
+   * copied storage until its request is acknowledged and released. */
+  sourceDrawingPlan(generation:number,sequence:number,options:SourceDrawingPlanOwnerOptions):SourceDrawingResult<SourceDrawingPlannedFrame>{
+    // The caller owns mathematical output and any current/composing raster.
+    // Requiring both fields prevents an accidental zero-retention admission.
+    if(!options||!Array.isArray(options.retainedBuffers)||!Number.isSafeInteger(options.additionalBytes)||options.additionalBytes<0)return{ok:false,error:{kind:'input',path:['retainedBytes'],reason:'分块绘制必须显式声明源输出缓冲及其他留存容量'}};
+    const input=this.sourceDrawingInput(generation,sequence);if(!input.ok)return input;
+    const revision=this.drawingRevision,{frame,meshes}=input.value;
+    const plan=prepareSourceDrawingPlan(meshes,{...options,frameBytes:frame.width*frame.height*(12+8*frame.samples),isCurrent:()=>this.drawingRevision===revision&&options.isCurrent?.()!==false});
+    if(!plan.ok)return plan;
+    return{ok:true,value:{...frame,plan:plan.value}};
+  }
+  private sourceDrawingInput(generation:number,sequence:number):SourceDrawingResult<{frame:Omit<SourceDrawingFrame,'drawing'|'bouncing'>;meshes:THREE.Mesh[]}>{
     if(!this.sourceCameraPlan||this.raster)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'当前画面不是可提交原生绘制的源几何帧'}};
     this.render();const gl=this.renderer.getContext();
     if(gl.isContextLost()||gl.isEnabled(gl.SCISSOR_TEST))return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧暂不支持丢失的上下文或裁剪视口'}};
@@ -470,11 +500,10 @@ export class ArtRenderer {
         meshes.push(item.object);
       }
     }
-    const drawing=snapshotSourceDrawings(meshes);if(!drawing.ok)return drawing;
     // Read the actual clear state. Source packed colors and legacy Three
     // backgrounds have different conversion/alpha rules, already applied here.
     const clear=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE) as Float32Array) as [number,number,number,number];
-    return{ok:true,value:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,samples:gl.getParameter(gl.SAMPLES) as number,clear,drawing:drawing.value}};
+    return{ok:true,value:{meshes,frame:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,samples:gl.getParameter(gl.SAMPLES) as number,clear}}};
   }
   private sourceFramebufferPixels(isCancelled:()=>boolean){
     if(isCancelled())throw new DOMException('图像导出已取消','AbortError');
@@ -529,6 +558,7 @@ export class ArtRenderer {
   }
 
   dispose() {
+    this.drawingRevision++;
     this.clear();
     this.sourceCompositedRaster=undefined;this.formulaFrame=undefined;this.document=null;
     this.surfaceOverlay?.geometry.dispose();this.surfaceOverlay?.material.dispose();this.surfaceOverlayScene.clear();

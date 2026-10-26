@@ -24,6 +24,7 @@ import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {sourceSamilaOwnerScene} from './sourceSamilaPaletteEditing';
 import {assertSourceSamilaRecordingFrame} from './sourceSamilaRecording';
 import {usesSourceBouncing} from './sourceBouncingDocument';
+import {usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SourceSamilaAsyncSession} from './sourceSamilaAsyncSession';
@@ -86,7 +87,7 @@ function generationFormulaContract(scene:SceneDocument,context:GenerationInput):
  if(context.implicitControls)return{kind:'implicit-runtime-geometry'};
  if(context.rootsLive?.controls)return{kind:'roots-runtime-raster',viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
- if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
+ if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene)||usesSourceAttractorCpu(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
  return usesSourceFractal(scene)?{kind:'source-raster',layout:scene.formulas?.layout,viewport:context.fractalViewport}:{kind:'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {

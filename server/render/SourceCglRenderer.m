@@ -50,13 +50,15 @@ static void samilaFloatBlock(NSData *data,NSUInteger length){INPUT(data.length==
 #include "SourceCglIteratedRenderProtocol.h"
 #include "SourceCglSymmetryProtocol.h"
 #include "SourceCglFractalProtocol.h"
+#include "SourceCglDrawingProtocol.h"
 static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=12,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=13,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
  NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version>=2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");uint32_t completion=version>=3?[r word]:0;INPUT(completion<=1&&(!completion||[clear[3]floatValue]==1),@"Invalid completion alpha policy");
+ if(version==13){INPUT(nt==0&&nd==0,@"Drawing transaction contains outer draws");NSDictionary *op=parseDrawingRequest(r,width,height,samples,retainedBytes);return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@(samples),@"completion":@(completion),@"clear":clear,@"drawing":op,@"packetBytes":@(packet.length)};}
  BOOL render=(version==7||version==10)&&packet.length>=68&&indexAt(packet,15,4)==3;
  BOOL fractalRelease=version==11&&packet.length==88&&indexAt(packet,16,4)==3;
  BOOL iteratedRelease=((version==6||version==8)&&packet.length==88&&indexAt(packet,16,4)==5)||(render&&packet.length==(version==10?96:88)&&indexAt(packet,16,4)==4);
@@ -168,17 +170,21 @@ static void applyUniforms(GLuint program,NSArray *uniforms){
   // arrays. An optimized-away input is fine; a missing/wrong active one is not.
   GLint active=0;glGetProgramiv(program,GL_ACTIVE_UNIFORMS,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveUniform(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active uniform name capacity");NSString *key=@(name);if([key hasSuffix:@"[0]"])key=[key substringToIndex:key.length-3];NSDictionary *found=nil;for(NSDictionary *u in uniforms)if([u[@"name"]isEqual:key])found=u;RUNTIME(found&&uniformType([found[@"kind"]intValue])==type&&(type==GL_SAMPLER_2D?size==1:[found[@"count"]intValue]>=size),@"Active uniform lacks matching typed data");}
 }
-static void draw(NSDictionary *d,NSArray *textures){
+static void drawCached(NSDictionary *d,NSArray *textures,NSMutableDictionary *cache){
  NSArray *attributes=d[@"attributes"],*uniforms=d[@"uniforms"];GLint maxAttributes=0,maxTextures=0;glGetIntegerv(GL_MAX_VERTEX_ATTRIBS,&maxAttributes);glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&maxTextures);
  ensure(attributes.count<=(NSUInteger)maxAttributes&&textures.count<=(NSUInteger)maxTextures,@"unsupported",@"Draw exceeds native attribute/texture limits");
  GLuint vao=0,vs=0,fs=0,program=0;NSMutableData *bufferIds=[NSMutableData dataWithLength:(attributes.count+1)*sizeof(GLuint)],*textureIds=[NSMutableData dataWithLength:textures.count*sizeof(GLuint)];GLuint *buffers=bufferIds.mutableBytes,*tex=textureIds.mutableBytes;
  @try{
   glGenVertexArrays(1,&vao);glBindVertexArray(vao);glGenBuffers((GLsizei)attributes.count+1,buffers);
-  vs=compile(GL_VERTEX_SHADER,d[@"vertex"]);fs=compile(GL_FRAGMENT_SHADER,d[@"fragment"]);program=glCreateProgram();glAttachShader(program,vs);glAttachShader(program,fs);glLinkProgram(program);GLint ok=0;glGetProgramiv(program,GL_LINK_STATUS,&ok);ensure(ok,@"gpu-link",@"Program link failed");glUseProgram(program);
+  BOOL prepared=cache[@"program"]!=nil;
+  if(prepared){program=[cache[@"program"]unsignedIntValue];vs=[cache[@"vs"]unsignedIntValue];fs=[cache[@"fs"]unsignedIntValue];}
+  else{vs=compile(GL_VERTEX_SHADER,d[@"vertex"]);if(cache)cache[@"vs"]=@(vs);fs=compile(GL_FRAGMENT_SHADER,d[@"fragment"]);if(cache)cache[@"fs"]=@(fs);program=glCreateProgram();if(cache)cache[@"program"]=@(program);glAttachShader(program,vs);glAttachShader(program,fs);glLinkProgram(program);GLint ok=0;glGetProgramiv(program,GL_LINK_STATUS,&ok);ensure(ok,@"gpu-link",@"Program link failed");}
+  glUseProgram(program);
   for(NSUInteger i=0;i<attributes.count;i++){NSDictionary *a=attributes[i];GLint loc=glGetAttribLocation(program,[a[@"name"]UTF8String]);if(loc<0)continue;NSData *bytes=a[@"bytes"];glBindBuffer(GL_ARRAY_BUFFER,buffers[i]);glBufferData(GL_ARRAY_BUFFER,bytes.length,bytes.bytes,GL_STATIC_DRAW);glEnableVertexAttribArray(loc);glVertexAttribPointer(loc,[a[@"size"]intValue],GL_FLOAT,GL_FALSE,0,NULL);glVertexAttribDivisor(loc,[a[@"divisor"]intValue]);}
   NSData *indices=d[@"indices"];GLenum indexType=[d[@"indexType"]intValue]==16?GL_UNSIGNED_SHORT:GL_UNSIGNED_INT;
   if([d[@"indexType"]intValue]){glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,buffers[attributes.count]);glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.length,indices.bytes,GL_STATIC_DRAW);}
-  glGenTextures((GLsizei)textures.count,tex);
+  if(prepared){NSData *saved=cache[@"textures"];INPUT(saved.length==textureIds.length,@"Cached texture count changed");memcpy(tex,saved.bytes,saved.length);}
+  else{glGenTextures((GLsizei)textures.count,tex);if(cache)cache[@"textures"]=textureIds;}
   // The context owns capabilities. Generic v12 wire zero requests Processing's
   // maximum supported sampling; existing numeric v3 requests remain exact.
   BOOL hasAnisotropy=NO;GLint extensions=0;glGetIntegerv(GL_NUM_EXTENSIONS,&extensions);
@@ -187,7 +193,7 @@ static void draw(NSDictionary *d,NSArray *textures){
   GLfloat maximum=1;if(hasAnisotropy)glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,&maximum);
   ensure(isfinite(maximum)&&maximum>=1,@"unsupported",@"Invalid native maximum anisotropy");
   GLint maxTextureSize=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTextureSize);
-  for(NSUInteger i=0;i<textures.count;i++){NSDictionary *t=textures[i];GLint w=[t[@"width"]intValue],h=[t[@"height"]intValue];GLfloat a=[t[@"anisotropy"]floatValue];if(a==0)a=maximum;ensure(a<=maximum&&w<=maxTextureSize&&h<=maxTextureSize,@"unsupported",@"Requested texture sampling/size unavailable");glActiveTexture(GL_TEXTURE0+(GLenum)i);glBindTexture(GL_TEXTURE_2D,tex[i]);NSData *pixels=t[@"pixels"];glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.bytes);glGenerateMipmap(GL_TEXTURE_2D);if(hasAnisotropy)glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAX_ANISOTROPY_EXT,a);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);}
+  for(NSUInteger i=0;i<textures.count;i++){NSDictionary *t=textures[i];GLint w=[t[@"width"]intValue],h=[t[@"height"]intValue];GLfloat a=[t[@"anisotropy"]floatValue];if(a==0)a=maximum;ensure(a<=maximum&&w<=maxTextureSize&&h<=maxTextureSize,@"unsupported",@"Requested texture sampling/size unavailable");glActiveTexture(GL_TEXTURE0+(GLenum)i);glBindTexture(GL_TEXTURE_2D,tex[i]);if(!prepared){NSData *pixels=t[@"pixels"];glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.bytes);glGenerateMipmap(GL_TEXTURE_2D);if(hasAnisotropy)glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAX_ANISOTROPY_EXT,a);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);}}
   applyUniforms(program,uniforms);
   GLint active=0;
   glGetProgramiv(program,GL_ACTIVE_ATTRIBUTES,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveAttrib(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active attribute name capacity");// Apple GL exposes this fixed-function vertex input in active attributes.
@@ -199,8 +205,9 @@ static void draw(NSDictionary *d,NSArray *textures){
   GLenum primitive=(flags&8)?GL_POINTS:GL_TRIANGLES;if(flags&8)glEnable(GL_PROGRAM_POINT_SIZE);else glDisable(GL_PROGRAM_POINT_SIZE);
   for(NSNumber *pass in d[@"passes"]){int p=pass.intValue;if(p==0)glDisable(GL_CULL_FACE);else{glEnable(GL_CULL_FACE);glCullFace(p==1?GL_BACK:GL_FRONT);}GLsizei n=[d[@"count"]intValue],instances=[d[@"instances"]intValue];GLint first=[d[@"first"]intValue];if([d[@"indexType"]intValue])glDrawElementsInstanced(primitive,n,indexType,(void*)(uintptr_t)((NSUInteger)first*([d[@"indexType"]intValue]/8)),instances);else glDrawArraysInstanced(primitive,first,n,instances);}
   ensure(glGetError()==GL_NO_ERROR,@"gpu-render",@"OpenGL draw failed");
- }@finally{glUseProgram(0);glBindVertexArray(0);glDeleteBuffers((GLsizei)attributes.count+1,buffers);glDeleteTextures((GLsizei)textures.count,tex);if(vao)glDeleteVertexArrays(1,&vao);if(program)glDeleteProgram(program);if(vs)glDeleteShader(vs);if(fs)glDeleteShader(fs);}
+ }@finally{glUseProgram(0);glBindVertexArray(0);glDeleteBuffers((GLsizei)attributes.count+1,buffers);if(vao)glDeleteVertexArrays(1,&vao);if(!cache){glDeleteTextures((GLsizei)textures.count,tex);if(program)glDeleteProgram(program);if(vs)glDeleteShader(vs);if(fs)glDeleteShader(fs);}}
 }
+static void draw(NSDictionary *d,NSArray *textures){drawCached(d,textures,nil);}
 static void createContext(CGLContextObj *context){
  CGLPixelFormatObj format=NULL;
  @try{CGLPixelFormatAttribute attrs[]={kCGLPFAOpenGLProfile,(CGLPixelFormatAttribute)kCGLOGLPVersion_GL4_Core,kCGLPFAAccelerated,(CGLPixelFormatAttribute)0};GLint n=0;
@@ -210,38 +217,18 @@ static void createContext(CGLContextObj *context){
 static void destroyContext(CGLContextObj *context){if(*context){RUNTIME(CGLSetCurrentContext(NULL)==kCGLNoError,@"Cannot unset CGL context");RUNTIME(CGLDestroyContext(*context)==kCGLNoError,@"Cannot destroy CGL context");*context=NULL;}}
 // Readbacks belong to the frame target, not individual draws. MSAA color is
 // resolved into an owned single-sample attachment before every requested read.
-static NSData *readFrame(GLuint fb,GLuint resolved,GLsizei w,GLsizei h){
+static NSData *readFramePrefix(GLuint fb,GLuint resolved,GLsizei w,GLsizei h,NSUInteger prefix){
  if(resolved){glBindFramebuffer(GL_READ_FRAMEBUFFER,fb);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,resolved);glBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);glBindFramebuffer(GL_READ_FRAMEBUFFER,resolved);}
- NSMutableData *rgba=[NSMutableData dataWithLength:(NSUInteger)w*h*4];glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,rgba.mutableBytes);
+ NSMutableData *rgba=[NSMutableData dataWithLength:prefix+(NSUInteger)w*h*4];glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,(uint8_t*)rgba.mutableBytes+prefix);
  ensure(glGetError()==GL_NO_ERROR,@"gpu-readback",@"Frame resolve/readback failed");glBindFramebuffer(GL_FRAMEBUFFER,fb);return rgba;
 }
+static NSData *readFrame(GLuint fb,GLuint resolved,GLsizei w,GLsizei h){return readFramePrefix(fb,resolved,w,h,0);}
+#include "SourceCglDrawingTarget.h"
+#include "SourceCglDrawingState.h"
 static NSData *renderFrameWithDraw(NSDictionary *frame,NSString *out,uint64_t retainedBytes,void (^render)(NSDictionary*,NSArray*)){
- GLuint fb=0,resolved=0,color=0,multiColor=0,depth=0;
- @try{
-  GLsizei w=[frame[@"width"]intValue],h=[frame[@"height"]intValue],samples=[frame[@"samples"]intValue];GLint maxTexture=0,maxRender=0,maxViewport[2]={0},maxSamples=0;
-  glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTexture);glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,&maxRender);glGetIntegerv(GL_MAX_VIEWPORT_DIMS,maxViewport);glGetIntegerv(GL_MAX_SAMPLES,&maxSamples);
-  ensure(w<=MIN(maxTexture,maxRender)&&h<=MIN(maxTexture,maxRender)&&w<=maxViewport[0]&&h<=maxViewport[1],@"unsupported",@"Frame exceeds native dimensions");ensure(samples<=maxSamples,@"unsupported",@"Requested sample count exceeds native limit");
-  ensure(retainedBytes+(uint64_t)w*h*(12+(uint64_t)8*samples)<=Budget,@"capacity",@"Retained state and frame targets exceed budget");
-  // This texture is the draw target for samples=0 and the resolve target otherwise.
-  glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenTextures(1,&color);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,color);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,color,0);
-  if(samples){
-   resolved=fb;glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenRenderbuffers(1,&multiColor);glBindRenderbuffer(GL_RENDERBUFFER,multiColor);glRenderbufferStorageMultisample(GL_RENDERBUFFER,samples,GL_RGBA8,w,h);glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,multiColor);
-   GLint actual=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actual);ensure(glGetError()==GL_NO_ERROR,@"gpu-allocation",@"Multisample color allocation failed");ensure(actual==samples,@"unsupported",@"Driver rounded the requested color sample count");
-  }
-  glGenRenderbuffers(1,&depth);glBindRenderbuffer(GL_RENDERBUFFER,depth);
-  if(samples)glRenderbufferStorageMultisample(GL_RENDERBUFFER,samples,GL_DEPTH_COMPONENT24,w,h);else glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,w,h);
-  GLint actualDepth=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actualDepth);ensure(glGetError()==GL_NO_ERROR,@"gpu-allocation",@"Depth allocation failed");ensure(actualDepth==samples,@"unsupported",@"Driver rounded the requested depth sample count");
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);ensure(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE,@"gpu-allocation",@"Incomplete framebuffer");glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,w,h);
-  if(samples)glEnable(GL_MULTISAMPLE);else glDisable(GL_MULTISAMPLE);
-  glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);glDisable(GL_SAMPLE_ALPHA_TO_ONE);glDisable(GL_SAMPLE_COVERAGE);glDisable(GL_SAMPLE_MASK);
-  glDisable(GL_SCISSOR_TEST);glDisable(GL_DITHER);glDisable(GL_FRAMEBUFFER_SRGB);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDepthMask(GL_TRUE);
-  NSArray *clear=frame[@"clear"];glClearColor([clear[0]floatValue],[clear[1]floatValue],[clear[2]floatValue],[clear[3]floatValue]);glClearDepth(1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-  NSArray *draws=frame[@"draws"];for(NSUInteger i=0;i<draws.count;i++)@autoreleasepool{
-   render(draws[i],frame[@"textures"]);if(out)writeFile(out,[NSString stringWithFormat:@"draw-%lu-after.rgba",(unsigned long)i+1],readFrame(fb,resolved,w,h));
-  }
-  if([frame[@"completion"]boolValue]){glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);}
-  return readFrame(fb,resolved,w,h);
- }@finally{glBindFramebuffer(GL_FRAMEBUFFER,0);glBindRenderbuffer(GL_RENDERBUFFER,0);if(fb)glDeleteFramebuffers(1,&fb);if(resolved)glDeleteFramebuffers(1,&resolved);if(color)glDeleteTextures(1,&color);if(multiColor)glDeleteRenderbuffers(1,&multiColor);if(depth)glDeleteRenderbuffers(1,&depth);}
+ SourceCglDrawingTarget *target=[[SourceCglDrawingTarget alloc]initWithFrame:frame];
+ @try{[target prepare:retainedBytes];NSArray *draws=frame[@"draws"];for(NSUInteger i=0;i<draws.count;i++)@autoreleasepool{[target bind];render(draws[i],frame[@"textures"]);if(out)writeFile(out,[NSString stringWithFormat:@"draw-%lu-after.rgba",(unsigned long)i+1],[target read]);}return[target finish];}
+ @finally{[target dispose];}
 }
 static NSData *renderFrame(NSDictionary *frame,NSString *out){return renderFrameWithDraw(frame,out,0,^(NSDictionary *command,NSArray *textures){draw(command,textures);});}
 #include "SourceCglBouncingState.h"
@@ -260,13 +247,14 @@ static NSData *iteratedReply(NSDictionary *operation,id<SourceCglIteratedStateOw
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){
- uint32_t version=indexAt(request,1,4),format=status?0:version==11?6:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
+ uint32_t version=indexAt(request,1,4),format=status?0:version==13?7:version==11?6:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
  uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,format,(uint32_t)payload.length,contextSerial};
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");
 }
 static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:[kind isEqual:@"state-lost"]?5:[kind isEqual:@"ownership"]?6:[kind isEqual:@"gpu-compile"]?7:[kind isEqual:@"gpu-link"]?8:[kind isEqual:@"gpu-context"]?9:[kind isEqual:@"gpu-allocation"]?10:[kind isEqual:@"gpu-render"]?11:[kind isEqual:@"gpu-readback"]?12:4;}
 int main(int argc,const char **argv){@autoreleasepool{
+ SourceCglDrawingState *drawingOwner=nil;NSData *drawingResource=nil;
  CGLContextObj ctx=NULL;SourceCglBouncingState *bouncing=nil;NSData *bouncingResource=nil;NSMutableDictionary<NSData*,SourceCglSamilaState*> *samila=[NSMutableDictionary new];NSMutableDictionary<NSData*,id<SourceCglIteratedStateOwner>> *iterated=[NSMutableDictionary new];NSMutableDictionary<NSData*,NSDictionary*> *inks=[NSMutableDictionary new];NSMutableDictionary<NSData*,SourceCglFractalState*> *fractals=[NSMutableDictionary new];FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
  @try{
   INPUT(stream||argc==3,@"Usage: renderer --stdio | frame.bin output-directory");input=stream?stdin:fopen(argv[1],"rb");INPUT(input!=NULL,@"Cannot open frame packet");
@@ -274,7 +262,10 @@ int main(int argc,const char **argv){@autoreleasepool{
   while(YES){@autoreleasepool{
    NSData *packet=readPacket(input,stream);if(!packet)break;
    @try{
-    uint64_t retained=(bouncing?bouncing.retainedBytes:0)+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals);NSDictionary *frame=parseWithRetained(packet,!stream,retained),*operation=frame[@"bouncing"],*samilaOperation=frame[@"samila"],*iteratedOperation=frame[@"iterated"],*renderOperation=frame[@"iteratedRender"],*fractalOperation=frame[@"fractal"];uint32_t kind=[operation[@"kind"]unsignedIntValue],renderKind=[renderOperation[@"kind"]unsignedIntValue];
+    ensure(!drawingOwner||indexAt(packet,1,4)==13,@"ownership",@"A retained generic drawing transaction owns the renderer");
+    uint64_t retained=(bouncing?bouncing.retainedBytes:0)+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals)+(drawingOwner?drawingOwner.retainedBytes:0);NSDictionary *frame=parseWithRetained(packet,!stream,retained),*operation=frame[@"bouncing"],*samilaOperation=frame[@"samila"],*iteratedOperation=frame[@"iterated"],*renderOperation=frame[@"iteratedRender"],*fractalOperation=frame[@"fractal"],*drawingOperation=frame[@"drawing"];uint32_t kind=[operation[@"kind"]unsignedIntValue],renderKind=[renderOperation[@"kind"]unsignedIntValue],drawingKind=[drawingOperation[@"kind"]unsignedIntValue];
+    if(drawingKind==1)ensure(!drawingOwner&&!bouncing&&!samila.count&&!iterated.count&&!inks.count&&!fractals.count,@"ownership",@"Drawing begin requires an unowned renderer");
+    else if(drawingKind){if(drawingOwner)ensure([drawingResource isEqual:drawingOperation[@"resource"]],@"ownership",@"Drawing resource belongs to another caller");else if(drawingKind!=4)ensure(NO,@"state-lost",@"Drawing resource is absent");}
     uint32_t fractalKind=[fractalOperation[@"kind"]unsignedIntValue];NSData *fractalResource=fractalOperation[@"resource"];SourceCglFractalState *fractalOwner=fractalResource?fractals[fractalResource]:nil;
     if(fractalKind==1)ensure(fractals.count<2&&!fractalOwner,@"capacity",@"Two Fractal resources are already owned or token is duplicate");else if(fractalKind==2)ensure(fractalOwner!=nil,@"state-lost",@"Fractal resource is absent after release or context loss");
     uint32_t samilaKind=[samilaOperation[@"kind"]unsignedIntValue];NSData *samilaResource=samilaOperation[@"resource"];SourceCglSamilaState *samilaOwner=samilaResource?samila[samilaResource]:nil;
@@ -286,7 +277,12 @@ int main(int argc,const char **argv){@autoreleasepool{
     if(kind==1)ensure(bouncing==nil,@"capacity",@"A Bouncing resource is already owned");
     else if(kind){if(bouncing)ensure([bouncingResource isEqual:operation[@"resource"]],@"ownership",@"Bouncing resource belongs to another caller");else if(kind!=4)ensure(NO,@"state-lost",@"Bouncing resource is absent after release or context loss");if(bouncing&&kind!=4)INPUT(bouncing.particleCount==[operation[@"count"]unsignedIntValue]&&(bouncing.pointVertex.length+bouncing.pointFragment.length)*3==[operation[@"programBytes"]unsignedIntValue],@"Bouncing particle count differs from owned state");}
     if(!ctx){createContext(&ctx);serial++;}NSData *rgba;
-    if(fractalKind){
+    if(drawingKind){
+     if(drawingKind==1){drawingResource=drawingOperation[@"resource"];drawingOwner=[[SourceCglDrawingState alloc]initWithFrame:frame];[drawingOwner prepare];rgba=drawingReply(drawingOperation,drawingOwner,0,[frame[@"width"]unsignedIntValue],[frame[@"height"]unsignedIntValue],nil);}
+     else if(drawingKind==2){[drawingOwner append:frame];rgba=drawingReply(drawingOperation,drawingOwner,0,drawingOwner.width,drawingOwner.height,nil);}
+     else if(drawingKind==3){NSData *pixels=[drawingOwner finish:frame];rgba=drawingReply(drawingOperation,drawingOwner,0,drawingOwner.width,drawingOwner.height,pixels);}
+     else{uint32_t disposition=drawingOwner?1:2;[drawingOwner dispose];rgba=drawingReply(drawingOperation,drawingOwner,disposition,[frame[@"width"]unsignedIntValue],[frame[@"height"]unsignedIntValue],nil);drawingOwner=nil;drawingResource=nil;}
+    }else if(fractalKind){
      if(fractalKind==1){fractalOwner=[[SourceCglFractalState alloc]initWithOperation:fractalOperation];fractals[fractalResource]=fractalOwner;@try{[fractalOwner prepare:fractalOperation];}@catch(NSException *e){[fractalOwner dispose];[fractals removeObjectForKey:fractalResource];@throw;}rgba=fractalReply(fractalOperation,fractalOwner,0,1,1,nil);}
      else if(fractalKind==2){NSData *records=[fractalOwner sample:fractalOperation width:[frame[@"width"]unsignedIntValue] height:[frame[@"height"]unsignedIntValue] retained:retained packetBytes:packet.length];rgba=fractalReply(fractalOperation,fractalOwner,0,[frame[@"width"]unsignedIntValue],[frame[@"height"]unsignedIntValue],records);}
      else{uint32_t disposition=fractalOwner?1:2;[fractalOwner dispose];rgba=fractalReply(fractalOperation,fractalOwner,disposition,1,1,nil);[fractals removeObjectForKey:fractalResource];}
@@ -323,14 +319,15 @@ int main(int argc,const char **argv){@autoreleasepool{
     // next valid frame; invalid input never touches an existing good context.
     // Fractal v11 poisons its owner instead, preserving custody until release.
     // A transport may retire this whole process after receiving that failure.
-    uint32_t status=errorCode(e.name);if((status==4||status>=7)&&indexAt(packet,1,4)!=11){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}destroyContext(&ctx);}
+    uint32_t status=errorCode(e.name);if(indexAt(packet,1,4)==13&&drawingOwner&&packet.length>=88&&memcmp((const uint8_t*)packet.bytes+72,drawingResource.bytes,16)==0)[drawingOwner fail];
+    if((status==4||status>=7)&&indexAt(packet,1,4)!=11&&indexAt(packet,1,4)!=13){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}destroyContext(&ctx);}
     NSData *message=[(e.reason?:@"Native frame failed") dataUsingEncoding:NSUTF8StringEncoding];if(!message||message.length>8192)message=[@"Native frame failed; diagnostic exceeded response budget" dataUsingEncoding:NSUTF8StringEncoding];
     reply(packet,status,serial,message);
    }
    if(!stream)break;
   }}result=0;
  }@catch(NSException *e){NSData *json=[NSJSONSerialization dataWithJSONObject:@{@"kind":e.name,@"reason":e.reason?:@"Native failure"} options:0 error:NULL];fwrite(json.bytes,1,json.length,stderr);fputc('\n',stderr);}
- @finally{BOOL clean=YES;for(NSData *key in [inks.allKeys copy])@try{[inks[key][@"owner"]dispose];[inks removeObjectForKey:key];}@catch(NSException *e){fprintf(stderr,"Iterated ink cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
+ @finally{BOOL clean=YES;@try{[drawingOwner dispose];drawingOwner=nil;}@catch(NSException *e){fprintf(stderr,"Drawing cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}for(NSData *key in [inks.allKeys copy])@try{[inks[key][@"owner"]dispose];[inks removeObjectForKey:key];}@catch(NSException *e){fprintf(stderr,"Iterated ink cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   @try{[bouncing dispose];}@catch(NSException *e){fprintf(stderr,"Bouncing cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}for(SourceCglSamilaState *owner in samila.allValues)@try{[owner dispose];}@catch(NSException *e){fprintf(stderr,"Samila cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   for(NSData *key in iterated.allKeys)@try{ensure(iteratedInkDependents(inks,key)==0,@"ownership",@"Failed ink cleanup retains its compute dependency");[iterated[key]dispose];}@catch(NSException *e){fprintf(stderr,"Iterated cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   for(SourceCglFractalState *owner in fractals.allValues)@try{[owner dispose];}@catch(NSException *e){fprintf(stderr,"Fractal cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}

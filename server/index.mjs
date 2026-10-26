@@ -220,12 +220,13 @@ export async function createExportServer(options={}){
    if(!native)throw new HttpError(503,'原生渲染后端尚未配置');
    const lease=nativeLease;if(lease&&(lease.closed||req.headers['x-source-lease']!==lease.token)||!lease&&req.headers['x-source-lease'])return json(res,409,{kind:'state-lost',error:'原生请求不属于当前页面连接'});
    if(mediaType(req)!=='application/octet-stream')throw new HttpError(415,'需要二进制帧请求');
-   if(nativeBusy)throw new HttpError(429,'原生帧通道正在处理请求');
+   if(nativeBusy)return json(res,429,{kind:'capacity',retryable:true,error:'原生帧通道正在处理请求'});
    nativeBusy=true;const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};nativeControllers.add(controller);req.once('aborted',disconnected);res.once('close',disconnected);
    try{return await withUpload(req,64*1024*1024,async bytes=>{
     if(controller.signal.aborted||closing)throw new HttpError(499,'原生帧请求已取消');
     if(lease&&(lease.closed||nativeLease!==lease))return json(res,409,{kind:'state-lost',error:'原生页面连接已失效'});
     const parsed=inspectSourceFrameHeader(bytes);if(!parsed.ok)return json(res,400,{error:parsed.error.message,kind:parsed.error.kind});
+    if(parsed.value.family==='drawing'&&!lease)return json(res,409,{kind:'ownership',error:'分块原生绘制需要当前页面连接'});
     // The gateway owns transport ordering across windows. Preserve the caller's
     // identity in the response; rewrite only an owned wire copy for the child.
     if(nativeSequence===0xffffffff){if(nativeGeneration===0xffffffff)throw new HttpError(503,'原生请求编号已耗尽，请重启服务');nativeGeneration++;nativeSequence=0;}

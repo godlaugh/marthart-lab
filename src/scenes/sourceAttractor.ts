@@ -10,6 +10,7 @@ import {OrdinarySourceCameraTimelineSession} from '../engine/ordinarySourceCamer
 import {sourceAttractorWorkBudget} from '../engine/sourceAttractorWork';
 import {SourceAttractorGpuReplaySession} from '../engine/sourceAttractorGpuReplay';
 import {ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
+import {formulaPresentation} from '../engine/formulas';
 
 /** One Worker/export lifetime owns both CPU motion and camera. Inputs are
  * validated on every request; only immutable prepared facts enter the replay.
@@ -56,6 +57,10 @@ export class SourceAttractorSession {
     if(key!==this.key){this.clear();this.key=key;this.gpu=new SourceAttractorGpuReplaySession({...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time});}
     return this.gpu!.generate({time:context.time,viewport:initial.viewport,width:context.width,height:context.height,backgroundColor:prepared.backgroundColor,isCancelled:()=>this.revoked||!!context.isCancelled?.()});
    }
+   // Capture and validate presentation before asynchronous warmup. Labels are
+   // not motion identity; their edits must not reseed particles or replace the
+   // camera subsequently paired with that same replay's tracked particle.
+   const formulas=structuredClone(formulaPresentation(scene,initial.viewport));
    const options={...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time,
     viewport:initial.viewport,referencePixelDensity:context.sourcePointPixelDensity};
    validateSourceAttractorCpuDisplay(options);
@@ -81,7 +86,9 @@ export class SourceAttractorSession {
    this.cancelled=()=>this.revoked||!!context.isCancelled?.();this.reserve=sourceAttractorWorkBudget();
    const frame=yield context.time;
    if(this.cancelled())throw Object.assign(Error('原版吸引子回放已取消'),{name:'AbortError'});
-   return composeSourceAttractorCpu(options,{frame,particles:this.particles!},started);
+   const output=composeSourceAttractorCpu(options,{frame,particles:this.particles!},started);
+   output.formulaPresentation=formulas;
+   return output;
   }catch(error){if(!this.warmupPool.diagnostics().ownedWorkers)this.clear([error]);throw error;}
   finally{this.cancelled=undefined;this.reserve=undefined;}
  }

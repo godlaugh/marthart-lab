@@ -34,7 +34,8 @@ import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimension
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import {encodeSourcePausedPng} from '../engine/sourcePausedPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
-import {encodeSourceImplicitImage} from '../engine/sourceImplicitImage';
+import {usesSourceAttractorCpu} from '../engine/sourceAttractorDocument';
+import {encodeSourceGeometryImage,usesSourceGeometryImage,sourceAttractorImageTarget} from '../engine/sourceGeometryImage';
 import { Generator } from "../engine/client";
 import { ArtRenderer,artExportPurpose } from "../engine/renderer";
 import { sceneAtTime, normalizeTimelineTime,resolveTimeline } from "../engine/timeline";
@@ -109,7 +110,7 @@ export function ExportDialog({
 }) {
   const {t}=useI18n();
   const sourceFractal=usesSourceFractal(scene),sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource,sourceSamila=usesSourceSamilaSampling(scene),sourceIterated=sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map';
-  const sourceImplicit=usesSourceImplicitCpuMesh(scene);
+  const sourceImplicit=usesSourceImplicitCpuMesh(scene),sourceAttractorCpu=usesSourceAttractorCpu(scene);
   const sourceImplicitLive=!!currentImplicitCapture,sourceGeometryLive=!!currentImplicitCapture||!!currentSurfaceCapture;
   const sourceSurfaceLive=!!currentSurfaceCapture,sourceFractalLive=!!currentFractalCapture,sourceDomainLive=!!currentDomainCapture,sourceNumericalLive=sourceFractalLive||sourceDomainLive;
   const recordingMode=mode!=='export';
@@ -184,6 +185,8 @@ export function ExportDialog({
   };
   const pausedSourceImage=kind==='image'&&(sourceGeometryLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
+  let attractorTarget:ReturnType<typeof sourceAttractorImageTarget>|undefined;
+  if(sourceAttractorCpu)try{attractorTarget=sourceAttractorImageTarget(scene,{width,height},previewPointPixelDensity??NaN,previewLogicalHeight??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}
   if((sourceGeometryLive||sourceNumericalLive)&&pausedSourceImage){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceImplicitLive?previewPointPixelDensity:sourceSurfaceLive?surfacePixelDensity:sourceDomainLive?domainPixelDensity:fractalPixelDensity)??NaN,sourceGeometryLive?undefined:MAX_RASTER_PIXELS);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   else if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
@@ -334,14 +337,14 @@ export function ExportDialog({
       const bouncing=bouncingPlan?.ok?bouncingPlan.value:undefined;
       const timeline=sourceFrames||sourceBouncing||perlinFrames||fractalFrames?exportScene.timeline:resolveTimeline(exportScene);
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
-      if((usesSourceSurfaceParticles(exportScene)||usesSourceImplicitCpuMesh(exportScene))&&previewPointPixelDensity===undefined)throw new Error('源几何导出缺少已呈现预览的像素密度，请等待预览完成');
+      if((usesSourceSurfaceParticles(exportScene)||usesSourceImplicitCpuMesh(exportScene)||usesSourceAttractorCpu(exportScene))&&previewPointPixelDensity===undefined)throw new Error('源几何导出缺少已呈现预览的像素密度，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
       if(usesSourceMapPresentation(exportScene)&&sourceMapToneReference===undefined)throw Error('Map 导出缺少已呈现主画布尺寸，请等待预览完成');
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
-      const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width:attractorTarget?.width??width,height:attractorTarget?.height??height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:attractorTarget?.sourceViewport??ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:undefined;
-      if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(width,height,1);}
+      if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(attractorTarget?.logicalWidth??width,attractorTarget?.logicalHeight??height,attractorTarget?.density??1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));
         checkCancelled();assertSourceBouncingExportFrame(warmup,bouncing,bouncing.warmup);
@@ -383,7 +386,7 @@ export function ExportDialog({
         const session = await request("/api/exports", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps:bouncing?.recording?.encodingFps??fps, frames, format,...videoEncoding,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height}:{}) }),
+          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps:bouncing?.recording?.encodingFps??fps, frames, format,...videoEncoding,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height}:{}),...(attractorTarget?{inputWidth:attractorTarget.width,inputHeight:attractorTarget.height}:{}) }),
         });
         sessionRef.current = exportSessionCleanup.registerCreated(session.id);
         checkCancelled();
@@ -435,8 +438,8 @@ export function ExportDialog({
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
-          blob=(kind==='video'||format==='png')&&usesSourceImplicitCpuMesh(exportScene)
-            ?await encodeSourceImplicitImage(r!,output,{signal:abort.signal,isCancelled:()=>cancelRef.current,purpose:kind==='video'?'video-frame':'static-png'})
+          blob=usesSourceGeometryImage(exportScene)&&(kind==='video'||format==='png'||usesSourceAttractorCpu(exportScene))
+            ?await encodeSourceGeometryImage(r!,exportScene,output,{signal:abort.signal,isCancelled:()=>cancelRef.current,purpose:kind==='video'?'video-frame':'static-image',format:kind==='image'&&format==='jpg'?'image/jpeg':'image/png'})
             :await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
         }
         checkCancelled();
@@ -596,6 +599,7 @@ export function ExportDialog({
         </label>
         {!pausedSourceImage&&upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}
         {resolution==='custom'&&<><label className="field"><span>{t("宽度 · px")}</span><input aria-label={t("导出宽度")} disabled={working} type="number" min={16} max={kind==='video'?7680:16384} step={kind==='video'?2:1} value={customWidth} onChange={e=>setCustomWidth(Number(e.target.value))}/></label><label className="field"><span>{t("高度 · px")}</span><input aria-label={t("导出高度")} disabled={working} type="number" min={16} max={kind==='video'?4320:16384} step={kind==='video'?2:1} value={customHeight} onChange={e=>setCustomHeight(Number(e.target.value))}/></label>{dimensionError&&<p className="export-error" role="alert">{dimensionError}</p>}</>}
+        {kind==='image'&&attractorTarget&&(attractorTarget.width!==width||attractorTarget.height!==height)&&<p role="status" className="muted" data-testid="actual-image-size">{t('实际图像尺寸：{width} × {height} 像素。',{width:attractorTarget.width,height:attractorTarget.height})}</p>}
         {kind === "video" && (
           <>
             <label className="field">

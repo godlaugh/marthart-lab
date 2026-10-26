@@ -114,7 +114,19 @@ export function timelineWarnings(scene:SceneDocument,clock:'fixed'|'realtime'='f
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,...(clock==='fixed'?['复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。']:[])];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
- if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=usesSourceImplicitCpuMesh(scene)?replaySourceImplicitTimeline(scene,0).frame:(usesSourceSymmetryGradient(scene)||usesSourceMapParameters(scene))?replaySourceIteratedTimeline(scene,0).frame:usesSourcePerlin(scene)?replaySourcePerlinCamera(scene,0):usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):usesSourceAttractor(scene)?replaySourceAttractorCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message));if(clock==='fixed')messages.push('原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
+ if(scene.sourceCamera){
+  const initial=ordinarySourceCameraInitial(scene)!;
+  // Timeline UI needs authored queue diagnostics, not a second particle
+  // replay. Attractor warmup belongs to the generation owner; in particular a
+  // valid asynchronous full warmup must not be rejected by a synchronous
+  // camera query's smaller work budget merely while rendering controls.
+  // Runtime tracking diagnostics remain on the actual generated frame.
+  const diagnostics=usesSourceAttractor(scene)
+   ?resolveOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,{particleActions:'attractor'}).diagnostics
+   :(usesSourceImplicitCpuMesh(scene)?replaySourceImplicitTimeline(scene,0).frame:(usesSourceSymmetryGradient(scene)||usesSourceMapParameters(scene))?replaySourceIteratedTimeline(scene,0).frame:usesSourcePerlin(scene)?replaySourcePerlinCamera(scene,0):usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0)).diagnostics;
+  messages.push(...diagnostics.map(d=>d.message));
+  if(clock==='fixed')messages.push('原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');
+ }
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&!rootMathAnimationTargetEnabled(scene,track.target)||track.type==='param'&&track.parameterAnimations?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&action.parameters?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))))))messages.push('源复根数学不使用通用参数或旧采样与求解字段；相关轨道保留时长但未执行。');
  const inactiveSourceParameters=(parameters:readonly ParameterAnimation[]|undefined)=>parameters?.some(p=>p.enabled&&inactiveFractalSourceColorTarget(scene,p.target));
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&inactiveFractalSourceColorTarget(scene,track.target)||track.type==='param'&&inactiveSourceParameters(track.parameterAnimations)||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&inactiveSourceParameters(action.parameters)))))messages.push('原版分形着色已停用；其偏移动画保留但不执行。');

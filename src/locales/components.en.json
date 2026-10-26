@@ -1196,5 +1196,6 @@
   "生成参数和颜色随分形项目保存。切回手动仅恢复颜色；应用为手动保留生成结果。暂停时保留动画进度，播放时重新开始。": "Generator parameters and colors are saved with the fractal project. Returning to Manual restores only colors; Apply as manual keeps the generated result. Edits preserve animation progress while paused and restart it while playing.",
   "源颜色原文": "Original source color",
   "源色板保留全部颜色原文与顺序；热改色不改变时间线。空列表保留当前配色，应用场景后按冷色板读取。": "The source palette retains every original color and its order. Live color changes keep the timeline. An empty list keeps the current colors until Apply reads the cold palette.",
-  "生成参数只保留在当前打开项目中；保存颜色，重新打开回到手动模式。": "Generator settings remain in the open project. Colors are saved; reopening starts in Manual mode."
+  "生成参数只保留在当前打开项目中；保存颜色，重新打开回到手动模式。": "Generator settings remain in the open project. Colors are saved; reopening starts in Manual mode.",
+  "实际图像尺寸：{width} × {height} 像素。": "Actual image size: {width} × {height} pixels."
 }

@@ -7,6 +7,7 @@ import {parseProjectFile} from '../src/engine/legacyImport';
 import {generateScene,generateSceneAsync,TemporalGenerationSession} from '../src/engine/temporal';
 import type {GenerateContext,SceneOutput} from '../src/types';
 import {outputBuffers} from '../src/engine/outputBuffers';
+import {defaultFormulas,formulaPresentation} from '../src/engine/formulas';
 
 function scene(){return parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'ATTRACTOR',name:'Async CPU',settings:{render_mode:'CPU',particle_count_cpu:8,time_step:.01,sub_steps:3},initialization:{warmup_steps:30,stagger_min:5,stagger_max:20},equations:{dx:'y-x',dy:'x-z',dz:'x*y-z'},parameters:{},timeline:[{type:'wait',duration:2}]})).scene;}
 const context:GenerateContext={time:0,width:80,height:60,quality:'preview',sourceViewport:{logicalWidth:80,logicalHeight:60,referenceLogicalHeight:60,target:'primary',projectionPass:'perspective'}};
@@ -65,5 +66,29 @@ describe('source Attractor async initialization with unchanged timeline owner',(
    expect(comparable(await generateSceneAsync(s,context,owner))).toEqual(comparable(generateScene(s,context)));expect(workers).toBeGreaterThan(1);
    const count=workers;await generateSceneAsync(s,{...context,time:.1},owner);expect(workers).toBe(count);
   }finally{owner.reset();}
+ });
+ it.each([false,true])('binds the same public sync/async formula presentation with visible=%s and preserves the paired tracked camera',async visible=>{
+  vi.stubGlobal('Worker',class extends Port{constructor(){super();}});
+  const s=scene();s.formulas=defaultFormulas();s.formulas.main.visible=visible;
+  s.timeline.tracks=[{id:'track',type:'animate',target:'camera.actions',from:0,to:0,start:0,duration:0,easing:'linear',enabled:true,pingPong:false,actions:[{id:'t',method:'track',args:{index:0}}]},...s.timeline.tracks];
+  const c={...context,time:.1},sync=generateScene(s,c),asyncOutput=await generateSceneAsync(s,c);
+  expect(comparable(asyncOutput)).toEqual(comparable(sync));expect(asyncOutput.formulaPresentation).toEqual(formulaPresentation(s,c.sourceViewport));expect(asyncOutput.formulaPresentation!.labels.length).toBe(visible?1:0);
+  if(asyncOutput.type!=='geometry')throw Error('geometry expected');
+  expect(asyncOutput.sourceCameraFrame!.camera.center).toEqual(Array.from(asyncOutput.positions.subarray(0,3)));
+  expect(asyncOutput.sourceCameraFrame!.camera.center.some(n=>n!==0)).toBe(true);
+ });
+ it('captures labels before warmup ACK and permits label-only updates without rebuilding motion',async()=>{
+  const ports:Port[]=[],owner=new SourceAttractorSession({warmupWorkerFactory:()=>{const p=new Port(false);ports.push(p);return p;}}),s=scene();s.formulas=defaultFormulas();s.formulas.main.visible=true;s.formulas.main.latex='x';
+  try{
+   const expected=formulaPresentation(s,context.sourceViewport),pending=owner.generateAsync(s,context);s.formulas.main.latex='y';
+   for(const p of ports)while(p.pending.length)p.complete();const first=await pending;
+   expect(first.formulaPresentation).toEqual(expected);expect(first.formulaPresentation!.labels[0].latex).toBe('x');const count=ports.length;
+   const second=await owner.generateAsync(s,context);expect(second.formulaPresentation!.labels[0].latex).toBe('y');expect(ports).toHaveLength(count);expect(owner.diagnostics().constructions).toBe(1);
+   if(first.type!=='geometry'||second.type!=='geometry')throw Error('geometry expected');expect(second.positions).toEqual(first.positions);expect(second.sourceCameraFrame).toEqual(first.sourceCameraFrame);
+  }finally{await owner.resetAsync();}
+ });
+ it('rejects malformed formula configuration before creating any warmup Worker',async()=>{
+  let count=0;const owner=new SourceAttractorSession({warmupWorkerFactory:()=>{count++;return new Port();}}),s=scene();s.formulas=defaultFormulas();s.formulas.main.scale=NaN;
+  try{await expect(owner.generateAsync(s,context)).rejects.toThrow();expect(count).toBe(0);expect(owner.diagnostics().retainedBytes).toBe(0);s.formulas.main.scale=1;expect((await owner.generateAsync(s,context)).formulaPresentation!.labels).toEqual([]);}finally{await owner.resetAsync();}
  });
 });

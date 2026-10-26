@@ -8,7 +8,7 @@ describe('source Attractor production Worker handoff',()=>{
  it('awaits nested warmup workers and transfers detached public geometry without leaking retained arrays or callbacks',async()=>{
   vi.resetModules();const {executeSourceAttractorWarmup}=await import('../src/engine/sourceAttractorWarmup');
   const {parseProjectFile}=await import('../src/engine/legacyImport');
-  const source=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'ATTRACTOR',name:'Worker warmup',settings:{render_mode:'CPU',particle_count_cpu:8,time_step:.01,sub_steps:3},initialization:{warmup_steps:30,stagger_min:5,stagger_max:20},equations:{dx:'y-x',dy:'x-z',dz:'x*y-z'},parameters:{},timeline:[{type:'wait',duration:2}]})).scene;
+  const source=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'ATTRACTOR',name:'Worker warmup',main_equation:{enabled:true,color:'#FFFFFF',scale:1,position:[10,20]},settings:{render_mode:'CPU',particle_count_cpu:8,time_step:.01,sub_steps:3},initialization:{warmup_steps:30,stagger_min:5,stagger_max:20},equations:{dx:'y-x',dy:'x-z',dz:'x*y-z'},parameters:{},timeline:[{type:'wait',duration:2}]})).scene;
   let workers=0,terminated=0;const responses:GenerationWorkerResponse[]=[],detach:number[][]=[];
   vi.stubGlobal('Worker',class implements SourceAttractorWarmupWorkerPort{
    onmessage:SourceAttractorWarmupWorkerPort['onmessage']=null;onerror:SourceAttractorWarmupWorkerPort['onerror']=null;onmessageerror:SourceAttractorWarmupWorkerPort['onmessageerror']=null;
@@ -23,9 +23,13 @@ describe('source Attractor production Worker handoff',()=>{
   await scope.onmessage!({data:request(1,0)} as MessageEvent<GenerationWorkerRequest>);
   const first=responses.find(x=>x.id===1&&x.operation==='generate');expect(first).toHaveProperty('output');if(!first||!('output'in first)||first.output.type!=='geometry')throw Error('geometry expected');
   const positions=first.output.positions.slice();expect(workers).toBeGreaterThan(1);expect(terminated).toBe(workers);
+  expect(first.output.formulaPresentation?.labels).toHaveLength(1);expect(first.output.formulaPresentation?.labels[0].latex).toContain('\\frac{dx}{dt}');
   await scope.onmessage!({data:request(2,.1)} as MessageEvent<GenerationWorkerRequest>);
   await scope.onmessage!({data:request(3,0)} as MessageEvent<GenerationWorkerRequest>);
   const third=responses.find(x=>x.id===3&&x.operation==='generate');if(!third||!('output'in third)||third.output.type!=='geometry')throw Error('geometry expected');
   expect(third.output.positions).toEqual(positions);expect(detach.flat().every(bytes=>bytes===0)).toBe(true);expect(terminated).toBe(workers);expect(responses.some(x=>'error'in x)).toBe(false);
+  expect(third.output.formulaPresentation).toEqual(first.output.formulaPresentation);
+  source.formulas!.main.visible=false;await scope.onmessage!({data:request(4,0)} as MessageEvent<GenerationWorkerRequest>);
+  const fourth=responses.find(x=>x.id===4&&x.operation==='generate');if(!fourth||!('output'in fourth))throw Error('output expected');expect(fourth.output.formulaPresentation?.labels).toEqual([]);
  });
 });

@@ -9,6 +9,7 @@ import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {sourceBouncingViewFromCamera,type SourceBouncingView,type SourceBouncingNavigationEvent} from '../engine/sourceBouncingNavigation';
 import type {SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
+import {usesSourceAttractorCpu} from '../engine/sourceAttractorDocument';
 import {samilaCameraEnabled,SAMILA_CAMERA_NAVIGATION_NOTICE} from '../engine/samilaCamera';
 import {captureSamilaViewport,navigateSamilaViewport,type SamilaViewportCommit} from '../engine/samilaViewport';
 import {PresentedFrameOwner,applyPresentedCamera,type PresentedFrame} from '../engine/presentedFrame';
@@ -387,13 +388,18 @@ export const Viewport = forwardRef<
         try{
           if(!output.formulaPresentation)throw Error('原生预览缺少实际帧的公式');
           nativeOwner.current??=new SourceNativeViewport(nativeCanvas.current!);
-          nativeOwner.current.submit({formulas:output.formulaPresentation,current:()=>nativeWanted.current&&latestOutput.current===output&&renderer.current===r,
-            prepare:(generation,sequence)=>{
+          nativeOwner.current.submit({formulas:output.formulaPresentation,prepareFormulasFirst:usesSourceAttractorCpu(source),current:()=>nativeWanted.current&&latestOutput.current===output&&renderer.current===r,
+            prepare:(generation,sequence,retainedPresentationBytes)=>{
               if(output.type==='raster'){
                 if(output.sourcePixelRenderer?.backend!=='native')throw Error('原生预览需要对应的原生像素帧');
                 return{pixels:output};
               }
-              draw();const frame=r.sourceDrawingFrame(generation,sequence);if(!frame.ok)throw Error(frame.error.reason);
+              draw();
+              if(usesSourceAttractorCpu(source)){
+                const gl=r.renderer.getContext(),planned=r.sourceDrawingPlan(generation,sequence,{retainedBuffers:outputBuffers(output),additionalBytes:retainedPresentationBytes+gl.drawingBufferWidth*gl.drawingBufferHeight*12});
+                if(!planned.ok)throw Error(planned.error.reason);return{planned:planned.value};
+              }
+              const frame=r.sourceDrawingFrame(generation,sequence);if(!frame.ok)throw Error(frame.error.reason);
               const retainedBytes=outputBuffers(output).reduce((sum,buffer)=>sum+buffer.byteLength,0)+frame.value.width*frame.value.height*12+64*1024**2;
               return{frame:frame.value,retainedBytes};
             },ready:()=>{nativeCanvas.current!.style.display='block';commit(true);},failed});
