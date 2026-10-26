@@ -41,7 +41,8 @@ export function sourcePerlinGpuLayout(width:number,height:number,marchSteps:numb
  if(bytes>SOURCE_PERLIN_GPU_LIMITS.bytes)throw new SourcePerlinGpuError('capacity','Perlin 图像与纹理超过本地 256 MiB 表示预算');
  return Object.freeze({size,pixels,work,bytes});
 }
-function packedRgba(input:Uint32Array){
+/** Source ARGB words to an unpremultiplied RGBA8 upload, in source row order. */
+export function sourcePerlinPackedRgba(input:Uint32Array){
  const out=new Uint8Array(input.length*4);
  for(let i=0;i<input.length;i++){const c=input[i],p=i*4;out[p]=c>>>16;out[p+1]=c>>>8;out[p+2]=c;out[p+3]=c>>>24;}
  return out;
@@ -84,7 +85,7 @@ export class SourcePerlinGpuDrawing {
  private readonly uniforms=new Map<string,WebGLUniformLocation|null>();
  private failed=false;private disposed=false;
  constructor(channel:SourcePerlinGpuChannel){
-  const facts=sourcePerlinGpuChannelLayout(channel);this.size=facts.size;this.resourceBytes=facts.resourceBytes;this.upload=packedRgba(channel.pixels);
+  const facts=sourcePerlinGpuChannelLayout(channel);this.size=facts.size;this.resourceBytes=facts.resourceBytes;this.upload=sourcePerlinPackedRgba(channel.pixels);
  }
  private check(cancelled?:()=>boolean){
   if(this.disposed)throw new SourcePerlinGpuError('disposed','Perlin GPU 绘制资源已释放');
@@ -124,12 +125,14 @@ export class SourcePerlinGpuDrawing {
    g.uniform1i(location('u_marchSteps'),u.marchSteps);g.uniform1i(location('u_renderStyle'),u.renderStyle);g.uniform1f(location('u_paletteSize'),256);g.uniform1i(location('u_useChannel0'),1);
    g.activeTexture(g.TEXTURE0);g.bindTexture(g.TEXTURE_2D,this.channel!);g.uniform1i(location('u_channel0'),0);
    g.activeTexture(g.TEXTURE1);g.bindTexture(g.TEXTURE_2D,this.palette!);g.uniform1i(location('u_palette'),1);
-   const bytes=packedRgba(frame.palette);
+   const bytes=sourcePerlinPackedRgba(frame.palette);
    if(!this.paletteBytes||bytes.some((v,i)=>v!==this.paletteBytes![i])){
     g.pixelStorei(g.UNPACK_ALIGNMENT,1);g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL,false);g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
     g.texSubImage2D(g.TEXTURE_2D,0,0,0,256,1,g.RGBA,g.UNSIGNED_BYTE,bytes);g.generateMipmap(g.TEXTURE_2D);this.paletteBytes=bytes;
    }
-   g.bindFramebuffer(g.FRAMEBUFFER,framebuffer);g.viewport(0,0,frame.width,frame.height);g.colorMask(true,true,true,true);g.disable(g.BLEND);g.disable(g.DEPTH_TEST);g.disable(g.SCISSOR_TEST);g.disable(g.CULL_FACE);g.enable(g.DITHER);
+   // Original Perlin actual-draw captures have DITHER disabled. Controlled
+   // on/off replay did not explain the ANGLE/native arithmetic residuals.
+   g.bindFramebuffer(g.FRAMEBUFFER,framebuffer);g.viewport(0,0,frame.width,frame.height);g.colorMask(true,true,true,true);g.disable(g.BLEND);g.disable(g.DEPTH_TEST);g.disable(g.SCISSOR_TEST);g.disable(g.CULL_FACE);g.disable(g.DITHER);
    this.check(cancelled);g.drawArrays(g.TRIANGLES,0,3);this.check(cancelled);
    const error=g.getError();if(error!==g.NO_ERROR||g.isContextLost())throw new SourcePerlinGpuError('render',`Perlin GPU 绘制失败 (${error})`);
   }catch(error){this.failed=true;this.release();throw error;}

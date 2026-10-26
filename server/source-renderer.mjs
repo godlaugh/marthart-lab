@@ -30,12 +30,12 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11,12].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===12?60:version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
- if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*(version===12?6:4)+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
  if(version===11){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
   if(b.readUInt32LE(60)!==4||![1,2,3].includes(operation)||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','分形原生帧头部无效');
@@ -55,7 +55,7 @@ export function inspectSourceFrameHeader(packet){
   if(b.length*6+128+(operation===3?width*height*8:0)>BUDGET)return failure('capacity','迭代原生绘制协议与读取超过容量');
   return{ok:true,value:{generation,sequence,width,height,samples,control:operation!==3,operation,resource,fragmentProfile,family:'iterated-render',stateResource,expectedIndex,expectedDisplays,totalCount,record:record===1}};
  }
- if(version>=6){
+ if(version>=6&&version<=10){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
   if(version===10||version===9&&operation!==9||version===8&&![2,4,5,7,8].includes(operation)||version===7&&operation!==3&&operation!==6||version===6&&operation>5||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>9||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
   const create=operation===1||operation===6||operation===7,shift=version===7&&operation===3?4:0,minimum={1:100,2:116,3:108+shift,4:100,5:88,6:108,7:104,8:108,9:112}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');

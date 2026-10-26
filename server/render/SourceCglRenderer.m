@@ -52,7 +52,7 @@ static void samilaFloatBlock(NSData *data,NSUInteger length){INPUT(data.length==
 #include "SourceCglFractalProtocol.h"
 static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=11,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=12,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
@@ -67,7 +67,7 @@ static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retain
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Fractal envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Fractal envelope clear must be zero");
   NSDictionary *operation=parseFractal(r,width,height,retainedBytes);return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"fractal":operation,@"packetBytes":@(packet.length)};
  }
- if(version>=6){
+ if(version>=6&&version<=10){
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Iterated envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Iterated envelope clear must be zero");
   uint32_t family=[r word];if((version==7||version==10)&&family==3){NSDictionary *op=parseIteratedRender(r,width,height,version);INPUT(r.offset==packet.length,@"Trailing iterated render bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"iteratedRender":op,@"packetBytes":@(packet.length)};}
   INPUT(version!=10&&family==2&&width==1&&height==1,@"Unknown iterated native family/control dimensions");uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
@@ -113,12 +113,12 @@ static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retain
  NSMutableArray *textures=[NSMutableArray new],*draws=[NSMutableArray new];
  for(NSUInteger i=0;i<nt;i++){
   uint32_t w=[r word],h=[r word];float anisotropy=[r number];NSData *pixels=[r block];
-  INPUT(w>0&&w<=16384&&h>0&&h<=16384&&(uint64_t)w*h*4==pixels.length&&anisotropy>=1,@"Invalid RGBA8 texture");
+  INPUT(w>0&&w<=16384&&h>0&&h<=16384&&(uint64_t)w*h*4==pixels.length&&(anisotropy>=1||(version==12&&anisotropy==0)),@"Invalid RGBA8 texture");
   [textures addObject:@{@"width":@(w),@"height":@(h),@"anisotropy":@(anisotropy),@"pixels":pixels}];
  }
  for(NSUInteger i=0;i<nd;i++){
   NSString *vertex=[r text],*fragment=[r text];uint32_t first=[r word],n=[r word],instances=[r word],flags=[r word];
-  INPUT(first<=INT_MAX&&n<=INT_MAX&&instances<=INT_MAX&&((version>=3&&(flags&8))||n%3==0)&&flags<=(version==4?63:version==3?31:7),@"Invalid draw range or raster flags");
+  INPUT(first<=INT_MAX&&n<=INT_MAX&&instances<=INT_MAX&&((version>=3&&(flags&8))||n%3==0)&&flags<=(version==4?63:(version==3||version==12)?31:7),@"Invalid draw range or raster flags");
   NSUInteger np=count(r,4);INPUT(np>0&&np<=2,@"Invalid face passes");NSMutableArray *passes=[NSMutableArray new];for(NSUInteger j=0;j<np;j++){uint32_t p=[r word];INPUT(p<=2,@"Invalid face selection");[passes addObject:@(p)];}
   BOOL retained=version==4&&(flags&32);if(retained)INPUT([operation[@"kind"]intValue]==3&&i==0&&first==0&&n==[operation[@"count"]unsignedIntValue]&&instances==1&&flags==56&&np==1&&[passes[0]intValue]==0,@"Invalid retained point draw");
   NSUInteger na=count(r,20),vertices=NSUIntegerMax;INPUT(retained?na==0:na>0,@"Invalid retained/packed attributes");if(retained)vertices=n;NSMutableArray *attributes=[NSMutableArray new];NSMutableSet *names=[NSMutableSet new];
@@ -178,8 +178,16 @@ static void draw(NSDictionary *d,NSArray *textures){
   for(NSUInteger i=0;i<attributes.count;i++){NSDictionary *a=attributes[i];GLint loc=glGetAttribLocation(program,[a[@"name"]UTF8String]);if(loc<0)continue;NSData *bytes=a[@"bytes"];glBindBuffer(GL_ARRAY_BUFFER,buffers[i]);glBufferData(GL_ARRAY_BUFFER,bytes.length,bytes.bytes,GL_STATIC_DRAW);glEnableVertexAttribArray(loc);glVertexAttribPointer(loc,[a[@"size"]intValue],GL_FLOAT,GL_FALSE,0,NULL);glVertexAttribDivisor(loc,[a[@"divisor"]intValue]);}
   NSData *indices=d[@"indices"];GLenum indexType=[d[@"indexType"]intValue]==16?GL_UNSIGNED_SHORT:GL_UNSIGNED_INT;
   if([d[@"indexType"]intValue]){glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,buffers[attributes.count]);glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.length,indices.bytes,GL_STATIC_DRAW);}
-  glGenTextures((GLsizei)textures.count,tex);GLfloat maximum=1;glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,&maximum);GLint maxTextureSize=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTextureSize);
-  for(NSUInteger i=0;i<textures.count;i++){NSDictionary *t=textures[i];GLint w=[t[@"width"]intValue],h=[t[@"height"]intValue];GLfloat a=[t[@"anisotropy"]floatValue];ensure(a<=maximum&&w<=maxTextureSize&&h<=maxTextureSize,@"unsupported",@"Requested texture sampling/size unavailable");glActiveTexture(GL_TEXTURE0+(GLenum)i);glBindTexture(GL_TEXTURE_2D,tex[i]);NSData *pixels=t[@"pixels"];glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.bytes);glGenerateMipmap(GL_TEXTURE_2D);glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAX_ANISOTROPY_EXT,a);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);}
+  glGenTextures((GLsizei)textures.count,tex);
+  // The context owns capabilities. Generic v12 wire zero requests Processing's
+  // maximum supported sampling; existing numeric v3 requests remain exact.
+  BOOL hasAnisotropy=NO;GLint extensions=0;glGetIntegerv(GL_NUM_EXTENSIONS,&extensions);
+  ensure(extensions>=0&&extensions<=65536,@"unsupported",@"Invalid native extension count");
+  for(GLint i=0;i<extensions;i++){const GLubyte *name=glGetStringi(GL_EXTENSIONS,i);if(name&&strcmp((const char*)name,"GL_EXT_texture_filter_anisotropic")==0){hasAnisotropy=YES;break;}}
+  GLfloat maximum=1;if(hasAnisotropy)glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,&maximum);
+  ensure(isfinite(maximum)&&maximum>=1,@"unsupported",@"Invalid native maximum anisotropy");
+  GLint maxTextureSize=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTextureSize);
+  for(NSUInteger i=0;i<textures.count;i++){NSDictionary *t=textures[i];GLint w=[t[@"width"]intValue],h=[t[@"height"]intValue];GLfloat a=[t[@"anisotropy"]floatValue];if(a==0)a=maximum;ensure(a<=maximum&&w<=maxTextureSize&&h<=maxTextureSize,@"unsupported",@"Requested texture sampling/size unavailable");glActiveTexture(GL_TEXTURE0+(GLenum)i);glBindTexture(GL_TEXTURE_2D,tex[i]);NSData *pixels=t[@"pixels"];glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.bytes);glGenerateMipmap(GL_TEXTURE_2D);if(hasAnisotropy)glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAX_ANISOTROPY_EXT,a);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);}
   applyUniforms(program,uniforms);
   GLint active=0;
   glGetProgramiv(program,GL_ACTIVE_ATTRIBUTES,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveAttrib(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active attribute name capacity");// Apple GL exposes this fixed-function vertex input in active attributes.

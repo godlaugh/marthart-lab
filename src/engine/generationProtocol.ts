@@ -155,3 +155,15 @@ export type GenerationPayload =
   | { operation: 'explore-complex'; id: number; progress: ComplexExploreProgress }
   | {operation:GenerationRequest['operation'];id:number;error:string;retainedSourceId?:number;retainedRecordingId?:number};
 export type GenerationResponse = GenerationPayload & { sessionId: number };
+
+/** Internal duplex broker. Numerical Perlin state remains in the Worker;
+ * only the owning page may use its native renderer lease/request slot. */
+export interface PerlinNativeDrawRequest {
+ operation:'perlin-native-draw';sessionId:number;id:number;drawId:number;
+ frame:import('./sourcePerlinGpu').SourcePerlinGpuFrame;
+ channel:import('./sourcePerlinGpu').SourcePerlinGpuChannel;retainedBytes:number;
+}
+export type PerlinNativeDrawResponse={operation:'perlin-native-result';sessionId:number;id:number;drawId:number}&(
+ {result:import('./sourceNativeClient').SourceNativePixels}|{error:string});
+export type GenerationWorkerRequest=GenerationRequest|PerlinNativeDrawResponse;
+export type GenerationWorkerResponse=GenerationResponse|PerlinNativeDrawRequest;

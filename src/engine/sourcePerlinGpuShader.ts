@@ -6,10 +6,9 @@
 export const sourcePerlinGpuVertex=`#version 300 es
 precision highp float;
 void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));gl_Position=vec4(p*2.-1.,0.,1.);}`;
-export const sourcePerlinGpuFragment=`#version 300 es
-precision highp float;
-precision highp int;
-
+/** The source fragment body is shared by WebGL and CGL. Version/precision
+ * declarations belong to the respective host, never a second shader copy. */
+export const sourcePerlinFragmentBody=`
 uniform vec2 u_resolution;
 uniform float u_time;
 uniform float u_noiseFrequency;
@@ -180,3 +179,5 @@ void main() {
     fragColor = vec4(col, 1.0);
 }
 `;
+
+export const sourcePerlinGpuFragment=`#version 300 es\nprecision highp float;\nprecision highp int;\n${sourcePerlinFragmentBody}`;

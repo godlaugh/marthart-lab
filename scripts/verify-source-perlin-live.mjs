@@ -1,16 +1,16 @@
 import {chromium} from '@playwright/test';
-import {createServer} from 'vite';
+import {sourceNativeVerificationServer} from './lib/source-native-verification-server.mjs';
 import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const output=process.argv[2];if(!output)throw Error('Pass a fresh report path');
 const paths=['src/scenes/sourcePerlin.ts','src/engine/sourcePerlinLive.ts','src/engine/sourcePerlinResponse.ts','src/engine/temporal.ts','src/engine/client.ts','src/engine/generate.worker.ts','src/engine/generationInput.ts','src/engine/generationProtocol.ts','src/engine/generationQueue.ts','src/types.ts','scripts/verify-source-perlin-live.mjs'];
 const hashes=()=>Promise.all(paths.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])).then(Object.fromEntries);
 const report={status:'running',sourceBefore:await hashes(),errors:[],scope:'Real production Generator Worker and GenerationQueue with Chrome WebGL2; no replaced numerical producers. Validates live transport, playback/capture/recording identity and deferred queue handoff. Not an original-app pixel oracle or public UI acceptance.'};
-let server,browser,page;const deadline=setTimeout(()=>void browser?.close(),30000),started=performance.now();
+let host,server,browser,page;const deadline=setTimeout(()=>void browser?.close(),30000),started=performance.now();
 try{
- server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-angle-features=disableProgramCaching']});page=await browser.newPage();page.on('pageerror',e=>report.errors.push(e.message));
- await page.route('**/perlin-live-check',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Perlin live transport</title>'}));await page.goto(server.resolvedUrls.local[0]+'perlin-live-check');
- report.result=await page.evaluate(async()=>{
+ const arg=process.argv.indexOf('--native-backend');host=await sourceNativeVerificationServer(output+'.service',arg<0?undefined:process.argv[arg+1]);server=host.server;report.nativeBackend=host.backend;browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-angle-features=disableProgramCaching']});page=await browser.newPage();page.on('pageerror',e=>report.errors.push(e.message));
+ await page.route('**/perlin-live-check',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Perlin live transport</title>'}));await page.goto(server.resolvedUrls.local[0]+'perlin-live-check');await page.unroute('**/perlin-live-check');
+ report.result=await page.evaluate(async native=>{
   const {Generator}=await import('/src/engine/client.ts'),{GenerationQueue}=await import('/src/engine/generationQueue.ts'),{parseLegacyScene}=await import('/src/engine/legacyImport.ts');
   const result=globalThis.__perlinLiveResult={checks:[],frames:[],workers:{created:0,terminated:0},browser:navigator.userAgent};
   const NativeWorker=Worker;globalThis.Worker=class extends NativeWorker{constructor(...args){super(...args);result.workers.created++;this.addEventListener('message',({data})=>{if(data.operation?.startsWith('source-recording')){const out=data.result?.warmup??data.result?.preview??data.output;(result.recordingWire??=[]).push({operation:data.operation,error:data.error,context:data.result?.context,sceneId:data.result?.scene?.id,live:out?.perlinLive,sourceFrame:out?.sourcePerlinFrame,width:out?.width,height:out?.height});}});let ended=false;const stop=this.terminate.bind(this);this.terminate=()=>{if(!ended){ended=true;result.workers.terminated++;}stop();};}};
@@ -19,7 +19,7 @@ try{
   const scene=()=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'live transport',settings:{render_mode:'GPU',seed:'1771842692935',particle_count:12,gpu_texture_style:3},timeline:[{type:'wait',duration:.2}]})).scene;
   const context=(token='live')=>({time:999,quality:'preview',width:48,height:36,sourcePerlinViewport:{width:48,height:36,pixelDensity:1},sourceViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:36,target:'primary',projectionPass:'perspective'},perlinLive:{sessionId:token,paletteRevision:0,clock:{paused:true,timestampMs:1000}}});
   const g=new Generator(),s=scene(),c=context(),cold=structuredClone(s);let queue,control;
-  const record=async(label,o)=>{check(o.type==='raster'&&o.backend==='webgl2'&&o.perlinLive&&o.sourcePerlinFrame,label+' actual GPU raster');result.frames.push({label,live:o.perlinLive,frame:o.sourcePerlinFrame,width:o.width,height:o.height,rgbaSha256:await hash(o.pixels)});};
+  const record=async(label,o)=>{check(o.type==='raster'&&o.backend===(native?'native':'webgl2')&&(!native||o.sourcePixelRenderer?.backend==='native')&&o.perlinLive&&o.sourcePerlinFrame,label+' actual GPU raster');result.frames.push({label,renderer:o.sourcePixelRenderer,live:o.perlinLive,frame:o.sourcePerlinFrame,width:o.width,height:o.height,rgbaSha256:await hash(o.pixels)});};
   try{
    let o=await g.generate(s,c);await record('initial',o);check(o.perlinLive.sceneTime===0,'initial paused uses retained source time instead of UI time999');
    await g.setPerlinPaused(o,false,1000);c.perlinLive.clock={paused:false,timestampMs:1100};o=await g.generate(s,c);await record('running',o);check(o.perlinLive.renderKind==='update'&&o.perlinLive.sceneTime>0,'injected live update advances');
@@ -67,7 +67,7 @@ try{
    check(!errors.length,'deferred palette command produces no queue errors');
    queue.dispose();queue=undefined;check(result.workers.created===result.workers.terminated,'all owned workers terminated');result.queueOutputs=outputs;return result;
   }finally{queue?.dispose();control?.dispose();g.dispose();}
- });
+ },host.native);
  report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);if(!report.sourceStable||report.errors.length)throw Error('Source changed or page error');report.status='passed';
 }catch(e){report.status='failed';report.error={message:e.message,stack:e.stack};report.partial=await page?.evaluate(()=>globalThis.__perlinLiveResult).catch(()=>undefined);process.exitCode=1;}
-finally{clearTimeout(deadline);await browser?.close();await server?.close();report.seconds=(performance.now()-started)/1000;report.closed={browser:true,vite:true};await writeFile(output,JSON.stringify(report,null,2)+'\n',{flag:'wx'});console.log(JSON.stringify({status:report.status,seconds:report.seconds,checks:report.result?.checks.length,error:report.error?.message,output}));}
+finally{clearTimeout(deadline);await browser?.close();await host?.close();report.remainingServiceProcesses=host?.service?.ownedProcessCount??0;report.seconds=(performance.now()-started)/1000;report.closed={browser:true,vite:true};await writeFile(output,JSON.stringify(report,null,2)+'\n',{flag:'wx'});console.log(JSON.stringify({status:report.status,seconds:report.seconds,checks:report.result?.checks.length,error:report.error?.message,output}));}

@@ -1,3 +1,7 @@
+import {prepareSourcePerlinNativeDrawing} from './sourcePerlinNativeDrawing';
+import {renderSourceNativeFrame} from './sourceNativeClient';
+import {ensureSourceNativeLease} from './sourceNativeLease';
+import type {GenerationWorkerResponse,PerlinNativeDrawRequest,PerlinNativeDrawResponse} from './generationProtocol';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
 import {usesSourceDomain} from './sourceDomainTimeline';
 import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
@@ -272,6 +276,46 @@ export class Generator {
   private counter = 0;
   private nativeTransition=0;
   private nativeCleanup?:Promise<void>;
+  private perlinBroker?:{worker:Worker;done:Promise<void>};
+  private perlinDrawIds=new WeakMap<Worker,number>();
+  private retireWorker(){
+    const worker=this.worker;this.worker=null;if(!worker)return;
+    const pending=this.perlinBroker?.worker===worker?this.perlinBroker.done:undefined;
+    if(pending)void pending.then(()=>worker.terminate(),()=>worker.terminate());else worker.terminate();
+  }
+  private brokerPerlinDraw(worker:Worker,request:PerlinNativeDrawRequest){
+    const pending=this.pending.get(request.id);
+    if(this.worker!==worker||request.sessionId!==this.sessionId||!pending)return;
+    const scene=pending.operation==='generate'?pending.scene:'source' in pending?pending.source.scene:undefined;
+    const eligible=sourceDrawingPolicy()==='native'&&(scene?.kind==='perlin'&&!!scene.perlinSource||this.recording?.family==='perlin'&&['source-recording-frame','source-recording-finish'].includes(pending.operation));
+    const reply=(value:{result:import('./sourceNativeClient').SourceNativePixels}|{error:string})=>{
+      if(this.worker!==worker||this.sessionId!==request.sessionId||this.pending.get(request.id)!==pending)return;
+      const result:PerlinNativeDrawResponse={operation:'perlin-native-result',sessionId:request.sessionId,id:request.id,drawId:request.drawId,...value};
+      worker.postMessage(result,'result' in value?[value.result.pixels.buffer]:[]);
+    };
+    if(!eligible||!Number.isSafeInteger(request.retainedBytes)||request.retainedBytes<0||!Number.isSafeInteger(request.drawId)||request.drawId<1||request.drawId>0xffffffff||request.drawId<=(this.perlinDrawIds.get(worker)??0)||this.perlinBroker){
+      this.invalidate(Error('Perlin 原生绘制代理身份或顺序无效'));return;
+    }
+    this.perlinDrawIds.set(worker,request.drawId);
+    const cleanup=this.nativeCleanup;
+    const done=(async()=>{
+      try{
+        await cleanup;
+        if(this.worker!==worker||this.pending.get(request.id)!==pending)return;
+        // Capture/begin keep the preceding transferred primary on this page.
+        // Worker target reservations cover their own new readbacks, not this
+        // distinct caller-held image. Preserve it through the complete ACK.
+        const retainedBytes=request.retainedBytes+('source' in pending&&pending.source?.output.type==='raster'?pending.source.output.pixels.byteLength:0);
+        const drawing=prepareSourcePerlinNativeDrawing(request.frame,request.channel,{retainedBytes});
+        await ensureSourceNativeLease(new AbortController().signal);
+        if(this.worker!==worker||this.pending.get(request.id)!==pending)return;
+        const result=await renderSourceNativeFrame({generation:request.sessionId,sequence:request.drawId,width:request.frame.width,height:request.frame.height,samples:0,clear:[0,0,0,1],drawing},{retainedBytes});
+        reply({result});
+      }catch(error){try{reply({error:error instanceof Error?error.message:String(error)});}catch(failure){if(this.worker===worker)this.invalidate(failure instanceof Error?failure:Error(String(failure)));}}
+    })();const owned={worker,done};this.perlinBroker=owned;
+    void done.then(()=>{if(this.perlinBroker===owned)this.perlinBroker=undefined;},()=>{if(this.perlinBroker===owned)this.perlinBroker=undefined;});
+  }
+
   private nativeDomain?:{session:SourceDomainLiveSession;retained:{bytes:number}};
   private nativeDomainCold?:{session:DomainRenderSession;inFlight?:Promise<SceneOutput>};
   private async releaseDomain(){
@@ -298,8 +342,8 @@ export class Generator {
   private async releaseSamilaCold(){const owned=this.nativeSamilaCold;if(!owned)return;await owned.resetAsync();if(this.nativeSamilaCold===owned)this.nativeSamilaCold=undefined;}
   private async releaseSamila(){const owned=this.nativeSamila;if(!owned)return;await owned.session.release();if(this.nativeSamila===owned)this.nativeSamila=undefined;}
   private releaseNative(){
-    const previous=this.nativeCleanup;this.nativeSamila?.backend.cancel();
-    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();})();void this.nativeCleanup.catch(()=>{});
+    const previous=this.nativeCleanup,perlin=this.perlinBroker?.done;this.nativeSamila?.backend.cancel();
+    this.nativeCleanup=(async()=>{await perlin?.catch(()=>{});await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();})();void this.nativeCleanup.catch(()=>{});
   }
   private sessionId = 0;
   private pending = new Map<number, Pending>();
@@ -311,7 +355,7 @@ export class Generator {
   private invalidate(error:Error){
     this.nativeTransition++;this.releaseNative();
     try{this.recording?.geometry?.releaseRenderer();}catch(cleanup){error=new AggregateError([error,cleanup],'曲面录制已失效，绘图清理仍待重试');}
-    this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
+    this.retireWorker();this.recording=undefined;this.completed=undefined;this.currentInputId=0;
     for(const p of this.pending.values()){if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
   hasSourceRecording(handle:SourceRecordingHandle):boolean{const lease=this.recording;return lease?.handle===handle&&(lease.nativeDomain?!!lease.nativeDomain.runtime&&lease.nativeDomain.session.ownsRecording(lease.nativeDomain.runtime):lease.nativeFractal?!!lease.nativeFractal.cleanupError||!!lease.nativeFractal.stop||!!lease.nativeFractal.runtime&&lease.nativeFractal.session.ownsRecording(lease.nativeFractal.runtime):lease.samila?lease.samila.hasRecording(handle):lease.iterated?!!lease.iterated.finish||!!lease.iterated.runtime&&lease.iterated.session.ownsRecording(lease.iterated.runtime):!!this.worker&&lease.usable);}
@@ -332,8 +376,9 @@ export class Generator {
       type: "module",
     });
     const worker = this.worker;
-    this.worker.onmessage = ({ data }: MessageEvent<GenerationResponse>) => {
-      if (data.sessionId !== this.sessionId) return;
+    this.worker.onmessage = ({ data }: MessageEvent<GenerationWorkerResponse>) => {
+      if(this.worker!==worker||data.sessionId!==this.sessionId)return;
+      if(data.operation==='perlin-native-draw'){this.brokerPerlinDraw(worker,data);return;}
       const p = this.pending.get(data.id);
       if (!p) return;
       if(p.operation==='surface-navigation'){
@@ -615,6 +660,7 @@ export class Generator {
     onStatus?: (status: GenerationStatus) => void,
   ): Promise<SceneOutput> {
     if(this.recording)return Promise.reject(this.recordingError('源场景录制期间不能生成其它场景'));
+    if(this.perlinBroker){const broker=this.perlinBroker;if(this.worker===broker.worker)return Promise.reject(Error('Perlin 原生绘制尚未确认'));const transition=this.nativeTransition;return broker.done.then(()=>{if(transition!==this.nativeTransition)throw new DOMException('已取消','AbortError');return this.generate(scene,context,onProgress,onStatus);});}
     if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     let domainNative:boolean;
     try{domainNative=sourceDrawingPolicy()==='native'&&scene.kind==='domain'&&(!!context.domainLive&&usesSourceDomain(scene)||usesDomainNativeRendering(scene));}
@@ -630,7 +676,7 @@ export class Generator {
     const iteratedCold=!context.mapLive&&!context.symmetryLive?nativeKind:undefined;
     if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold||fractalNative||domainNative)){
       if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
-      this.worker?.terminate();this.worker=null;
+      this.retireWorker();
       const previous=this.completed,id=++this.counter;this.currentInputId=id;this.completed=undefined;
       return new Promise((resolve,reject)=>{
         try{
@@ -1359,15 +1405,14 @@ export class Generator {
     if(this.recording)return;
     this.nativeTransition++;this.releaseNative();
     this.completed=undefined;this.currentInputId=0;
-    this.worker?.terminate();
-    this.worker = null;
+    this.retireWorker();
     for (const p of this.pending.values()){
       if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();
       p.reject(new DOMException("已取消", "AbortError"));
     }
     this.pending.clear();
   }
-  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();}
+  async settledNativeCleanup(){await this.perlinBroker?.done.catch(()=>{});if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

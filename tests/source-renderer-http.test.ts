@@ -21,6 +21,13 @@ describe.skipIf(process.platform!=='darwin')('loopback native frame transport',(
   const s=await service();try{for(const sequence of [1,1,9]){const r=await post(s.url,packet(sequence));expect(r.status).toBe(200);expect(r.headers.get('x-source-generation')).toBe('3');expect(r.headers.get('x-source-sequence')).toBe(String(sequence));expect(r.headers.get('x-source-row-order')).toBe('bottom-up');const b=new Uint8Array(await r.arrayBuffer());expect(b.length).toBe(140);for(let i=0;i<b.length;i+=4)expect([...b.subarray(i,i+4)]).toEqual([255,0,128,255]);}expect(s.app.ownedProcessCount).toBe(1);}
   finally{await s.app.close();expect(s.app.ownedProcessCount).toBe(0);}
  });
+ it('passes the v12 maximum-sampling envelope through the real loopback service',async()=>{
+  const s=await service();try{
+   const encoded=encodeSourceDrawingFrame({generation:5,sequence:6,width:2,height:2,samples:0,clear:[1,0,0,1],drawing:{model:'source-drawing-v1',commands:[],textures:[{width:1,height:1,pixels:new Uint8Array([1,2,3,255]),anisotropy:'maximum',magFilter:'linear',minFilter:'linear-mipmap-linear',wrap:'clamp',generateMipmaps:true}],admittedBytes:4,copiedBufferBytes:4,retainedBufferBytes:0}});
+   if(!encoded.ok)throw Error(encoded.error.reason);expect(Buffer.from(encoded.value).readUInt32LE(4)).toBe(12);
+   const response=await post(s.url,Buffer.from(encoded.value));expect(response.status).toBe(200);expect(response.headers.get('x-source-generation')).toBe('5');expect([...new Uint8Array(await response.arrayBuffer())]).toEqual(Array.from({length:4},()=>[255,0,0,255]).flat());
+  }finally{await s.app.close();expect(s.app.ownedProcessCount).toBe(0);}
+ });
  it('preserves an actual compiler failure stage through the loopback HTTP boundary',async()=>{
   const s=await service();try{
    const frame=encodeSourceDrawingFrame({generation:1,sequence:1,width:7,height:5,samples:0,clear:[0,0,0,1],drawing:{model:'source-drawing-v1',textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0,commands:[{primitive:'triangles',vertexShader:'not GLSL',fragmentShader:'out vec4 c;void main(){c=vec4(1);}',attributes:[{name:'position',size:2,divisor:0,values:new Float32Array([0,0,1,0,0,1])}],first:0,count:3,instances:1,uniforms:[],depthTest:false,depthWrite:false,depthFunction:'less-equal',frontFace:'counter-clockwise',passes:['both'],blend:'source-alpha-over'}]}});

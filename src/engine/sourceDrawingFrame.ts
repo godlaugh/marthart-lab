@@ -29,6 +29,8 @@ const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
 
 /** Two passes admit all bytes before allocating the packet. The native side
  * uses the same conservative packet/copy/GPU + (12 + 8*samples) bytes/pixel rule.
+ * Generic v12 adds receiver-owned maximum anisotropy (wire zero); numeric
+ * requests keep v3. Its conservative transport multiplier is six.
  * This is resource admission, not a claim about driver or JS peak RSS. */
 export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCancelled?:()=>boolean;retainedBytes?:number}={}):SourceDrawingResult<Uint8Array> {
   const check=()=>{if(options.isCancelled?.())throw new FrameFailure('cancelled','原生帧编码已取消');};
@@ -41,7 +43,9 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     demand(frame.clear.length===4&&frame.clear.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1),'帧背景必须为四个有限的 0 至 1 分量');
     demand(frame.completion===undefined||frame.completion==='opaque-alpha'&&frame.clear[3]===1,'帧完成阶段的 alpha 策略无效');
     demand(frame.drawing.model==='source-drawing-v1','未知绘制快照版本');
+    const maximumAnisotropy=frame.drawing.textures.some(t=>t.anisotropy==='maximum');
     const operation=frame.bouncing;
+    demand(!operation||!maximumAnisotropy,'保留状态帧不支持通用纹理最大采样策略');
     let nativeBytes=0,uploadBytes=0;
     if(operation){
       demand(['create','upload','draw','release'].includes(operation.kind)&&/^[a-f0-9]{32}$/.test(operation.resource)&&operation.resource!=='0'.repeat(32),'原生状态操作或资源身份无效');
@@ -75,7 +79,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
       let bytes=strings.get(s);if(!bytes){bytes=encoder.encode(s);demand(new TextDecoder('utf-8',{fatal:true}).decode(bytes)===s,'帧字符串不是有效 Unicode');strings.set(s,bytes);}raw(bytes);
     };
     const emit=()=>{
-      u32(SOURCE_FRAME_MAGIC);u32(operation?4:3);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
+      u32(SOURCE_FRAME_MAGIC);u32(operation?4:maximumAnisotropy?12:3);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
       frame.clear.forEach(f32);u32(frame.drawing.textures.length);u32(frame.drawing.commands.length);u32(frame.samples);u32(frame.completion==='opaque-alpha'?1:0);
       if(operation){
         u32({create:1,upload:2,draw:3,release:4}[operation.kind]);raw(Uint8Array.from(operation.resource.match(/../g)!,v=>parseInt(v,16)));
@@ -92,7 +96,8 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
       }
       for(const t of frame.drawing.textures){
         demand(t.magFilter==='linear'&&t.minFilter==='linear-mipmap-linear'&&t.wrap==='clamp'&&t.generateMipmaps===true,'不支持的帧纹理采样');
-        u32(t.width);u32(t.height);f32(t.anisotropy);raw(t.pixels);
+        demand(t.anisotropy==='maximum'||typeof t.anisotropy==='number'&&Number.isFinite(t.anisotropy)&&t.anisotropy>=1,'纹理各向异性需要有限上限或原生最大策略');
+        u32(t.width);u32(t.height);f32(t.anisotropy==='maximum'?0:t.anisotropy);raw(t.pixels);
       }
       for(const d of frame.drawing.commands){
         demand(d.depthFunction==='less-equal'&&['source-alpha-over-additive-alpha','source-alpha-over'].includes(d.blend),'不支持的帧深度或混合方式');
@@ -117,7 +122,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     const frameStorage=frame.width*frame.height*(12+8*frame.samples);
     demand(Number.isSafeInteger(frame.drawing.admittedBytes)&&frame.drawing.admittedBytes>=0,'快照容量信息无效');
     if(operation&&size*6+frameStorage+nativeBytes+uploadBytes+retainedBytes+frame.drawing.admittedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','状态、调用方种子、协议副本与输出超过 256 MiB 预算');
-    if(size*4+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage+retainedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
+    if(size*(maximumAnisotropy?6:4)+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage+retainedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
     packet=new Uint8Array(size);view=new DataView(packet.buffer);offset=0;emit();
     demand(offset===size,'编码期间帧结构发生变化');check();return{ok:true,value:packet};
   }catch(error){if(error instanceof FrameFailure)return{ok:false,error:{kind:error.kind,path:['frame'],reason:error.message}};throw error;}

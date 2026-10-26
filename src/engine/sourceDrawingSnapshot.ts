@@ -12,7 +12,7 @@ export type SourceDrawingUniform=
   | {name:string;kind:SourceNumericUniformKind;count:number;values:Float32Array|Int32Array}
   | {name:string;kind:'sampler2d';texture:number};
 export interface SourceDrawingTexture {
-  width:number;height:number;pixels:Uint8Array;anisotropy:number;
+  width:number;height:number;pixels:Uint8Array;anisotropy:number|'maximum';
   magFilter:'linear';minFilter:'linear-mipmap-linear';wrap:'clamp';generateMipmaps:true;
 }
 export interface SourceDrawingCommand {

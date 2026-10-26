@@ -946,7 +946,7 @@ export default function App() {
   }
   function nativePreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision];}
   function pauseForExport(){
-    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current))?nativeExportPreview.current.open(nativePreviewInput()):undefined;
+    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current)||!!sceneRef.current.perlinSource)?nativeExportPreview.current.open(nativePreviewInput()):undefined;
     if(ticket)setNativeExportPaused(false);
     const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
     if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}

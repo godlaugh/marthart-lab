@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "target": "MathArt 1.7.8",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "scope": "Passive readback immediately after the actual Perlin GPU draw, before normal overlays; unchanged source presets, 30 FPS normal runFrame, 500x600 physical output. Normal completed frames equal prior originals. Two presets only; original GUI timing, CPU and other devices not established.",
+  "width": 500,
+  "height": 600,
+  "primary": {
+    "width": 406,
+    "height": 486,
+    "density": 2
+  },
+  "outputLogical": {
+    "width": 250,
+    "height": 300,
+    "density": 2
+  },
+  "cases": [
+    {
+      "name": "filament",
+      "resource": "Noise/noise1.json",
+      "configSha256": "679aa5d25def6c76577c9f8d21db99acfcb3810c7585f2d0722b6cb490f299f2",
+      "fragmentSha256": "35d264120332f506b76430490fcb5c1e6d1c250764d7256a3c8d4aff6da60521",
+      "vertexSha256": "b9b454b6012c0a11e05f0eb262f24dd0bccf040f63fdcdb83105d090da189a70",
+      "state": {
+        "state_2930": 1,
+        "renderer": "Apple M2 Max",
+        "state_2932": 515,
+        "vertexPointer": [
+          1,
+          4,
+          5126,
+          0,
+          0,
+          0
+        ],
+        "enabled_32925": false,
+        "state_36010": 2,
+        "mode": 4,
+        "state_36006": 2,
+        "vendor": "Apple",
+        "state_32969": 770,
+        "state_32968": 771,
+        "enabled_2929": false,
+        "state_32937": 0,
+        "method": "glDrawElements",
+        "count": 6,
+        "indexByteOffset": 0,
+        "enabled_2884": false,
+        "version": "4.1 Metal - 90.5",
+        "vertexCount": 4,
+        "enabled_3089": false,
+        "enabled_3024": false,
+        "indexType": 5123,
+        "state_32970": 1,
+        "enabled_3042": true,
+        "state_32971": 1,
+        "state_32777": 32774,
+        "state_34877": 32774
+      },
+      "textureLevel0Sha256": {
+        "palette": "ca7f699e89685b8ee36f6e60feedad2bf2f7d7762828ee806be17b51fda30679",
+        "channel0": "9cd073df603af54286f108a4f35fd88d292da73e4384656184ce14781a627b2f"
+      },
+      "frames": [
+        {
+          "step": 1,
+          "uiTime": 0,
+          "time": 0.033333335,
+          "timeBits": 1023969417,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "f658e8e8e212910d1e2f7c91c23447799ef50f95869927c191363d827bf5c12d",
+          "rgbaTopDownSha256": "1e179ec2fd9456d04355767513a4e2832a751490ac48223e244caf048e51e83c"
+        },
+        {
+          "step": 16,
+          "uiTime": 0.5,
+          "time": 0.53333336,
+          "timeBits": 1057523849,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "5bf87077c083f22a18f97e380159c099da8443dc33eca08e06e391a2032e8f28",
+          "rgbaTopDownSha256": "6528025054672542b6963b8c925c65ea3e2545f86f8acd3959aedf01cf70c9c1"
+        },
+        {
+          "step": 61,
+          "uiTime": 2,
+          "time": 2.0333328,
+          "timeBits": 1073881632,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "837b492680e58b5cd1e1f3e5984015365da6357ffcc4cd78c63524c0d2aae7b1",
+          "rgbaTopDownSha256": "e64fe3251a13d1d3865e0761460450cb93968121a3dabb97f040309425c294b8"
+        },
+        {
+          "step": 151,
+          "uiTime": 5,
+          "time": 5.03333,
+          "timeBits": 1084297482,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "1a79591b7355ec5b7011ab49d029f09629bfa337f2d909984b00470cf814831f",
+          "rgbaTopDownSha256": "9295f2ee1767ce3a8fb1eee0b362c48ee76bf94f67de85d1e07d10aba7cac252"
+        },
+        {
+          "step": 241,
+          "uiTime": 8,
+          "time": 8.0,
+          "timeBits": 1090519040,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "667cdbcc04e23eee1947af1140f213e90d03a3cfadd3ac57ff74add344face13",
+          "rgbaTopDownSha256": "9f462c43c57d73e51161e4f9a3b7e958ab7afec46f74c869ffb02407c13ed000"
+        }
+      ]
+    },
+    {
+      "name": "swirl",
+      "resource": "Noise/noise2.json",
+      "configSha256": "17d04d97c083562321d217d7b18654267d5e27420aadfc17b26fcc093ed3dd48",
+      "fragmentSha256": "35d264120332f506b76430490fcb5c1e6d1c250764d7256a3c8d4aff6da60521",
+      "vertexSha256": "b9b454b6012c0a11e05f0eb262f24dd0bccf040f63fdcdb83105d090da189a70",
+      "state": {
+        "state_2930": 1,
+        "renderer": "Apple M2 Max",
+        "state_2932": 515,
+        "vertexPointer": [
+          1,
+          4,
+          5126,
+          0,
+          0,
+          0
+        ],
+        "enabled_32925": false,
+        "state_36010": 2,
+        "mode": 4,
+        "state_36006": 2,
+        "vendor": "Apple",
+        "state_32969": 770,
+        "state_32968": 771,
+        "enabled_2929": false,
+        "state_32937": 0,
+        "method": "glDrawElements",
+        "count": 6,
+        "indexByteOffset": 0,
+        "enabled_2884": false,
+        "version": "4.1 Metal - 90.5",
+        "vertexCount": 4,
+        "enabled_3089": false,
+        "enabled_3024": false,
+        "indexType": 5123,
+        "state_32970": 1,
+        "enabled_3042": true,
+        "state_32971": 1,
+        "state_32777": 32774,
+        "state_34877": 32774
+      },
+      "textureLevel0Sha256": {
+        "palette": "22641b9fcd12e7806a166af2fcefd8be057b675672890f3cf184b263afcb1d2f",
+        "channel0": "12691fd8697322b38e3768491fc1cf1a58587c986d6b8727d3c778dcca6e9cf2"
+      },
+      "frames": [
+        {
+          "step": 1,
+          "uiTime": 0,
+          "time": 0.033333335,
+          "timeBits": 1023969417,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "8ffe20a066df9a42fad4ba3d1182f1f37de90fc1239df0598938399d41ecb15e",
+          "rgbaTopDownSha256": "a1bc887d175872caa530221aafe1cd97f0d6e2858ef3428e4570de3a761ca69f"
+        },
+        {
+          "step": 16,
+          "uiTime": 0.5,
+          "time": 0.53333336,
+          "timeBits": 1057523849,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "430348ba3948b12bd946e32b57e227aed9931b38987850e3a5ba82d94d113778",
+          "rgbaTopDownSha256": "23eb42e00a78af821ade86368cf0bbd9ff6d868a2c068fef3c44d773cf421281"
+        },
+        {
+          "step": 61,
+          "uiTime": 2,
+          "time": 2.0333328,
+          "timeBits": 1073881632,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "3975b70b267eae4cdbf095909d1d0b0a65103c0ee794903baa41deec5763e181",
+          "rgbaTopDownSha256": "00d7ef324c060ecf8973540f1e7e2a7c77891bcf8f2d5d46ffc0b98742a038db"
+        },
+        {
+          "step": 151,
+          "uiTime": 5,
+          "time": 5.03333,
+          "timeBits": 1084297482,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "b81b102f81e3b0de64739eb8ed983f042d28ffc1f3852b15d4e6eeb3ed2af0d6",
+          "rgbaTopDownSha256": "f811a2d450be6c12ce14bec268d3450db41091a4815fe11e9bd83cc980edddc4"
+        },
+        {
+          "step": 241,
+          "uiTime": 8,
+          "time": 8.0,
+          "timeBits": 1090519040,
+          "rowOrder": "bottom-up",
+          "rgbaBottomUpSha256": "5f9df4d4bdbaa9b20a564114cc458d3fbe6140e0ebeff7aa32d7f8d7a36a68c3",
+          "rgbaTopDownSha256": "f0978d5cfd3130ac34fcbd395c70522f7aaedb693f4ddbc871fb85625040eae5"
+        }
+      ]
+    }
+  ]
+}

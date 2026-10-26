@@ -50,6 +50,12 @@ describe('binary source frame producer',()=>{
     expect(encodeSourceDrawingFrame(frame(),{retainedBytes:SOURCE_FRAME_BUDGET})).toMatchObject({ok:false,error:{kind:'capacity'}});
     expect(encodeSourceDrawingFrame(frame(),{retainedBytes:NaN})).toMatchObject({ok:false,error:{kind:'input'}});
   });
+  it('versions device-maximum sampling explicitly and rejects invalid numeric limits',()=>{
+    const f=frame();const texture={width:1,height:1,pixels:new Uint8Array([1,2,3,255]),anisotropy:'maximum' as const,magFilter:'linear' as const,minFilter:'linear-mipmap-linear' as const,wrap:'clamp' as const,generateMipmaps:true as const};
+    f.drawing.textures=[texture];expect(Buffer.from(encode(f)).readUInt32LE(4)).toBe(12);
+    f.drawing.textures=[{...texture,anisotropy:1}];expect(Buffer.from(encode(f)).readUInt32LE(4)).toBe(3);
+    for(const anisotropy of [0,-0,NaN,Infinity,.5]){f.drawing.textures=[{...texture,anisotropy}];expect(encodeSourceDrawingFrame(f)).toMatchObject({ok:false,error:{kind:'input'}});}
+  });
   it('does not deliver a partially encoded cancelled frame',()=>{
     let calls=0;expect(encodeSourceDrawingFrame(frame([triangle()]),{isCancelled:()=>++calls>45})).toMatchObject({ok:false,error:{kind:'cancelled'}});
   });
@@ -127,6 +133,12 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     const f=frame([a,b]);f.drawing.textures=[[0,64,0,128],[0,0,128,127]].map(bytes=>({width:1,height:1,pixels:new Uint8Array(bytes),anisotropy:1,magFilter:'linear',minFilter:'linear-mipmap-linear',wrap:'clamp',generateMipmaps:true}));
     success(f,[0,64,128,255]);
   });
+  it('renders maximum sampling through v12 and rejects its zero sentinel in saved v3',()=>{
+    const d=triangle();d.fragmentShader='uniform sampler2D image;out vec4 color;void main(){color=texture(image,vec2(.5));}';d.uniforms=[{name:'image',kind:'sampler2d',texture:0}];d.blend='source-alpha-over';
+    const f=frame([d]);f.drawing.textures=[{width:1,height:1,pixels:new Uint8Array([19,72,139,255]),anisotropy:'maximum',magFilter:'linear',minFilter:'linear-mipmap-linear',wrap:'clamp',generateMipmaps:true}];
+    success(f,[19,72,139,255]);
+    const legacy=Buffer.from(encode(f));legacy.writeUInt32LE(3,4);const rejected=run(legacy);expect(rejected.status).toBe(1);expect(JSON.parse(rejected.stderr).kind).toBe('input');
+  });
   it.each(['magic','version','length','identity','viewport','clear','truncated','trailing','collection','index','uniform-type','reserved-attribute','palette-length','flags','completion','shader','budget'] as const)('fails closed on malformed %s',kind=>{
     const f=frame([triangle()]);if(kind==='index'){f.drawing.commands[0].index=new Uint16Array([0,1,999]);}
     if(kind==='uniform-type')f.drawing.commands[0].uniforms=f.drawing.commands[0].uniforms.map((u,i)=>i===1?{name:'mode',kind:'float',count:1,values:new Float32Array([2])}:u);
@@ -142,7 +154,7 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     if(kind==='completion')bytes.writeUInt32LE(2,56);
     if(kind==='flags'){const draw=f.drawing.commands[0],offset=60+4+Buffer.byteLength(draw.vertexShader)+4+Buffer.byteLength(draw.fragmentShader)+12;bytes.writeUInt32LE(32,offset);}
     if(kind==='budget')bytes.writeUInt32LE(SOURCE_FRAME_BUDGET,8);
-    const r=run(bytes);expect(r.status).toBe(1);expect(JSON.parse(r.stderr).kind).toBe(kind==='shader'||kind==='uniform-type'?'runtime':kind==='budget'?'capacity':'input');
+    const r=run(bytes);expect(r.status).toBe(1);expect(JSON.parse(r.stderr).kind).toBe(kind==='shader'?'gpu-compile':kind==='uniform-type'?'runtime':kind==='budget'?'capacity':'input');
     expect(()=>readFileSync(join(r.folder,'renderer.json'))).toThrow();
   });
 });
