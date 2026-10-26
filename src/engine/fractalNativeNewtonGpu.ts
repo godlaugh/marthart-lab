@@ -7,7 +7,8 @@ import {uploadFractalTrace} from './fractalColorGpu';
 import {FractalSourceReferenceCache,validateFractalSourcePlan,type FractalSourcePlan,type FractalSourceReferenceReady,type FractalViewport} from './fractalPrecision';
 import {FractalSourceGpuError,fractalSourceRequire as require,fractalSourceDevice as device,fractalSourceCancel as cancel} from './fractalSourceGpuFailure';
 import {FRACTAL_SOURCE_RASTER_VERTEX,FRACTAL_SOURCE_NEWTON_VERTEX,FRACTAL_SOURCE_TF_FRAGMENT,FRACTAL_SOURCE_TF_VARYINGS,FRACTAL_SOURCE_TF_STRIDE as STRIDE} from './fractalNativeNewtonKernel';
-import {FRACTAL_SOURCE_RASTER_FRAGMENT,FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT,decodeFractalSourceTerminal} from './fractalNativeNewtonRaster';
+import {FRACTAL_SOURCE_RASTER_FRAGMENT,FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT} from './fractalNativeNewtonRaster';
+import {scatterFractalSourceRasterSample} from './fractalSourceRasterSample';
 
 import {validatePreparedFractalSourceColor,type PreparedFractalSourceColor} from './fractalSourceColor';
 
@@ -247,13 +248,7 @@ export class FractalSourceNewtonGpu {
    }
    for(let j=first;j<end;j++){
     const o=order[j],k=(points[o*2]-x)*4,z=attachments[0],t=attachments[1];
-    if(nativeRgba)out.sourceRGBA!.set(nativeRgba.subarray(k,k+4),o*4);const facts=decodeFractalSourceTerminal(t[k],t[k+1],maxIter);
-    const derivative=plan.isJulia?1:0,measured=facts.converged?Math.fround(Math.sqrt(t[k+2])):0;
-    out.values.set([z[k],z[k+2],facts.steps,facts.converged?4:facts.escaped?2:1,derivative,0,t[k+3],0],o*8);
-    out.residual.set([z[k+1],z[k+3],measured,0,measured,0,facts.converged?1:0,facts.iteration],o*8);
-    if(out.traps){out.traps.set(attachments[2].subarray(k,k+4),o*8);out.traps.set(attachments[3].subarray(k,k+4),o*8+4);}
-    out.distance?.set([derivative,0,0,0,z[k],z[k+2],facts.iteration,facts.converged?2:facts.escaped?1:0,t[k+2],facts.startedPerturb?1:0,0,0],o*12);
-    out.source.set([facts.startedPerturb?1:0,facts.glitches,facts.ordinarySteps,facts.perturbSteps],o*4);
+    const facts=scatterFractalSourceRasterSample(out,o,plan.isJulia,maxIter,z,t,k,attachments[2],attachments[3],nativeRgba);
     this.samples++;if(colorPlan){this.colorSamples++;this.colorPlanKey=colorPlan.key;}else this.colorPlanKey=undefined;this.glitches+=facts.glitches;this.perturbSamples+=facts.startedPerturb?1:0;this.ordinarySteps+=facts.ordinarySteps;this.perturbSteps+=facts.perturbSteps;
    }
    first=end;

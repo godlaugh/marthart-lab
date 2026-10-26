@@ -1,3 +1,11 @@
+import {FractalSourceNativeSampler} from './fractalSourceNativeSampler';
+import {SourceFractalLiveSession} from './sourceFractalLiveSession';
+import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
+import {generateFractalAsync} from '../scenes/complex';
+import {parseFractalSourceColorProfile} from './fractalSourceColor';
+import {validFractalSourceExecution} from './fractalSourceFrame';
+import {prepareGenerationPresentation} from './generationPresentation';
+import {sceneAtTime} from './timeline';
 import {SourceIteratedSession} from './sourceIteratedSession';
 import {SourceIteratedNativeBackend} from './sourceIteratedNativeBackend';
 import {sourceIteratedLiveKind} from './sourceLivePreview';
@@ -40,7 +48,7 @@ import {assertFractalRecordingFrame} from './sourceFractalRecording';
 import {validSourceQueueRecordingClock,type SourceQueueRecordingClock,type SourceRecordingClock} from './sourceRecordingClock';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
-import {MAX_RASTER_PIXELS} from './rasterDimensions';
+import {MAX_RASTER_PIXELS,validateRasterRequest} from './rasterDimensions';
 import {sourceProfileForFormula} from './fractalSourcePrecision';
 import {snapshotGenerationInput} from './generationInput';
 import type {SourceViewportNavigationEvent} from './sourceViewportNavigation';
@@ -97,9 +105,9 @@ type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:Sce
 const surfaceFrame=(source:Completed)=>source.surfaceFrame??(source.output.type==='geometry'?source.output.surfaceLive?.frame:undefined);
 type LiveRasterRequest={sessionId:string;revision:number;paused:boolean;actualFrameRate:number};
 function validFractalOutput(output:SceneOutput,request:LiveRasterRequest,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
-  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.fractalRender||!validOutputFormulas(output,{kind:'raster'}))return false;
+  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!validFractalSourceExecution(output)||!validOutputFormulas(output,{kind:'raster'}))return false;
   const live=output.fractalLive,frame=live?.presentation?.evaluatedFractalScene?.scene;
-  return !!live&&live.sessionId===request.sessionId&&live.revision===request.revision&&live.target===target&&live.renderKind===renderKind&&live.paused===request.paused&&live.actualFrameRate===Math.fround(request.actualFrameRate)&&live.clock===clock&&(clock==='fixed-source-queue'?live.clockSource==='fixed-step':['worker-wall-clock','injected'].includes(live.clockSource))&&Number.isSafeInteger(live.updateOrdinal)&&live.updateOrdinal>=0&&Number.isSafeInteger(live.objectUpdates)&&live.objectUpdates>=0&&[live.sceneTime,live.rawDt,live.activeDt].every(Number.isFinite)&&Number.isSafeInteger(live.queueIndex)&&live.queueIndex>=0&&typeof live.queueComplete==='boolean'&&!!frame&&frame.sceneTime===live.sceneTime&&frame.queueIndex===live.queueIndex&&frame.queueComplete===live.queueComplete;
+  return !!live&&live.sessionId===request.sessionId&&live.revision===request.revision&&live.target===target&&live.renderKind===renderKind&&live.paused===request.paused&&live.actualFrameRate===Math.fround(request.actualFrameRate)&&live.clock===clock&&(clock==='fixed-source-queue'?live.clockSource==='fixed-step':['worker-wall-clock','page-wall-clock','injected'].includes(live.clockSource))&&Number.isSafeInteger(live.updateOrdinal)&&live.updateOrdinal>=0&&Number.isSafeInteger(live.objectUpdates)&&live.objectUpdates>=0&&[live.sceneTime,live.rawDt,live.activeDt].every(Number.isFinite)&&Number.isSafeInteger(live.queueIndex)&&live.queueIndex>=0&&typeof live.queueComplete==='boolean'&&!!frame&&frame.sceneTime===live.sceneTime&&frame.queueIndex===live.queueIndex&&frame.queueComplete===live.queueComplete;
 }
 function validDomainOutput(output:SceneOutput,request:LiveRasterRequest,input:GenerationInput,target:'primary'|'offscreen'='primary',recording=false):boolean {
  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.domainRender||!validOutputFormulas(output,{kind:'raster'}))return false;
@@ -166,7 +174,7 @@ function validFractalRecordingStop(stop:SourceRecordingStop,lease:RetainedRecord
  // Preview sampling may shrink this raster, including when the recording
  // anchor has a different iteration budget from the previous live document.
  // The renderer owns that decision and reports requested and actual sizes.
- return render!==undefined&&render.profile===sourceProfileForFormula(render.formula)&&render.execution?.backend==='webgl2'&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0;
+ return render!==undefined&&render.profile===sourceProfileForFormula(render.formula)&&validFractalSourceExecution(output)&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0;
 }
 type SourceCaptureSize=ReturnType<typeof prepareSourcePausedCaptureSize>;
 function validCurrentImage(capture:PausedCaptureResult['capture'],size:PausedCaptureSize,scale:1|3|5,base:SourceCaptureSize):boolean {
@@ -240,6 +248,13 @@ export class Generator {
   private counter = 0;
   private nativeTransition=0;
   private nativeCleanup?:Promise<void>;
+  private nativeFractal?:{backend:FractalSourceNativeSampler;session:SourceFractalLiveSession;retained:{bytes:number}};
+  private nativeFractalCold?:{backend:FractalSourceNativeSampler;session:SourceFractalFreshRecordingSession;retained:{bytes:number}};
+  private async releaseFractal(){const owned=this.nativeFractal;if(!owned)return;await owned.session.settle();await owned.backend.dispose();if(this.nativeFractal===owned)this.nativeFractal=undefined;}
+  private async releaseFractalCold(){const owned=this.nativeFractalCold;if(!owned)return;await owned.session.settle();await owned.backend.dispose();if(this.nativeFractalCold===owned)this.nativeFractalCold=undefined;}
+  private matchesFractalPrimary(scene:SceneDocument,context:GenerationInput):boolean {
+    const owned=this.nativeFractal;return !!owned&&!owned.backend.diagnostics().cleanupPending&&owned.session.matchesCompletedPrimary(scene,context);
+  }
   private nativeSamila?:{backend:SourceSamilaNativeBackend;session:SourceSamilaAsyncSession};
   private nativeSamilaCold?:IteratedDensitySession;
   private nativeIterated?:SourceIteratedSession;
@@ -250,13 +265,13 @@ export class Generator {
   private async releaseSamila(){const owned=this.nativeSamila;if(!owned)return;await owned.session.release();if(this.nativeSamila===owned)this.nativeSamila=undefined;}
   private releaseNative(){
     const previous=this.nativeCleanup;this.nativeSamila?.backend.cancel();
-    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();})();void this.nativeCleanup.catch(()=>{});
+    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();})();void this.nativeCleanup.catch(()=>{});
   }
   private sessionId = 0;
   private pending = new Map<number, Pending>();
   private currentInputId=0;
   private completed?:Completed;
-  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;samila?:SourceSamilaAsyncSession;iterated?:{session:SourceIteratedSession;runtime?:object;finish?:ReturnType<SourceIteratedSession['finishRecording']>;preview?:SourceRecordingRaster};roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
+  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;nativeFractal?:{backend:FractalSourceNativeSampler;session:SourceFractalLiveSession;runtime?:object;validation:RetainedRecordingLease;stop?:SourceRecordingStop;cleanupError?:Error};samila?:SourceSamilaAsyncSession;iterated?:{session:SourceIteratedSession;runtime?:object;finish?:ReturnType<SourceIteratedSession['finishRecording']>;preview?:SourceRecordingRaster};roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
   private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='implicit-playback'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
@@ -265,7 +280,7 @@ export class Generator {
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
     for(const p of this.pending.values()){if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
-  hasSourceRecording(handle:SourceRecordingHandle):boolean{const lease=this.recording;return lease?.handle===handle&&(lease.samila?lease.samila.hasRecording(handle):lease.iterated?!!lease.iterated.finish||!!lease.iterated.runtime&&lease.iterated.session.ownsRecording(lease.iterated.runtime):!!this.worker&&lease.usable);}
+  hasSourceRecording(handle:SourceRecordingHandle):boolean{const lease=this.recording;return lease?.handle===handle&&(lease.nativeFractal?!!lease.nativeFractal.cleanupError||!!lease.nativeFractal.stop||!!lease.nativeFractal.runtime&&lease.nativeFractal.session.ownsRecording(lease.nativeFractal.runtime):lease.samila?lease.samila.hasRecording(handle):lease.iterated?!!lease.iterated.finish||!!lease.iterated.runtime&&lease.iterated.session.ownsRecording(lease.iterated.runtime):!!this.worker&&lease.usable);}
 
   private renderGeometryFrame(id:number,p:Extract<Pending,{operation:'source-recording-begin'|'source-recording-frame'}>,lease:SourceGeometryRecordingLease,worker:Worker,start?:import('./generationProtocol').SourceRecordingWireStart){
     const cancelled=()=>this.worker!==worker||this.pending.get(id)!==p||this.recording?.geometry!==lease;
@@ -566,6 +581,7 @@ export class Generator {
   ): Promise<SceneOutput> {
     if(this.recording)return Promise.reject(this.recordingError('源场景录制期间不能生成其它场景'));
     if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
+    const fractalNative=sourceDrawingPolicy()==='native'&&scene.kind==='fractal'&&usesSourceFractal(scene)&&!!parseFractalSourceColorProfile(scene.settings.fractalColorProfile);
     const samilaNative=sourceDrawingPolicy()==='native'&&scene.kind==='samila'&&(!!context.samilaLive||usesSourceSamilaSampling(scene)&&usesSourceSamilaPresentation(scene)&&usesSourceSamilaSplat(scene));
     // Live and fixed reconstruction have distinct semantic/resource owners.
     // Legacy models retain their saved Worker contract. Source custom Symmetry
@@ -574,10 +590,10 @@ export class Generator {
     const iteratedFamily=nativeKind&&sourceIteratedLiveKind(scene)===nativeKind?nativeKind:undefined;
     const iteratedNative=iteratedFamily==='map'&&context.mapLive?'map':iteratedFamily==='symmetry'&&context.symmetryLive?'symmetry':undefined;
     const iteratedCold=!context.mapLive&&!context.symmetryLive?nativeKind:undefined;
-    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold)){
+    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold||fractalNative)){
       if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
       this.worker?.terminate();this.worker=null;
-      const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+      const previous=this.completed,id=++this.counter;this.currentInputId=id;this.completed=undefined;
       return new Promise((resolve,reject)=>{
         try{
           const input=snapshotGenerationInput(context),snapshot=structuredClone(context.samilaLive?sourceSamilaOwnerScene(scene):sourcePaletteRuntimeScene(scene));
@@ -588,6 +604,39 @@ export class Generator {
             if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});
             await sourceBouncingNativeSession.settleCancellation();
             if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
+            if(fractalNative){
+              if([input.rootsLive,input.perlinLive,input.domainLive,input.surfaceLive,input.implicitLive,input.mapLive,input.symmetryLive,input.samilaLive].some(value=>value!==undefined)||input.fractalLive&&input.fractalRecording)throw Error('一次生成只能拥有一个分形实时或录制时钟');
+              await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();
+              const cancelled=()=>this.pending.get(id)!==pending;
+              if(input.fractalLive){
+                await this.releaseFractalCold();const held=this.nativeFractal?.session.diagnostics();
+                if(held?.failed||this.nativeFractal?.backend.diagnostics().cleanupPending){if(held?.sessionId===input.fractalLive.sessionId)throw new SourceNativeError('state-lost','分形当前显示结果未知；请重新应用或重置场景');await this.releaseFractal();}
+                if(cancelled())throw new DOMException('已取消','AbortError');
+                if(!this.nativeFractal){this.sessionId++;const backend=new FractalSourceNativeSampler(),retained={bytes:0};this.nativeFractal={backend,retained,session:new SourceFractalLiveSession(undefined,{asyncRender:(scene,context,prepared,options)=>generateFractalAsync(scene,context,backend,prepared,{retainedBytes:retained.bytes+options.retainedBytes}),hostClock:{now:()=>Date.now()-nativePageOrigin,source:'page-wall-clock'}})};}
+                const owned=this.nativeFractal;
+                // The catch below keeps the last completed image reachable for
+                // an admission rejection. Charge only that operation's buffer;
+                // capture has its separate, explicitly supplied retained image.
+                owned.retained.bytes=previous?.output.type==='raster'?previous.output.pixels.byteLength:0;
+                try{
+                  const output=await owned.session.generateAsync(snapshot,{...input,isCancelled:cancelled});
+                  if(!validFractalOutput(output,{...input.fractalLive,paused:input.fractalLive.clock.paused}))throw new SourceNativeError('protocol','分形原生主预览事实无效');return output;
+                }finally{owned.retained.bytes=0;}
+              }
+              await this.releaseFractal();if(cancelled())throw new DOMException('已取消','AbortError');
+              // An explicit new cold request may recover, but the failed call
+              // never retries itself and an unacknowledged release keeps its token.
+              if(this.nativeFractalCold?.backend.diagnostics().cleanupPending)await this.releaseFractalCold();
+              if(cancelled())throw new DOMException('已取消','AbortError');
+              if(!this.nativeFractalCold){const backend=new FractalSourceNativeSampler(),retained={bytes:0};this.nativeFractalCold={backend,retained,session:new SourceFractalFreshRecordingSession(undefined,{asyncRender:(scene,context,prepared)=>generateFractalAsync(scene,context,backend,prepared,{retainedBytes:retained.bytes})})};}
+              const owned=this.nativeFractalCold;owned.retained.bytes=previous?.output.type==='raster'?previous.output.pixels.byteLength:0;
+              try{
+                const presentation=prepareGenerationPresentation(snapshot,{...input,isCancelled:cancelled,onProgress:value=>{if(!cancelled())onProgress?.(value);}}),context=presentation.context;
+                const output=input.fractalRecording?await owned.session.generateAsync(snapshot,context):await generateFractalAsync(sceneAtTime(snapshot,input.time,{isCancelled:cancelled}),context,owned.backend,undefined,{retainedBytes:owned.retained.bytes});
+                return presentation.complete(output);
+              }finally{owned.retained.bytes=0;}
+            }
+            await this.releaseFractal();await this.releaseFractalCold();
             if(iteratedNative){
               await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIteratedCold();
               if(this.nativeIterated&&this.nativeIterated.family!==iteratedNative)await this.releaseIterated();
@@ -629,11 +678,11 @@ export class Generator {
           })().then(output=>{
             if(this.pending.get(id)!==pending)return;
             this.pending.delete(id);if(this.currentInputId===id)this.completed={id,scene,context:input,output};resolve(output);
-          },error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);reject(error);});
+          },error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);if(fractalNative&&input.fractalLive){const retained=!!previous&&this.matchesFractalPrimary(previous.scene,previous.context);if(retained)this.completed=previous;reject(new FractalLiveGenerationError(error instanceof Error?error.message:String(error),retained));}else reject(error);});
         }catch(error){this.pending.delete(id);reject(error);}
       });
     }
-    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeIterated||this.nativeIteratedCold){
+    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeIterated||this.nativeIteratedCold||this.nativeFractal||this.nativeFractalCold){
       const transition=this.nativeTransition;this.releaseNative();
       return this.nativeCleanup!.then(()=>{if(this.nativeTransition!==transition)throw new DOMException('已取消','AbortError');return this.generate(scene,context,onProgress,onStatus);});
     }
@@ -713,7 +762,7 @@ export class Generator {
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.nativeIterated?this.captureNativeIterated('map',output,size,scale):this.capturePaused('map-paused-capture',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.nativeIterated?this.captureNativeIterated('symmetry',output,size,scale):this.capturePaused('symmetry-paused-capture',output,size,scale);}
   captureDomainPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('domain-paused-capture',output,size,scale);}
-  captureFractalPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('fractal-paused-capture',output,size,scale);}
+  captureFractalPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.nativeFractal?this.captureNativeFractal(output,size,scale):this.capturePaused('fractal-paused-capture',output,size,scale);}
   navigateDomainPaused(output:SceneOutput,event:SourceDomainNavigationEvent):Promise<SceneOutput>{
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||source.scene.kind!=='domain'||output.type!=='raster'||output.domainLive?.target!=='primary')return Promise.reject(new Error('域着色视口交互需要当前已完成的主预览'));
@@ -777,7 +826,12 @@ export class Generator {
   setRootsPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('roots-playback',output,paused,timestampMs);}
   setPerlinPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('perlin-playback',output,paused,timestampMs);}
   setDomainPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('domain-playback',output,paused,timestampMs);}
-  setFractalPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('fractal-playback',output,paused,timestampMs);}
+  setFractalPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
+    if(!this.nativeFractal)return this.setLivePaused('fractal-playback',output,paused,timestampMs);
+    const source=this.completed,session=this.nativeFractal.session,live=source?.context.fractalLive;
+    if(this.recording||this.pending.size||!source||source.output!==output||!live||!this.matchesFractalPrimary(source.scene,source.context))return Promise.reject(Error('分形播放控制需要当前已完成主预览'));
+    try{session.setPaused(paused,timestampMs);this.completed={...source,context:{...source.context,fractalLive:{...live,clock:{...live.clock,paused}}}};return Promise.resolve();}catch(error){return Promise.reject(error);}
+  }
   private setLivePaused(operation:'samila-playback'|'symmetry-playback'|'map-playback'|'fractal-playback'|'domain-playback'|'implicit-playback'|'surface-playback'|'perlin-playback'|'roots-playback',output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
     const source=this.completed;
     const valid=operation==='implicit-playback'?output.type==='geometry'&&source?.scene.kind==='implicit'&&!!source.context.implicitLive&&!!output.implicitLive:operation==='surface-playback'?output.type==='geometry'&&source?.scene.kind==='surface'&&!!output.surfaceLive:output.type==='raster'&&(operation==='roots-playback'?!!source?.context.rootsLive&&!!output.rootsLive&&output.rootsPresentation?.target==='primary':operation==='perlin-playback'?source?.scene.kind==='perlin'&&!!source.context.perlinLive&&!!output.perlinLive&&!!output.sourcePerlinFrame&&source.context.sourceViewport?.target==='primary':operation==='domain-playback'?source?.scene.kind==='domain'&&!!output.domainLive&&!!output.domainRender:operation==='fractal-playback'?source?.scene.kind==='fractal'&&!!output.fractalLive&&!!output.fractalRender:operation==='samila-playback'
@@ -820,6 +874,82 @@ export class Generator {
   /** Native recording owns the same retained Samila runtime as preview. The
    * queue supplies backpressure and soft cancellation; a submitted draw must
    * settle before stop can restore or release its exact resource. */
+  private captureNativeFractal(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
+    const source=this.completed,session=this.nativeFractal!.session,ErrorType=pausedCaptureContracts['fractal-paused-capture'].Error;
+    if(this.recording||this.pending.size||!source||source.output!==output||!source.context.fractalLive||!this.matchesFractalPrimary(source.scene,source.context))return Promise.reject(new ErrorType('分形截图需要当前已完成的暂停预览',false));
+    let base:SourceCaptureSize;
+    try{if(scale!==1&&scale!==3&&scale!==5)throw Error('暂停 PNG 放大倍率须为 1、3 或 5');base=prepareSourcePausedCaptureSize(size,source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS);const enhanced=scale===1?base:prepareSourcePausedUpscale(base.width,base.height,scale);validateRasterRequest({time:0,quality:'export',width:enhanced.width,height:enhanced.height});}
+    catch(error){return Promise.reject(new ErrorType(error instanceof Error?error.message:String(error),true));}
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'fractal-paused-capture',source,size:{...size},scale,captureSize:base,resolve,reject};this.pending.set(id,pending);let rendered=false;
+      void session.capturePausedAsync(source.scene,{...source.context,quality:'export',...size,isCancelled:()=>this.pending.get(id)!==pending},{additionalBytes:source.output.type==='raster'?source.output.pixels.byteLength:0}).then(result=>{
+        rendered=true;if(this.pending.get(id)!==pending)return;
+        result.capture.sourceCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[base.logicalWidth,base.logicalHeight],pixelDensity:base.density,baseSize:[base.width,base.height],scale};
+        if(!validFractalCapture(result,source.output,size,scale,base))throw Error('分形原生截图身份、尺寸或状态不匹配');
+        this.pending.delete(id);this.completed={...source,id,output:result.preview};resolve(result);
+      }).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=!rendered&&this.matchesFractalPrimary(source.scene,source.context);if(retained)this.completed=source;reject(new ErrorType(error instanceof Error?error.message:String(error),retained));});
+    });
+  }
+  private beginNativeFractalRecording(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>{
+    const source=this.completed,session=this.nativeFractal!.session;
+    if(this.recording||this.pending.size||!source||source.output!==output||!source.context.fractalLive||!this.matchesFractalPrimary(source.scene,source.context))return Promise.reject(new SourceRecordingOperationError('分形录制需要当前已完成的主预览',false,false));
+    let validation:RetainedRecordingLease;
+    try{if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('分形录制模拟帧率必须为 1–120 的整数');validation={options:{...options},size:sourceRecordingSize(options,source.context.fractalPixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1};}
+    catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
+    const id=++this.counter,handle=Object.freeze({sessionId:this.sessionId,recordingId:id}),lease:NonNullable<Generator['recording']>={handle,family:'fractal',usable:false,nativeFractal:{backend:this.nativeFractal!.backend,session,validation}};
+    this.currentInputId=id;this.completed=undefined;this.recording=lease;
+    const cancelled=()=>this.recording!==lease||this.nativeFractal?.session!==session;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'source-recording-begin',source,handle,resolve,reject};this.pending.set(id,pending);
+      void session.beginRecordingAsync(source.scene,{...source.context,isCancelled:cancelled},validation.options).then(start=>{
+        if(this.pending.get(id)!==pending)return;lease.nativeFractal!.runtime=start.handle;
+        if(!validFractalRecordingOutput(start.warmup,validation,start.clock,0))throw Error('分形原生录制预热状态无效');
+        validation.clock=start.clock;lease.usable=true;this.pending.delete(id);resolve({...start,handle});
+      }).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=!!lease.nativeFractal!.runtime&&session.ownsRecording(lease.nativeFractal!.runtime),preview=!retained&&this.matchesFractalPrimary(source.scene,source.context);if(!retained)this.recording=undefined;if(preview)this.completed=source;reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),preview,retained,retained?handle:undefined));});
+    });
+  }
+  private nextNativeFractalRecordingFrame(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>{
+    const lease=this.recording!,owned=lease.nativeFractal!,validation=owned.validation;
+    if(owned.cleanupError||owned.stop||!validation.clock||displayFrame!==validation.nextDisplayFrame||displayFrame>validation.clock.lastDisplayFrame)return Promise.reject(this.recordingError('分形录制必须按已确认规划连续请求'));
+    const id=++this.counter;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'source-recording-frame',handle,family:'fractal',displayFrame,resolve,reject};this.pending.set(id,pending);
+      void owned.session.nextRecordingFrameAsync(owned.runtime!,displayFrame).then(output=>{
+        if(this.pending.get(id)!==pending)return;if(!validFractalRecordingOutput(output,validation,validation.clock!,displayFrame))throw Error('分形原生录制帧状态无效');validation.nextDisplayFrame++;this.pending.delete(id);resolve(output);
+      }).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=owned.session.ownsRecording(owned.runtime!);if(!retained)this.recording=undefined;reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,retained,retained?handle:undefined));});
+    });
+  }
+  private async releaseFailedFractalRecording(lease:NonNullable<Generator['recording']>):Promise<void>{
+    const owned=lease.nativeFractal!;
+    // A failed native transaction cannot redraw a numerical finish lease.
+    // Keep the exact backend reachable until release is acknowledged, including
+    // when the queue retries cleanup after unmount.
+    await owned.session.settle();
+    try{await owned.backend.dispose();}
+    catch(error){throw new AggregateError([owned.cleanupError,error],'分形录制停止失败且原生资源释放尚未确认');}
+    if(this.nativeFractal?.backend===owned.backend)this.nativeFractal=undefined;
+    if(this.recording===lease)this.recording=undefined;
+  }
+  private finishNativeFractalRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop>{
+    const lease=this.recording!,owned=lease.nativeFractal!,id=++this.counter;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'source-recording-finish',handle,family:'fractal',resolve,reject};this.pending.set(id,pending);
+      void (async()=>{
+        if(owned.cleanupError){await this.releaseFailedFractalRecording(lease);throw owned.cleanupError;}
+        try{
+          owned.stop??=await owned.session.finishRecordingAsync(owned.runtime!,timestampMs);
+          if(this.pending.get(id)!==pending)return;const stop=owned.stop;
+          if(!validFractalRecordingStop(stop,owned.validation)||!this.matchesFractalPrimary(stop.scene,stop.context)){
+            owned.cleanupError=new Error('分形原生录制停止没有恢复相同主预览');throw owned.cleanupError;
+          }
+          this.pending.delete(id);this.recording=undefined;this.currentInputId=id;this.completed={id,scene:stop.scene,context:snapshotGenerationInput(stop.context),output:stop.preview};resolve(stop);
+        }catch(error){
+          if(owned.cleanupError||owned.backend.diagnostics().cleanupPending){
+            owned.cleanupError??=error instanceof Error?error:new Error(String(error));owned.stop=undefined;
+            await this.releaseFailedFractalRecording(lease);
+          }
+          throw error;
+        }
+      })().catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=this.recording===lease&&(!!owned.cleanupError||!!owned.stop||owned.session.ownsRecording(owned.runtime!));if(!retained&&this.recording===lease)this.recording=undefined;reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,retained,retained?handle:undefined));});
+    });
+  }
   private captureNativeIterated(family:'map'|'symmetry',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
     const source=this.completed,session=this.nativeIterated!,operation=family==='map'?'map-paused-capture':'symmetry-paused-capture',ErrorType=pausedCaptureContracts[operation].Error;
     if(this.recording||this.pending.size||!source||source.output!==output||session.family!==family||source.scene.kind!==family||!source.context[family==='map'?'mapLive':'symmetryLive']||output.type!=='raster'||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new ErrorType('迭代场景截图需要当前已完成的暂停预览',false));
@@ -938,6 +1068,7 @@ export class Generator {
   }
   beginSourceRecording(output:SceneOutput,options:SourceRecordingOptions,signal?:AbortSignal):Promise<SourceRecordingStart>{
     if(signal?.aborted)return Promise.reject(new DOMException('源场景录制已取消','AbortError'));
+    if(this.nativeFractal)return this.beginNativeFractalRecording(output,options);
     if(this.nativeSamila)return this.beginNativeSamilaRecording(output,options);
     if(this.nativeIterated)return this.beginNativeIteratedRecording(output,options);
     const source=this.completed;
@@ -974,6 +1105,7 @@ export class Generator {
   nextSourceRecordingFrame(handle:SourceRecordingHandle,displayFrame:number,actualFrameRate?:number):Promise<SourceRecordingRaster>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
     if(!Number.isSafeInteger(displayFrame)||displayFrame<1)return Promise.reject(this.recordingError('源场景录制帧序号无效'));
+    if(this.recording!.nativeFractal)return this.nextNativeFractalRecordingFrame(handle,displayFrame);
     if(this.recording!.samila)return this.nextNativeSamilaRecordingFrame(handle,displayFrame);
     if(this.recording!.iterated)return this.nextNativeIteratedRecordingFrame(handle,displayFrame);
     try{this.recording!.roots?.requestFrame(displayFrame);}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
@@ -999,6 +1131,7 @@ export class Generator {
    * A retry republishes the first stop; it never resets that baseline again. */
   finishSourceRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
+    if(this.recording!.nativeFractal)return this.finishNativeFractalRecording(handle,timestampMs);
     if(this.recording!.samila)return this.finishNativeSamilaRecording(handle,timestampMs);
     if(this.recording!.iterated)return this.finishNativeIteratedRecording(handle,timestampMs);
     if(timestampMs!==undefined&&this.recording!.family!=='implicit')return Promise.reject(this.recordingError('注入停止时钟仅支持隐式录制'));
@@ -1085,7 +1218,7 @@ export class Generator {
     }
     this.pending.clear();
   }
-  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();}
+  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

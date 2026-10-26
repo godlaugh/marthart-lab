@@ -2,12 +2,12 @@
  * Input identity follows the App's generation effect, including its RAF tick.
  * One input scheduled before opening may still need to reach the queue. */
 const same=(a:readonly unknown[]|undefined,b:readonly unknown[])=>!!a&&a.length===b.length&&a.every((value,index)=>Object.is(value,b[index]));
-export class SourceSamilaExportPreview {
+export class SourceNativeExportPreview {
  private submitted?:readonly unknown[];
  private held?:{token:object;openingSubmitted:boolean;deferred:boolean};
  get active(){return !!this.held;}
  open(input:readonly unknown[]):object {
-  if(this.held)throw Error('Samila 导出已占用当前预览');
+  if(this.held)throw Error('原生场景导出已占用当前预览');
   const token={};this.held={token,openingSubmitted:same(this.submitted,input),deferred:false};return token;
  }
  owns(token:object){return this.held?.token===token;}

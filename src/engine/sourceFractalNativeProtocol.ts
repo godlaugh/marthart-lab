@@ -2,6 +2,8 @@ import {SOURCE_FRAME_BUDGET,SOURCE_FRAME_MAGIC} from './sourceDrawingFrame';
 import type {SourceDrawingResult,SourceDrawingUniform} from './sourceDrawingSnapshot';
 import {SourceNativeError} from './sourceNativeError';
 
+export const SOURCE_FRACTAL_NATIVE_MAX_SAMPLES=65536;
+
 export type SourceFractalNativeOperation=
  | {kind:'create';resource:string;shaders:{vertex:string;fragment:string}}
  | {kind:'sample';resource:string;expectedIndex:number;points:Uint32Array;reference:Float32Array;palette:Float32Array;uniforms:readonly SourceDrawingUniform[]}
@@ -46,7 +48,7 @@ export function captureSourceFractalNativeResponseBinding(request:SourceFractalN
  let value:SourceFractalNativeResponseBinding;
  if(op.kind==='sample'){
   demand(uint(op.expectedIndex)&&op.expectedIndex<0xffffffff,'分形采样检查点无效');
-  demand(op.points instanceof Uint32Array&&op.points.buffer instanceof ArrayBuffer&&op.points.length>0&&op.points.length%2===0&&op.points.length<=65536*2,'分形采样点必须为 1–65536 个非共享整数坐标对');
+  demand(op.points instanceof Uint32Array&&op.points.buffer instanceof ArrayBuffer&&op.points.length>0&&op.points.length%2===0&&op.points.length<=SOURCE_FRACTAL_NATIVE_MAX_SAMPLES*2,'分形采样点必须为 1–65536 个非共享整数坐标对');
   value={kind:op.kind,resource:op.resource,expectedIndex:op.expectedIndex,width,height,count:op.points.length/2};
  }else {demand(width===1&&height===1,'分形控制事务必须为 1×1');value={kind:op.kind,resource:op.resource,width:1,height:1,count:0};}
  Object.freeze(value);bindings.add(value);return value;

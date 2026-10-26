@@ -1,3 +1,6 @@
+import {runGenerationEffects,runGenerationEffectsAsync} from '../engine/generationEffects';
+import type {FractalSourceAsyncSampler,FractalSourceSampleRequest} from '../engine/fractalSourceSampling';
+import type {GpuOrbitBatch} from '../engine/fractalGpu';
 import {SourceFractalDisplay,sourceFractalDisplayInput,validateSourceFractalDisplayFacts} from '../engine/sourceFractalDisplay';
 import {parseFractalSourceColorProfile,prepareFractalSourceColor} from '../engine/fractalSourceColor';
 import {authoredFractalSourceColor} from '../engine/fractalSourceColorAuthoring';
@@ -234,17 +237,28 @@ export function prepareFractalRender(scene:SceneDocument,ctx:GenerateContext){
  const sourceNavigation=sourcePlan?prepareFractalViewportNavigation({...s,formula:sourcePlan.formula,fractalNumericProfile:sourcePlan.profile},sourcePlan.logicalSize[0],sourcePlan.logicalSize[1]):undefined;
  return{s,source,c,coloring,traceColors,view,orbitConfig,requestedBackend,method,precision,sourcePlan,colorPlan,sourceNavigation};
 }
-export function generateFractal(scene:SceneDocument,ctx:GenerateContext,prepared?:ReturnType<typeof prepareFractalRender>):SceneOutput{
- const start=performance.now();
+type FractalSampleOperation<T>=Generator<FractalSourceSampleRequest,T,GpuOrbitBatch>;
+export function generateFractal(scene:SceneDocument,ctx:GenerateContext,prepared?:ReturnType<typeof prepareFractalRender>):SceneOutput {
  if(!scene.fractalSource&&scene.settings.formula==='mandelbulb_3d')return generateMandelbulb(scene,ctx,fractalConfig(scene.settings));
  const value=prepared??prepareFractalRender(scene,ctx);
+ if(scene.fractalSource&&value.sourcePlan&&value.colorPlan&&scene.evaluatedFractalScene&&!ctx.fractalDisplay)return new SourceFractalDisplay().display(sourceFractalDisplayInput(value,scene),display=>generateFractal(scene,{...ctx,fractalDisplay:display},value));
+ return runGenerationEffects(generateFractalOperation(scene,ctx,value),()=>{throw new FractalSourceGpuError('Synchronous fractal renderer cannot perform an asynchronous sample','input');});
+}
+/** Native and WebGL share all sampling, assembly, progressive display and
+ * diagnostics interpretation. Only the prepared sampling effect is awaited. */
+export async function generateFractalAsync(scene:SceneDocument,ctx:GenerateContext,sampler:FractalSourceAsyncSampler,prepared?:ReturnType<typeof prepareFractalRender>,options:{retainedBytes?:number}={}):Promise<SceneOutput> {
+ const retainedBytes=options.retainedBytes??0;if(!Number.isSafeInteger(retainedBytes)||retainedBytes<0)throw new FractalSourceGpuError('Fractal caller retained bytes must be a nonnegative safe integer','input');
+ const value=prepared??prepareFractalRender(scene,ctx);
+ if(!value.sourcePlan||!value.colorPlan)throw new FractalSourceGpuError('Native fractal rendering requires prepared source arithmetic and source fragment coloring','input');
+ if(scene.fractalSource&&scene.evaluatedFractalScene&&!ctx.fractalDisplay)return new SourceFractalDisplay().displayAsync(sourceFractalDisplayInput(value,scene),display=>generateFractalAsync(scene,{...ctx,fractalDisplay:display},sampler,value,{retainedBytes}));
+ return runGenerationEffectsAsync(generateFractalOperation(scene,ctx,value,sampler,retainedBytes),request=>sampler.sample(request));
+}
+function* generateFractalOperation(scene:SceneDocument,ctx:GenerateContext,value:ReturnType<typeof prepareFractalRender>,sampler?:FractalSourceAsyncSampler,retainedBytes=0):FractalSampleOperation<SceneOutput>{
+ const start=performance.now();
  const {s,c,coloring,traceColors,view,orbitConfig,requestedBackend,method,precision,sourcePlan,colorPlan,sourceNavigation}=value;
- if(scene.fractalSource&&sourcePlan&&colorPlan&&scene.evaluatedFractalScene&&!ctx.fractalDisplay){
-  return new SourceFractalDisplay().display(sourceFractalDisplayInput(value,scene),display=>generateFractal(scene,{...ctx,fractalDisplay:display},value));
- }
  const display=ctx.fractalDisplay;if(display){validateSourceFractalDisplayFacts(display);if(!sourcePlan||!colorPlan)throw new FractalSourceGpuError('Source display requires prepared arithmetic and coloring','input');}
- const sourceBefore=sourcePlan?fractalGpu.sourceDiagnostics():undefined;
- const preparedSource=sourcePlan?fractalGpu.prepareSourceReference(sourcePlan,{isCancelled:ctx.isCancelled}):undefined;
+ const sourceBefore=sourcePlan?(sampler?sampler.diagnostics():fractalGpu.sourceDiagnostics()):undefined;
+ const preparedSource=sourcePlan?(sampler?sampler.prepareReference(sourcePlan,{isCancelled:ctx.isCancelled,additionalBytes:retainedBytes}):fractalGpu.prepareSourceReference(sourcePlan,{isCancelled:ctx.isCancelled})):undefined;
  const precise=view.zoom>100||view.centerXLow!==0||view.centerYLow!==0,useDD=!sourcePlan&&precise&&supportsDoubleDouble(c),reference=!sourcePlan&&precise&&supportsPerturbation(c)?referenceOrbit(c,view):undefined;
  const bg=background(scene),warnings:string[]=[];
  let useGpu=!!sourcePlan||requestedBackend!=='cpu'&&(!precise||!!reference)&&!usesStepConvergence(c);
@@ -263,10 +277,11 @@ export function generateFractal(scene:SceneDocument,ctx:GenerateContext,prepared
  const [w,h]=rasterDimensions(ctx,c.iterations*(!useGpu&&useDD?12:1),useGpu?'webgl2':'cpu',warnings);
  const actualMethod=display?'one-pass':ctx.quality==='export'?'one-pass':method;
  if(!display&&ctx.quality==='export'&&method!=='one-pass')warnings.push('导出自动使用 One Pass，全部实际输出像素直接求值。');
- let samples=0,invalid=0,repairCount=0;
- function evaluate(points:Float32Array,width:number,height:number):Array<number[]|undefined>{
+ let samples=0,invalid=0,repairCount=0,publishedBytes=0;
+ const admission=(width:number,height:number,sampleCount:number)=>sampler?.admit({width,height,sampleCount,config:orbitConfig,plan:sourcePlan!,colorPlan:colorPlan!,display,isCancelled:ctx.isCancelled,additionalBytes:retainedBytes+publishedBytes+width*height*4+sampleCount*8});
+ function* evaluate(points:Float32Array,width:number,height:number):FractalSampleOperation<Array<number[]|undefined>>{
   let sourceRGBA:Uint8Array|undefined,gpu:Float32Array|undefined,gpuTraps:Float32Array|undefined,gpuResidual:Float32Array|undefined,gpuDistance:Float32Array|undefined;
-  if(useGpu){const result=fractalGpu.sample(points,width,height,view,orbitConfig,reference,precision?perturbationThresholds[precision]:undefined,traceColors,sourcePlan?{plan:sourcePlan,colorPlan,display,isCancelled:ctx.isCancelled}:undefined);if(!result.values){if(sourcePlan)throw new FractalSourceGpuError('Source GPU did not return orbit facts','device');throw new FractalGpuFallback(result.warning);}gpu=result.values;gpuTraps=result.traps;gpuResidual=result.residual;gpuDistance=result.distance;sourceRGBA=result.sourceRGBA;}
+  if(useGpu){const result=sampler?yield {points,width,height,config:orbitConfig,plan:sourcePlan!,colorPlan:colorPlan!,display,isCancelled:ctx.isCancelled,additionalBytes:retainedBytes+publishedBytes+width*height*4+points.byteLength}:fractalGpu.sample(points,width,height,view,orbitConfig,reference,precision?perturbationThresholds[precision]:undefined,traceColors,sourcePlan?{plan:sourcePlan,colorPlan,display,isCancelled:ctx.isCancelled}:undefined);if(!result.values){if(sourcePlan)throw new FractalSourceGpuError('Source GPU did not return orbit facts','device');throw new FractalGpuFallback(result.warning);}gpu=result.values;gpuTraps=result.traps;gpuResidual=result.residual;gpuDistance=result.distance;sourceRGBA=result.sourceRGBA;}
   if(colorPlan&&(!sourceRGBA||sourceRGBA.length!==points.length*2))throw new FractalSourceGpuError('Source GPU did not return the complete RGBA frame','device');
   const colors:Array<number[]|undefined>=[];
   for(let i=0;i<points.length/2;i++){
@@ -292,39 +307,41 @@ export function generateFractal(scene:SceneDocument,ctx:GenerateContext,prepared
  function output(pixels:Uint8ClampedArray,width:number,height:number,generated:number,extra:string[]=[]):SceneOutput {
   if(sourcePlan)fractalSourceCancel(ctx.isCancelled);
   const allResidualRepaired=useGpu&&usesResidualConvergence(c)&&samples>0&&repairCount===samples;
-  const sourceAfter=sourcePlan?fractalGpu.sourceDiagnostics():undefined;
-  const fractalRender=sourcePlan&&sourceNavigation&&preparedSource&&sourceAfter?fractalSourceFrameFacts(sourcePlan,sourceNavigation,preparedSource.reference,[ctx.width,ctx.height],[width,height],sourceBefore,sourceAfter,colorPlan,display):undefined;
-  return {type:'raster',...(fractalRender?{fractalRender}:{}),dimension:2,cameraResolved:true,backend:useGpu&&!allResidualRepaired?'webgl2':'cpu',width,height,pixels,stats:{samples,generated,invalid,elapsedMs:performance.now()-start},warnings:[...warnings.filter(w=>!allResidualRepaired||w!==RESIDUAL_GPU_NOTICE),...extra,...(repairCount?[`${repairCount} 个 GPU 数值不确定像素已用 CPU ${useDD?'DoubleDouble':'双精度'} 修复。`]:[])]};
+  const sourceAfter=sourcePlan?(sampler?sampler.diagnostics():fractalGpu.sourceDiagnostics()):undefined;
+  const fractalRender=sourcePlan&&sourceNavigation&&preparedSource&&sourceAfter?fractalSourceFrameFacts(sourcePlan,sourceNavigation,preparedSource.reference,[ctx.width,ctx.height],[width,height],sourceBefore,sourceAfter,colorPlan,display,sampler?.execution()):undefined;
+  return {type:'raster',...(fractalRender?{fractalRender}:{}),dimension:2,cameraResolved:true,...(sampler?{sourcePixelRenderer:sampler.pixelRenderer()}:{}),backend:sampler?'native':useGpu&&!allResidualRepaired?'webgl2':'cpu',width,height,pixels,stats:{samples,generated,invalid,elapsedMs:performance.now()-start},warnings:[...warnings.filter(w=>!allResidualRepaired||w!==RESIDUAL_GPU_NOTICE),...extra,...(repairCount?[`${repairCount} 个 GPU 数值不确定像素已用 CPU ${useDD?'DoubleDouble':'双精度'} 修复。`]:[])]};
  }
- function pass(width:number,height:number):SceneOutput {
+ function* pass(width:number,height:number):FractalSampleOperation<SceneOutput> {
+  const batch=sampler?.maximumSamples??Math.max(64,Math.min(16384,Math.floor(2_000_000/c.iterations)));
+  admission(width,height,Math.min(batch,width*height));
   const pixels=raster(width,height,bg);let generated=0;
-  const batch=Math.max(64,Math.min(16384,Math.floor(2_000_000/c.iterations)));
   for(let base=0;base<width*height;base+=batch){
    if(ctx.isCancelled?.())return output(pixels,width,height,generated,['计算已取消，剩余像素保留背景。']);
    const n=Math.min(batch,width*height-base),points=new Float32Array(n*2);
    for(let i=0;i<n;i++){points[2*i]=(base+i)%width;points[2*i+1]=Math.floor((base+i)/width);}
-   const colors=evaluate(points,width,height);for(let i=0;i<n;i++){if(colors[i]){put(pixels,base+i,colors[i]!);generated++;}}
+   const colors=yield* evaluate(points,width,height);for(let i=0;i<n;i++){if(colors[i]){put(pixels,base+i,colors[i]!);generated++;}}
   }return output(pixels,width,height,generated);
  }
  try{
   // Each progress frame owns its arrays: worker transfer cannot detach final data.
-  if(actualMethod==='multi-pass'&&ctx.onProgress&&Math.min(w,h)>=32){for(const divisor of [8,4,2]){if(ctx.isCancelled?.())break;ctx.onProgress(pass(Math.max(1,Math.ceil(w/divisor)),Math.max(1,Math.ceil(h/divisor))));}}
+  if(actualMethod==='multi-pass'&&ctx.onProgress&&Math.min(w,h)>=32){for(const divisor of [8,4,2]){if(ctx.isCancelled?.())break;const progress=yield* pass(Math.max(1,Math.ceil(w/divisor)),Math.max(1,Math.ceil(h/divisor)));if(progress.type==='raster')publishedBytes+=progress.pixels.byteLength;ctx.onProgress(progress);}}
   if(actualMethod==='guessing'){
    // Conservative block prediction: compare corners and center in color space,
    // refine non-uniform blocks. Uniform predictions can still miss tiny islands.
+   admission(w,h,Math.max(Math.ceil(w/4)*5,w*Math.min(4,h)));
    const pixels=raster(w,h,bg);let generated=0,predicted=0;
    for(let by=0;by<h;by+=4){if(ctx.isCancelled?.())return output(pixels,w,h,generated,['计算已取消，剩余像素保留背景。']);
     const blocks:Array<{x:number;y:number;width:number;height:number}>=[];const seeds:number[]=[];
     for(let bx=0;bx<w;bx+=4){const bw=Math.min(4,w-bx),bh=Math.min(4,h-by);blocks.push({x:bx,y:by,width:bw,height:bh});for(const [dx,dy]of [[0,0],[bw-1,0],[0,bh-1],[bw-1,bh-1],[sourcePlan?Math.floor((bw-1)/2):(bw-1)/2,sourcePlan?Math.floor((bh-1)/2):(bh-1)/2]])seeds.push(bx+dx,by+dy);}
-    const colors=evaluate(Float32Array.from(seeds),w,h),refine:number[]=[],indices:number[]=[];
+    const colors=yield* evaluate(Float32Array.from(seeds),w,h),refine:number[]=[],indices:number[]=[];
     blocks.forEach((b,i)=>{const local=colors.slice(i*5,i*5+5),first=local[0];const uniform=first&&local.every(color=>color&&color.every((v,k)=>Math.abs(v-first[k])<=1/255));
      for(let dy=0;dy<b.height;dy++)for(let dx=0;dx<b.width;dx++){const index=(b.y+dy)*w+b.x+dx;if(uniform){put(pixels,index,first);generated++;predicted++;}else{refine.push(b.x+dx,b.y+dy);indices.push(index);}}
     });
-    const refined=evaluate(Float32Array.from(refine),w,h);refined.forEach((color,i)=>{if(color){put(pixels,indices[i],color);generated++;}});
+    const refined=yield* evaluate(Float32Array.from(refine),w,h);refined.forEach((color,i)=>{if(color){put(pixels,indices[i],color);generated++;}});
    }
    return output(pixels,w,h,generated,[`Guessing 独立块预测：${predicted} 个像素使用相近样本颜色；细小孤岛可能遗漏，最终导出改为 One Pass。`]);
   }
-  return pass(w,h);
+  return yield* pass(w,h);
  }catch(error){
   if(sourcePlan||!(error instanceof FractalGpuFallback))throw error;
   const result=generateFractal({...scene,settings:{...s,fractalBackend:'cpu'}},ctx);

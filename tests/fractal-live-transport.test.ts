@@ -21,7 +21,7 @@ const context=():GenerationInput=>({time:0,quality:'preview',width:4,height:4,fr
 function transportRaster(_scene:SceneDocument,ctx:GenerationInput):SceneOutput {
  // Deliberately partial renderer stub: only fields parsed by this transport
  // boundary are populated. It is not evidence of shader execution or pixels.
- const fractalRender={logicalSize:[ctx.fractalViewport!.logicalWidth,ctx.fractalViewport!.logicalHeight],requestedSize:[ctx.width,ctx.height],rasterSize:[ctx.width,ctx.height]} as unknown as NonNullable<Extract<SceneOutput,{type:'raster'}>['fractalRender']>;
+ const fractalRender={execution:{backend:'webgl2'},logicalSize:[ctx.fractalViewport!.logicalWidth,ctx.fractalViewport!.logicalHeight],requestedSize:[ctx.width,ctx.height],rasterSize:[ctx.width,ctx.height]} as unknown as NonNullable<Extract<SceneOutput,{type:'raster'}>['fractalRender']>;
  return{type:'raster',width:ctx.width,height:ctx.height,pixels:new Uint8ClampedArray(ctx.width*ctx.height*4),stats:{samples:1,generated:1,invalid:0},fractalRender};
 }
 function rendered(s:SceneDocument,c=context()):SceneOutput {

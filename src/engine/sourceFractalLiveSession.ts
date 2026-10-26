@@ -14,6 +14,7 @@ import {supportsSourceFractalLive} from './sourceFractalDocument';
 import {validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 import {MAX_RASTER_PIXELS,validateRasterRequest} from './rasterDimensions';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
+import {runGenerationEffects,runGenerationEffectsAsync} from './generationEffects';
 
 export interface SourceFractalLiveContext {
  sessionId:string;revision:number;intent:'hot'|'apply';clock:SourceSceneClockRequest;
@@ -26,12 +27,22 @@ export interface SourceFractalLiveContext {
 }
 export type SourceFractalLivePresentation=Pick<SceneDocument,'settings'|'palette'|'camera'|'sourceCamera'|'timeline'|'formulas'|'projectResolution'|'fractalSource'|'fractalSourceColor'|'evaluatedFractalScene'|'evaluatedFractalGradient'>;
 export interface SourceFractalLiveFacts {
- sessionId:string;revision:number;clock:'realtime-source-queue'|'fixed-source-queue';clockSource:'worker-wall-clock'|'injected'|'fixed-step';
+ sessionId:string;revision:number;clock:'realtime-source-queue'|'fixed-source-queue';clockSource:'worker-wall-clock'|'page-wall-clock'|'injected'|'fixed-step';
  target:'primary'|'offscreen';renderKind:'update'|'snapshot';
  sceneTime:number;rawDt:number;activeDt:number;queueIndex:number;queueComplete:boolean;paused:boolean;
  updateOrdinal:number;objectUpdates:number;actualFrameRate:number;presentation:SourceFractalLivePresentation;
 }
 type Raster=Extract<SceneOutput,{type:'raster'}>;
+type Render=(scene:SceneDocument,context:GenerateContext,prepared?:ReturnType<typeof prepareFractalRender>)=>SceneOutput;
+export interface SourceFractalLiveSessionOptions {
+ asyncRender?:(scene:SceneDocument,context:GenerateContext,prepared:ReturnType<typeof prepareFractalRender>,options:{retainedBytes:number})=>SceneOutput|PromiseLike<SceneOutput>;
+ hostClock?:{now:()=>number;source:'worker-wall-clock'|'page-wall-clock'};
+}
+type DrawEffect={scene:SceneDocument;context:GenerateContext;prepared:ReturnType<typeof prepareFractalRender>;retainedBytes:number};
+type Operation<T>=Generator<DrawEffect,T,SceneOutput>;
+type RecordingOptions={width:number;height:number;simulationFps:number};
+type RecordingStart={handle:SourceFractalHostRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceQueueRecordingClock;warmup:Raster};
+type RecordingStop={scene:SceneDocument;context:GenerationInput;preview:Raster};
 const copy=<T>(value:T):T=>structuredClone(value);
 const LOCAL_COLOR_FIELDS=['coloring','colorDensity','gradientOffset','transfer','repeatGradient','solidColor','metric','binaryAxis','smoothSource','smoothPower','smoothReal','smoothImag','smoothBailout','distancePower','directScale','directGamma','directSaturation','directMix','trapMerge','trapThreshold','trapShape','trapRadius','trapReal','trapImag','trapRotation','trapAspect'] as const;
 /** Explicit Mobject settings; every unlisted setting belongs to the retained
@@ -70,7 +81,7 @@ function presentation(scene:SceneDocument):SourceFractalLivePresentation {
  return copy({settings:scene.settings,palette:scene.palette,camera:scene.camera,sourceCamera:scene.sourceCamera,timeline:scene.timeline,formulas:scene.formulas,projectResolution:scene.projectResolution,fractalSource:scene.fractalSource,fractalSourceColor:scene.fractalSourceColor,evaluatedFractalScene:scene.evaluatedFractalScene,evaluatedFractalGradient:scene.evaluatedFractalGradient});
 }
 
-/** One worker-owned numerical host and captured render configuration. The
+/** One numerical host and captured render configuration. The
  * existing bounded GPU renderer is shared; every draw binds the entire native
  * state. A separate display owner retains passIndex and the delayed gradient uniform;
  * GL objects remain local and no rendered image is cached. */
@@ -88,27 +99,73 @@ export class SourceFractalLiveSession {
  private sessionId='';private revision=0;private startAt?:number;private failed=false;private busy=false;
  private cancel?:()=>boolean;
  private completed?:{sceneId:string;sessionId:string;revision:number;width:number;height:number;context:GenerationInput};
- constructor(private readonly render:(scene:SceneDocument,context:GenerateContext,prepared?:ReturnType<typeof prepareFractalRender>)=>SceneOutput=generateFractal){}
- reset():void {if(this.recording)throw Error('请先结束分形录制再释放实例');this.host=undefined;this.displayOwner=new SourceFractalDisplay();this.retained=undefined;this.applied=undefined;this.retainedFormulas=undefined;this.appliedFormulas=undefined;this.handoff=undefined;this.sessionId='';this.revision=0;this.startAt=undefined;this.failed=false;this.completed=undefined;this.cancel=undefined;}
+ private inFlight?:Promise<unknown>;private resetting?:Promise<void>;private operationRevision=0;private revoked?:()=>boolean;
+ constructor(private readonly render:Render=generateFractal,private readonly options:SourceFractalLiveSessionOptions={}){this.options={...options,...(options.hostClock?{hostClock:{...options.hostClock}}:{})};}
+ private get executing(){return this.busy||!!this.inFlight||!!this.resetting;}
+ private clear(){this.host=undefined;this.displayOwner=new SourceFractalDisplay();this.retained=undefined;this.applied=undefined;this.retainedFormulas=undefined;this.appliedFormulas=undefined;this.recording=undefined;this.handoff=undefined;this.sessionId='';this.revision=0;this.startAt=undefined;this.failed=false;this.completed=undefined;this.cancel=undefined;}
+ reset():void {if(this.executing)throw Error('分形生成结束前不能重置实例');if(this.recording&&!this.failed)throw Error('请先结束分形录制再释放实例');this.clear();}
+ /** Wait for the operation's catch/finally as well as its renderer ACK. This
+  * does not release external renderer resources or claim successful rendering. */
+ async settle():Promise<void>{await this.inFlight?.catch(()=>{});}
+ resetAsync():Promise<void>{
+  if(this.resetting)return this.resetting;
+  if(this.busy&&!this.inFlight)return Promise.reject(Error('分形生成结束前不能重置实例'));
+  if(!this.inFlight&&this.recording&&!this.failed)return Promise.reject(Error('请先结束分形录制再释放实例'));
+  this.operationRevision++;
+  const pending=(async()=>{await this.settle();if(this.recording&&!this.failed)throw Error('请先结束分形录制再释放实例');this.clear();})();this.resetting=pending;
+  void pending.then(()=>{if(this.resetting===pending)this.resetting=undefined;},()=>{if(this.resetting===pending)this.resetting=undefined;});return pending;
+ }
+ private check(c?:GenerateContext){if(this.revoked?.()||c?.isCancelled?.())throw new DOMException('分形生成已取消','AbortError');}
+ private run<T>(operation:Operation<T>):T {
+  if(this.options.asyncRender)throw Error('异步分形 renderer 必须使用 Async 操作');
+  if(this.executing)throw Error('分形实时会话正在生成或清理');
+  return runGenerationEffects(operation,e=>this.performDraw(e));
+ }
+ private runAsync<T>(operation:()=>Operation<T>):Promise<T>{
+  if(this.executing)return Promise.reject(Error('分形实时会话正在生成或清理'));
+  const revision=this.operationRevision;
+  const pending=Promise.resolve().then(async()=>{
+   this.revoked=()=>revision!==this.operationRevision;
+   try{this.check();return await runGenerationEffectsAsync(operation(),e=>this.performDrawAsync(e));}finally{this.revoked=undefined;}
+  });this.inFlight=pending;
+  void pending.then(()=>{if(this.inFlight===pending)this.inFlight=undefined;},()=>{if(this.inFlight===pending)this.inFlight=undefined;});return pending;
+ }
+ private snapshot(scene:SceneDocument,c:GenerateContext){return{scene:copy(scene),context:{...snapshotGenerationInput(c),fractalDisplay:c.fractalDisplay,isCancelled:c.isCancelled,onProgress:c.onProgress,onStatus:c.onStatus}};}
  diagnostics(){return{sessionId:this.sessionId,revision:this.revision,failed:this.failed,host:this.host&&!this.failed?this.host.snapshot():undefined,retainedBytes:this.retained?JSON.stringify(this.retained).length*2:0};}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {
+  return !this.inFlight&&!this.resetting&&this.matchesPrimary(scene,c);
+ }
+ private matchesPrimary(scene:SceneDocument,c:GenerateContext):boolean {
   const value=this.completed,v=c.fractalLive;return !this.recording&&!this.failed&&!this.busy&&!!value&&!!v&&scene.id===value.sceneId&&v.sessionId===value.sessionId&&v.revision===value.revision&&c.width===value.width&&c.height===value.height&&c.fractalViewport?.target==='primary';
  }
  setPaused(paused:boolean,timestampMs?:number):void {
-  if(this.recording||this.busy||this.failed||!this.host||!this.completed)throw Error('分形播放控制需要已完成且可用的实时主预览');
+  if(this.recording||this.executing||this.failed||!this.host||!this.completed)throw Error('分形播放控制需要已完成且可用的实时主预览');
   validateSourceSceneClockRequest({paused,timestampMs});
   try{this.host.setPaused(paused,timestampMs);this.handoff=undefined;}catch(error){this.failed=true;this.completed=undefined;throw error;}
  }
- private draw(scene:SceneDocument,c:GenerateContext):SceneOutput {
+ private *draw(scene:SceneDocument,c:GenerateContext,retainedBytes=0):Operation<SceneOutput> {
+  if(!Number.isSafeInteger(retainedBytes)||retainedBytes<0)throw Error('分形内部保留像素字节数无效');
   const prepared=prepareFractalRender(scene,c);
+  this.check(c);const output=yield{scene,context:c,prepared,retainedBytes};this.check(c);return output;
+ }
+ private performDraw({scene,context:c,prepared}:DrawEffect):SceneOutput {
   // Saved source-arithmetic documents may deliberately use local coloring.
   // Their existing local scheduling does not claim native display semantics.
   if(!prepared.colorPlan)return this.render(scene,c,prepared);
   return this.displayOwner.display(sourceFractalDisplayInput(prepared,scene),facts=>this.render(scene,{...c,fractalDisplay:facts},prepared));
  }
+ private async performDrawAsync({scene,context:c,prepared,retainedBytes}:DrawEffect):Promise<SceneOutput>{
+  const context={...c,isCancelled:()=>Boolean(this.revoked?.()||c.isCancelled?.())};
+  const draw=async(facts?:GenerateContext['fractalDisplay'])=>{
+   this.check(c);const input={...context,...(facts?{fractalDisplay:facts}:{})};
+   const output=await(this.options.asyncRender?this.options.asyncRender(scene,input,prepared,{retainedBytes}):this.render(scene,input,prepared));
+   this.check(c);return output;
+  };
+  return prepared.colorPlan?this.displayOwner.displayAsync(sourceFractalDisplayInput(prepared,scene),draw):draw();
+ }
  private admit(scene:SceneDocument,c:GenerateContext){
   if(!supportsSourceFractalLive(scene))throw Error('分形实时预览需要完整受支持分形源配置与源队列');
-  const configuration=prepareSourceFractalScene(scene),candidate=new SourceFractalHostSession(configuration,{paused:c.fractalLive!.clock.paused,isCancelled:()=>this.cancel?.()??false});
+  const configuration=prepareSourceFractalScene(scene),candidate=new SourceFractalHostSession(configuration,{paused:c.fractalLive!.clock.paused,hostClock:this.options.hostClock,isCancelled:()=>Boolean(this.revoked?.()||this.cancel?.())});
   prepareFractalRender(display(scene,candidate.snapshot()),c);return{configuration,candidate,formulas:formulaPresentation(scene)};
  }
  private facts(snapshot:SourceFractalHostSnapshot,scene:SceneDocument,actualFrameRate:number,target:'primary'|'offscreen',updated:boolean):SourceFractalLiveFacts {
@@ -124,6 +181,12 @@ export class SourceFractalLiveSession {
   * Both displays share the original pass/uniform owner; logical target changes
   * reset its pass index without advancing the numerical clock. */
  capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):PausedCaptureResult {
+  return this.run(this.captureOperation(scene,c,options));
+ }
+ capturePausedAsync(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):Promise<PausedCaptureResult>{
+  const saved=this.snapshot(scene,c),copy={...options};return this.runAsync(()=>this.captureOperation(saved.scene,saved.context,copy));
+ }
+ private *captureOperation(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}):Operation<PausedCaptureResult> {
   if(this.recording||!this.completed||!this.host||!this.retained||this.failed||this.busy||scene.id!==this.completed.sceneId||c.fractalLive?.sessionId!==this.sessionId||c.fractalLive.revision!==this.revision)throw Error('分形当前帧截图需要已完成的实时主预览');
   const snapshot=this.host.snapshot();if(!snapshot.paused)throw Error('请先暂停分形再保存当前帧');
   const retained=this.completed,renderScene=display(this.retained,snapshot),primary:GenerateContext={...retained.context,isCancelled:c.isCancelled,onProgress:undefined};
@@ -136,9 +199,9 @@ export class SourceFractalLiveSession {
   this.busy=true;this.completed=undefined;this.handoff=undefined;
   try{
    const actualFrameRate=retained.context.fractalLive!.actualFrameRate;
-   const captured=this.bind(this.draw(renderScene,capture),this.facts(snapshot,renderScene,actualFrameRate,'offscreen',false));
+   const captured=this.bind(yield* this.draw(renderScene,capture,extra),this.facts(snapshot,renderScene,actualFrameRate,'offscreen',false));
    if(c.isCancelled?.())throw new DOMException('分形当前帧截图已取消','AbortError');
-   const preview=this.bind(this.draw(display(this.retained,snapshot),primary),this.facts(snapshot,renderScene,actualFrameRate,'primary',false));
+   const preview=this.bind(yield* this.draw(display(this.retained,snapshot),primary,extra+captured.pixels.byteLength),this.facts(snapshot,renderScene,actualFrameRate,'primary',false));
    if(c.isCancelled?.())throw new DOMException('分形当前帧截图已取消','AbortError');
    this.completed=retained;return{capture:captured,preview};
   }catch(error){this.failed=true;throw error;}finally{this.busy=false;}
@@ -146,8 +209,12 @@ export class SourceFractalLiveSession {
  /** Toolbar recording rebuilds the numerical host from the last full load.
   * Keep the author draft and the full render anchor distinct. Size uses the
   * explicit parent density, never a low-quality preview's raster ratio. */
- beginRecording(scene:SceneDocument,c:GenerateContext,options:{width:number;height:number;simulationFps:number}){
-  if(this.recording||!this.matchesCompletedPrimary(scene,c)||!this.applied||!this.host)throw Error('分形录制需要已完成且匹配的主预览');
+ beginRecording(scene:SceneDocument,c:GenerateContext,options:RecordingOptions):RecordingStart{return this.run(this.beginOperation(scene,c,options));}
+ beginRecordingAsync(scene:SceneDocument,c:GenerateContext,options:RecordingOptions):Promise<RecordingStart>{
+  const saved=this.snapshot(scene,c),copy={...options};return this.runAsync(()=>this.beginOperation(saved.scene,saved.context,copy));
+ }
+ private *beginOperation(scene:SceneDocument,c:GenerateContext,options:RecordingOptions):Operation<RecordingStart>{
+  if(this.recording||!this.matchesPrimary(scene,c)||!this.applied||!this.host)throw Error('分形录制需要已完成且匹配的主预览');
   this.cancel=c.isCancelled;
   try{
    const source=this.completed!,primary=snapshotGenerationInput(source.context),live=primary.fractalLive!;
@@ -157,7 +224,7 @@ export class SourceFractalLiveSession {
    validateRasterRequest(target);
    const clock=planFractalRecordingClock(this.applied,options.simulationFps,this.cancel),anchor=clean(this.applied),author=clean(scene);
    // Pure renderer admission precedes the same host's irreversible reset.
-   const candidate=new SourceFractalHostSession({...prepareSourceFractalScene(anchor),fps:options.simulationFps});
+   const candidate=new SourceFractalHostSession({...prepareSourceFractalScene(anchor),fps:options.simulationFps},{hostClock:this.options.hostClock});
    prepareFractalRender(display(anchor,candidate.snapshot()),target);prepareFractalRender(display(anchor,candidate.snapshot()),primary);
    if(this.cancel?.())throw new DOMException('分形录制开始已取消','AbortError');
    this.busy=true;
@@ -166,16 +233,16 @@ export class SourceFractalLiveSession {
     this.displayOwner=new SourceFractalDisplay();
     this.retained=anchor;this.retainedFormulas=copy(this.appliedFormulas!);this.completed=undefined;this.handoff=undefined;
     this.recording={handle:started.handle,clock,author,primary,target,next:0,cancel:c.isCancelled};
-    const warmup=this.renderRecording(started.warmup);
+    const warmup=yield* this.renderRecording(started.warmup);
     return{handle:started.handle,scene:clean(anchor),context:snapshotGenerationInput(primary),clock:{...clock},warmup};
-   }catch(error){this.failed=true;this.completed=undefined;this.recording=undefined;throw error;}finally{this.busy=false;}
+   }catch(error){this.failed=true;this.completed=undefined;throw error;}finally{this.busy=false;}
   }finally{this.cancel=undefined;}
  }
- private renderRecording(snapshot:SourceFractalHostSnapshot):Raster {
+ private *renderRecording(snapshot:SourceFractalHostSnapshot):Operation<Raster> {
   const record=this.recording!,position=snapshot.recording!;
   if(this.cancel?.())throw new DOMException('分形录制更新已取消','AbortError');
   const scene=display(this.retained!,snapshot),c:GenerateContext={...record.target,time:snapshot.state.scene.sceneTime,isCancelled:this.cancel};
-  const output=this.bind(this.draw(scene,c),this.facts(snapshot,scene,record.clock.simulationFps,'offscreen',true));
+  const output=this.bind(yield* this.draw(scene,c),this.facts(snapshot,scene,record.clock.simulationFps,'offscreen',true));
   output.fractalRecording=fractalRecordingFrameFacts(scene.evaluatedFractalScene!,{displayFrame:position.ordinal,simulationFps:record.clock.simulationFps});
   assertFractalRecordingFrame(output,record.clock,position.ordinal);
   if(this.cancel?.())throw new DOMException('分形录制更新已取消','AbortError');
@@ -183,33 +250,43 @@ export class SourceFractalLiveSession {
  }
  ownsRecording(handle:object):boolean{return !this.failed&&this.recording?.handle===handle;}
  nextRecordingFrame(handle:object,displayFrame:number):Raster {
+  return this.run(this.nextOperation(handle,displayFrame));
+ }
+ nextRecordingFrameAsync(handle:object,displayFrame:number):Promise<Raster>{return this.runAsync(()=>this.nextOperation(handle,displayFrame));}
+ private *nextOperation(handle:object,displayFrame:number):Operation<Raster>{
   const record=this.recording;
   if(this.failed||this.busy||!record||!this.ownsRecording(handle)||record.finished||displayFrame!==record.next||displayFrame>record.clock.lastDisplayFrame)throw Error('分形录制身份或连续帧序号无效');
   this.busy=true;this.cancel=record.cancel;
-  try{return this.renderRecording(this.host!.nextRecordingFrame(record.handle,displayFrame));}
-  catch(error){this.failed=true;this.recording=undefined;this.completed=undefined;throw error;}finally{this.busy=false;this.cancel=undefined;}
+  try{return yield* this.renderRecording(this.host!.nextRecordingFrame(record.handle,displayFrame));}
+  catch(error){this.failed=true;this.completed=undefined;throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  /** disableRenderMode resets wall time exactly once. The returned local
   * primary snapshot adds no numerical update; the next live draw resumes.
   * A failed redraw retains this finish lease for an explicit retry. */
- finishRecording(handle:object,timestampMs?:number):{scene:SceneDocument;context:GenerationInput;preview:Raster} {
+ finishRecording(handle:object,timestampMs?:number):RecordingStop{return this.run(this.finishOperation(handle,timestampMs));}
+ finishRecordingAsync(handle:object,timestampMs?:number):Promise<RecordingStop>{return this.runAsync(()=>this.finishOperation(handle,timestampMs));}
+ private *finishOperation(handle:object,timestampMs?:number):Operation<RecordingStop>{
   const record=this.recording??this.handoff;
   if(this.failed||this.busy||!record||record.handle!==handle||(!this.recording&&!this.completed))throw Error('分形录制身份无效');
   this.busy=true;
   try{
    record.finished??=this.host!.finishRecording(record.handle,timestampMs);
    const snapshot=record.finished,scene=display(this.retained!,snapshot),context={...snapshotGenerationInput(record.primary),time:snapshot.state.scene.sceneTime};
-   const preview=this.bind(this.draw(scene,context),this.facts(snapshot,scene,context.fractalLive!.actualFrameRate,'primary',false));
+   const preview=this.bind(yield* this.draw(scene,context),this.facts(snapshot,scene,context.fractalLive!.actualFrameRate,'primary',false));
    this.completed={sceneId:record.author.id,sessionId:this.sessionId,revision:this.revision,width:context.width,height:context.height,context:snapshotGenerationInput(context)};
    this.recording=undefined;this.handoff=record;return{scene:clean(record.author),context,preview};
   }finally{this.busy=false;}
  }
  generate(scene:SceneDocument,c:GenerateContext):Raster {
-  const live=context(c);if(scene.kind!=='fractal')throw Error('分形实时上下文只能用于分形场景');if(this.recording||this.busy)throw Error('分形实时会话正在生成或录制');
+  return this.run(this.generateOperation(scene,c));
+ }
+ generateAsync(scene:SceneDocument,c:GenerateContext):Promise<Raster>{const saved=this.snapshot(scene,c);return this.runAsync(()=>this.generateOperation(saved.scene,saved.context));}
+ private *generateOperation(scene:SceneDocument,c:GenerateContext):Operation<Raster>{
+  const live=context(c);if(scene.kind!=='fractal')throw Error('分形实时上下文只能用于分形场景');if(this.recording&&!this.failed||this.busy)throw Error('分形实时会话正在生成或录制');
   const replace=!this.host||live.sessionId!==this.sessionId;
   if(!replace&&(this.failed||live.revision<this.revision||live.startAt!==this.startAt))throw Error('分形实时实例已失效或版本倒退，需要新的 sessionId');
   this.cancel=c.isCancelled;
-  let mutated=false;this.busy=true;
+  let mutated=false,publishing=true;this.busy=true;
   try{
    if(this.cancel?.())throw new DOMException('分形实时预览已取消','AbortError');
    if(replace){
@@ -217,7 +294,7 @@ export class SourceFractalLiveSession {
     if(initial.id!==scene.id||initial.kind!==scene.kind)throw Error('分形配置快照与当前文档身份不匹配');
     const admitted=this.admit(initial,c),retained=clean(initial);
     if(live.startAt!==undefined)admitted.candidate.reconstruct(live.startAt);
-    this.host=admitted.candidate;this.displayOwner=new SourceFractalDisplay();this.retained=retained;this.applied=retained;this.retainedFormulas=admitted.formulas;this.appliedFormulas=copy(admitted.formulas);this.sessionId=live.sessionId;this.revision=live.revision;this.startAt=live.startAt;this.failed=false;mutated=true;
+    this.host=admitted.candidate;this.displayOwner=new SourceFractalDisplay();this.retained=retained;this.applied=retained;this.retainedFormulas=admitted.formulas;this.appliedFormulas=copy(admitted.formulas);this.recording=undefined;this.sessionId=live.sessionId;this.revision=live.revision;this.startAt=live.startAt;this.failed=false;mutated=true;
    }else if(live.revision>this.revision){
     if(!live.configuration||live.configuration.kind!=='fractal'||live.configuration.id!==scene.id)throw Error('分形配置版本需要对应文档事件的完整配置快照');
     const configuration=live.configuration,admitted=this.admit(configuration,c),hot=live.intent==='hot'||this.host!.snapshot().paused;
@@ -232,11 +309,11 @@ export class SourceFractalLiveSession {
    this.completed=undefined;this.handoff=undefined;mutated=true;const snapshot=this.host!.update(live.clock,live.actualFrameRate),renderScene=display(this.retained!,snapshot),s=snapshot.state.scene;
    const facts=this.facts(snapshot,renderScene,live.actualFrameRate,'primary',true);
    const bind=(output:SceneOutput):Raster=>this.bind(output,facts);
-   const output=bind(this.draw(renderScene,{...c,time:s.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined}));
+   const output=bind(yield* this.draw(renderScene,{...c,time:s.sceneTime,onProgress:c.onProgress?value=>{if(!publishing)throw new DOMException('分形进度所属操作已结束','AbortError');this.check(c);c.onProgress!(bind(value));}:undefined}));
    if(this.cancel?.())throw new DOMException('分形实时预览已取消','AbortError');
    const saved=snapshotGenerationInput(c);delete saved.fractalLive!.configuration;
    this.completed={sceneId:scene.id,sessionId:this.sessionId,revision:this.revision,width:c.width,height:c.height,context:saved};return output;
   }catch(error){if(mutated){this.failed=true;this.completed=undefined;}throw error;}
-  finally{this.busy=false;this.cancel=undefined;}
+  finally{publishing=false;this.busy=false;this.cancel=undefined;}
  }
 }

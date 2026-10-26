@@ -7,6 +7,7 @@ export class SourceFractalHostError extends Error {
 export interface SourceFractalHostOptions {
  readonly paused?:boolean;
  readonly now?:()=>number;
+ readonly hostClock?:{readonly now:()=>number;readonly source:'worker-wall-clock'|'page-wall-clock'};
  readonly isCancelled?:()=>boolean;
  /** Shared with parameter phases; the host also enforces a per-operation cap. */
  readonly reserve?:(units:number)=>void;
@@ -19,7 +20,7 @@ export interface SourceFractalHostSnapshot {
  readonly paused:boolean;
  readonly mode:'live'|'recording';
  readonly state:ReturnType<SourceFractalSceneRuntime['snapshot']>;
- readonly hostClock:ReturnType<SourceSceneHostClock['diagnostics']>;
+ readonly hostClock:ReturnType<SourceSceneHostClock<'worker-wall-clock'|'page-wall-clock'>['diagnostics']>;
  /** Numerical facts only. Warmup still needs rendering and discarding by a host. */
  readonly recording?:{readonly simulationFps:number;readonly ordinal:number;readonly warmup:boolean;readonly complete:boolean};
 }
@@ -45,7 +46,7 @@ function effectiveFps(value:number):void {
  * currently mutated runtime are deliberately distinct identities. */
 export class SourceFractalHostSession {
  private runtime!:SourceFractalSceneRuntime;
- private hostClock!:SourceSceneHostClock;
+ private hostClock!:SourceSceneHostClock<'worker-wall-clock'|'page-wall-clock'>;
  private authored!:SourceFractalSceneRuntimeConfiguration;
  private applied!:SourceFractalSceneRuntimeConfiguration;
  private updateOrdinal=-1;
@@ -55,8 +56,8 @@ export class SourceFractalHostSession {
  private work=0;
  private readonly options:SourceFractalHostOptions;
  constructor(configuration:SourceFractalSceneRuntimeConfiguration,options:SourceFractalHostOptions={}){
-  if(!options||options.now!==undefined&&typeof options.now!=='function'||options.isCancelled!==undefined&&typeof options.isCancelled!=='function'||options.reserve!==undefined&&typeof options.reserve!=='function')throw new SourceFractalHostError('input','分形宿主回调无效');
-  this.options={...options};this.fullLoad(configuration,{paused:options.paused===undefined?false:options.paused});
+  if(!options||options.now!==undefined&&typeof options.now!=='function'||options.hostClock!==undefined&&(!options.hostClock||typeof options.hostClock.now!=='function'||!['worker-wall-clock','page-wall-clock'].includes(options.hostClock.source))||options.isCancelled!==undefined&&typeof options.isCancelled!=='function'||options.reserve!==undefined&&typeof options.reserve!=='function')throw new SourceFractalHostError('input','分形宿主回调无效');
+  this.options={...options,...(options.hostClock?{hostClock:{...options.hostClock}}:{})};this.fullLoad(configuration,{paused:options.paused===undefined?false:options.paused});
  }
  private check():void {if(this.options.isCancelled?.())throw new SourceFractalHostError('cancelled','分形宿主更新已取消');}
  private ensure():void {if(this.failed)throw new SourceFractalHostError('state','分形宿主部分更新失败，需要 fullLoad 重建');}
@@ -75,7 +76,7 @@ export class SourceFractalHostSession {
   validateSourceSceneClockRequest({paused});this.work=0;this.check();
   // Runtime performs format/capacity admission before we retain another copy.
   const runtime=new SourceFractalSceneRuntime(configuration,{reserve:this.reserve});
-  const hostClock=new SourceSceneHostClock(paused,camera(runtime.snapshot().scene.cameraAngles),this.options.now);
+  const hostClock=new SourceSceneHostClock(paused,camera(runtime.snapshot().scene.cameraAngles),this.options.hostClock?.now??this.options.now,this.options.hostClock?.source??'worker-wall-clock');
   const retained=clone(configuration);this.check();return{runtime,hostClock,retained};
  }
  private install(candidate:ReturnType<SourceFractalHostSession['prepare']>):void {
@@ -113,7 +114,7 @@ export class SourceFractalHostSession {
    for(let i=0;i<=last;i++)this.advance(Math.fround(1/this.applied.fps),false);
    // A local seek may initialize paused. Resume must restore the reconstructed
    // camera, not the fresh constructor's angles, and still has no elapsed time.
-   this.hostClock=new SourceSceneHostClock(this.hostClock.diagnostics().paused,camera(this.runtime.clock.snapshot().cameraAngles),this.options.now);
+   this.hostClock=new SourceSceneHostClock(this.hostClock.diagnostics().paused,camera(this.runtime.clock.snapshot().cameraAngles),this.options.hostClock?.now??this.options.now,this.options.hostClock?.source??'worker-wall-clock');
    return this.snapshot();
   });
  }

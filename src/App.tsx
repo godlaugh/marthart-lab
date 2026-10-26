@@ -16,7 +16,7 @@ import type {SourceImplicitLiveContext} from './engine/sourceImplicitLive';
 import {hasFormulaComposition} from './engine/formulaConfig';
 import {nativeGeometryPreviewEnabled,usesNativeSourceViewport} from './engine/sourceNativeViewport';
 import {sourceDrawingPolicy} from './engine/sourceDrawingPixels';
-import {SourceSamilaExportPreview} from './engine/sourceSamilaExportPreview';
+import {SourceNativeExportPreview} from './engine/sourceNativeExportPreview';
 import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
 import {applyFractalJuliaSeed} from './engine/complexViewport';
 import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
@@ -258,8 +258,8 @@ export default function App() {
     [exporting, setExporting] = useState(false),
     [recording,setRecording]=useState(false),
     [tab, setTab] = useState<"geometry" | "appearance">("geometry");
-  const samilaExportPreview=useRef(new SourceSamilaExportPreview()),exportWorking=useRef(false),livePlaybackPromise=useRef<Promise<void>|undefined>(undefined);
-  const [samilaExportPaused,setSamilaExportPaused]=useState(false);
+  const nativeExportPreview=useRef(new SourceNativeExportPreview()),exportWorking=useRef(false),livePlaybackPromise=useRef<Promise<void>|undefined>(undefined);
+  const [nativeExportPaused,setNativeExportPaused]=useState(false);
   const sourceSamilaRecording=sourceDrawingPolicy()==='native'&&usesSourceSamilaSampling(scene);
   const [theme, setTheme] = useState<"dark" | "light">(
       restored?.theme ?? "dark",
@@ -905,7 +905,7 @@ export default function App() {
     seek(0);
   }
   function play(value:boolean):Promise<void>|undefined {
-    if(value&&samilaExportPreview.current.active)return;
+    if(value&&nativeExportPreview.current.active)return;
     if(usesSourceImplicitCpuMesh(sceneRef.current)&&implicitNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}
     if(value&&usesSourceImplicitCpuMesh(sceneRef.current)&&(implicitEditor.current?.pendingCount||generationPending.current)){notify(t('请等待当前预览完成并暂停后再保存画面'));return;}
     if(value&&experience.error){setToast(t(experience.error));return;}
@@ -913,7 +913,7 @@ export default function App() {
     const liveKind=previewLiveKind(sceneRef.current);
     if(liveKind==='roots'){if(rootsNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}retireRootsGesture();}
     if(liveKind){
-      if(livePlaybackTransition.current)return !value&&samilaExportPreview.current.active?livePlaybackPromise.current?.then(()=>play(false)):undefined;
+      if(livePlaybackTransition.current)return !value&&nativeExportPreview.current.active?livePlaybackPromise.current?.then(()=>play(false)):undefined;
       const queue=generationQueue.current;if(!queue)return;
       const ticket={},sessionId=liveSessionId.current;livePlaybackTransition.current=ticket;
       // Stop scheduling immediately; a running display completes before the
@@ -942,17 +942,17 @@ export default function App() {
     if(value&&!continuousBouncing(scene)&&!playingRef.current&&(playbackScene.timeline.playbackMode==='once'||(!playbackScene.timeline.playbackMode&&!playbackScene.timeline.loop))&&timeRef.current>=resolveTimeline(playbackScene).duration){playbackClock.current=0;setTime(0);}
     setPlaying(value);
   }
-  function samilaPreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision];}
+  function nativePreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision];}
   function pauseForExport(){
-    const ticket=sourceDrawingPolicy()==='native'&&usesSourceSamilaSampling(sceneRef.current)?samilaExportPreview.current.open(samilaPreviewInput()):undefined;
-    if(ticket)setSamilaExportPaused(false);
+    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||sourceLivePreviewKind(sceneRef.current)==='fractal')?nativeExportPreview.current.open(nativePreviewInput()):undefined;
+    if(ticket)setNativeExportPaused(false);
     const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
     if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}
-    if(ticket)void Promise.resolve(paused).then(()=>{if(samilaExportPreview.current.owns(ticket))setSamilaExportPaused(true);});
+    if(ticket)void Promise.resolve(paused).then(()=>{if(nativeExportPreview.current.owns(ticket))setNativeExportPaused(true);});
   }
   function closeExport(){
     if(exportWorking.current)return;
-    const deferred=samilaExportPreview.current.close();setExporting(false);setRecording(false);
+    const deferred=nativeExportPreview.current.close();setExporting(false);setRecording(false);
     if(deferred)setGenerationRevision(value=>value+1);
   }
   function cameraChanged(next:CameraState) {
@@ -1065,7 +1065,9 @@ export default function App() {
       prev = playbackStartedAt.current??performance.now();
     playbackStartedAt.current=undefined;
     function tick() {
-      if(!playingRef.current&&!replayPendingRef.current)return;
+      // A native export holds the shared transport. Do not reserve a RAF
+      // request that the generation effect must defer until the dialog closes.
+      if(nativeExportPreview.current.active||!playingRef.current&&!replayPendingRef.current)return;
       // Start/resume/recording anchors use performance.now(). RAF's frame
       // timestamp can precede those anchors, so use RAF only for scheduling.
       const now=performance.now();
@@ -1109,7 +1111,7 @@ export default function App() {
     }
     if (playing||liveDisplayPending) {id = requestAnimationFrame(tick);}
     return () => cancelAnimationFrame(id);
-  }, [playing,liveDisplayPending, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
+  }, [playing,liveDisplayPending,exporting,recording, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{
@@ -1167,7 +1169,7 @@ export default function App() {
           sceneRef.current=result.scene;generationScene.current=result.scene;camera.current=result.scene.camera;setSceneState(result.scene);
           const live=result.context.samilaLive;liveSessionId.current=live.sessionId;samilaDirtyRevision.current=live.dirtyRevision??0;
           livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;
-          samilaExportPreview.current.close();setSamilaExportPaused(false);
+          nativeExportPreview.current.close();setNativeExportPaused(false);
           playingRef.current=!live.clock?.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
           setTime(result.context.time);setPreviewCancelled(false);return;
         }
@@ -1236,7 +1238,7 @@ export default function App() {
     // A provisional size would consume progressive samples before the first
     // measured viewport, whose resize then legitimately clears their ink.
     if(!viewportSize||implicitRecordingScene.current!==undefined&&usesSourceImplicitCpuMesh(scene)&&generationScene.current===scene&&!implicitEditor.current?.pendingCount||usesSourceImplicitCpuMesh(scene)&&implicitNeedsApply.current||sourceLivePreviewKind(scene)==='roots'&&rootsNeedsApply.current)return;
-    if(samilaExportPreview.current.defer(samilaPreviewInput()))return;
+    if(nativeExportPreview.current.defer(nativePreviewInput()))return;
     setPreviewCancelled(false);
     const changed=generationScene.current!==scene;
     if(generationScene.current?.id!==scene.id)setOutput(null);
@@ -1294,7 +1296,7 @@ export default function App() {
 
   return (
     <I18nProvider language={language}><div className="app-shell">
-      <header className="app-header" inert={samilaExportPreview.current.active}>
+      <header className="app-header" inert={nativeExportPreview.current.active}>
         <div className="brand">
           <div className="brand-mark">
             <Activity size={22} />
@@ -1332,7 +1334,7 @@ export default function App() {
         >
           <Download size={15} />{t("导出作品")}</button>
       </header>
-      <div className="workspace" inert={samilaExportPreview.current.active}>
+      <div className="workspace" inert={nativeExportPreview.current.active}>
         <nav className="activity-bar">
           <button
             title={t("场景库")}
@@ -2022,7 +2024,7 @@ export default function App() {
         <ExportDialog
           mode={recording?(usesSourceImplicitCpuMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':sourceSamilaRecording?'samila-recording':'fractal-recording'):'export'}
           scene={{ ...(implicitExport?.scene??scene),id:scene.id,name:scene.name,projectResolution:scene.projectResolution,camera:camera.current }}
-          previewReady={implicitExport?.error?false:samilaExportPreview.current.active?samilaExportPaused&&!generationPending.current&&completedFrameAvailable:nativeGeometryPreviewEnabled(scene)?completedFrameAvailable:undefined}
+          previewReady={implicitExport?.error?false:nativeExportPreview.current.active?nativeExportPaused&&!generationPending.current&&completedFrameAvailable:nativeGeometryPreviewEnabled(scene)?completedFrameAvailable:undefined}
           time={time}
           currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}

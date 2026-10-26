@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {inflateSync} from 'node:zlib';
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+function png(bytes){
+ assert.ok(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));let width,height,channels;const chunks=[];
+ for(let at=8;at<bytes.length;){const n=bytes.readUInt32BE(at),name=bytes.toString('ascii',at+4,at+8),data=bytes.subarray(at+8,at+8+n);assert.ok(at+12+n<=bytes.length);if(name==='IHDR'){width=data.readUInt32BE(0);height=data.readUInt32BE(4);assert.equal(data[8],8);assert.ok([2,6].includes(data[9]));assert.equal(data[12],0);channels=data[9]===6?4:3;}if(name==='IDAT')chunks.push(data);at+=12+n;if(name==='IEND')break;}
+ assert.ok(width&&height&&width*height<=1_000_000&&channels);const raw=inflateSync(Buffer.concat(chunks),{maxOutputLength:width*height*4+height}),stride=width*channels;assert.equal(raw.length,(stride+1)*height);const rows=Buffer.alloc(stride*height),rgba=Buffer.alloc(width*height*4);
+ const paeth=(a,b,c)=>{const p=a+b-c,x=Math.abs(p-a),y=Math.abs(p-b),z=Math.abs(p-c);return x<=y&&x<=z?a:y<=z?b:c;};
+ for(let y=0;y<height;y++){const filter=raw[y*(stride+1)];assert.ok(filter<=4);for(let x=0;x<stride;x++){const a=x>=channels?rows[y*stride+x-channels]:0,b=y?rows[(y-1)*stride+x]:0,c=y&&x>=channels?rows[(y-1)*stride+x-channels]:0;rows[y*stride+x]=(raw[y*(stride+1)+1+x]+[0,a,b,Math.floor((a+b)/2),paeth(a,b,c)][filter])&255;}}
+ const colors=new Set();for(let i=0;i<width*height;i++){for(let c=0;c<3;c++)rgba[i*4+c]=rows[i*channels+c];rgba[i*4+3]=channels===4?rows[i*channels+3]:255;colors.add(rgba.readUInt32LE(i*4));}return{width,height,rgbaSha256:sha(rgba),colors:colors.size};
+}
+/** Observes actual public calls without substituting their input or output. */
+export async function verifyFractalNativeUi(browser,origin,root,input){
+ const page=await browser.newPage({viewport:{width:1120,height:760},deviceScaleFactor:1,acceptDownloads:true});page.setDefaultTimeout(60000);const errors=[],consoleErrors=[],requestFailures=[],result={};page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());});page.on('requestfailed',r=>requestFailures.push({url:r.url(),failure:r.failure()}));
+ const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
+ try{
+  await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(origin+'fixture');
+  await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const scene=createScene(definition('surface'));Object.assign(scene.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'low',frameRate:30}});});
+  await page.goto(origin);console.log(JSON.stringify({uiStage:'app-loaded',url:page.url()}));await ready();
+  await page.evaluate(async()=>{
+   const {Generator}=await import('/src/engine/client.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),generate=Generator.prototype.generate,capture=Generator.prototype.captureFractalPaused,set=ArtRenderer.prototype.setOutput;
+   const audit=window.__nativeFractalUi={generated:[],captures:[],rendered:[],errors:[]},owners=new WeakMap();
+   const hash=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(v=>v.toString(16).padStart(2,'0')).join('');
+   const facts=async output=>({width:output.width,height:output.height,backend:output.backend,pixelRenderer:output.sourcePixelRenderer,fractal:output.fractalRender,live:output.fractalLive,recording:output.fractalRecording,image:output.sourceCurrentImage,formulas:output.formulaPresentation,pixelSha256:await hash(output.pixels)});
+   Generator.prototype.generate=async function(scene,context,...args){try{const output=await generate.call(this,scene,context,...args);if(scene.kind==='fractal'){const row={scene:structuredClone(scene),context:structuredClone(context),output:await facts(output),sequence:audit.generated.length};audit.generated.push(row);owners.set(output,row);}return output;}catch(e){if(scene.kind==='fractal'&&e.name!=='AbortError')audit.errors.push(String(e));throw e;}};
+   Generator.prototype.captureFractalPaused=async function(...args){const result=await capture.call(this,...args);audit.captures.push({capture:await facts(result.capture),preview:await facts(result.preview)});return result;};
+   ArtRenderer.prototype.setOutput=function(output,...args){const result=set.call(this,output,...args),row=owners.get(output);if(row)audit.rendered.push(row.sequence);return result;};
+  });
+  const source=structuredClone(input);source.name='Native Fractal application acceptance';source.timeline=[{type:'wait',duration:.08}];
+  await page.locator('input[type=file][accept=".json"]').setInputFiles({name:'native-fractal.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});
+  await page.waitForFunction(()=>window.__nativeFractalUi.generated.some(r=>r.output.fractal?.display&&!r.output.fractal.display.needsAnotherDisplay));await ready();
+  const preview=await page.evaluate(()=>window.__nativeFractalUi.generated.at(-1));assert.equal(preview.output.backend,'native');assert.equal(preview.output.fractal.execution.backend,'native');assert.equal(preview.output.live.clockSource,'page-wall-clock');assert.ok(await page.evaluate(n=>window.__nativeFractalUi.rendered.includes(n),preview.sequence));
+  result.preview=preview;console.log(JSON.stringify({uiStage:'native-preview-ready'}));await page.screenshot({path:root+'/app-native-fractal.png'});
+  for(const mode of ['current','replay']){
+   await page.getByRole('button',{name:'Export artwork',exact:true}).click();await page.getByRole('combobox',{name:'Fractal image source',exact:true}).selectOption(mode);if(mode==='current')await page.getByRole('combobox',{name:'PNG upscale',exact:true}).selectOption('1');
+   await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('96');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('80');
+   console.log(JSON.stringify({uiStage:'export-ready',mode,enabled:await page.getByRole('button',{name:'Start export',exact:true}).isEnabled()}));const [download]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Start export',exact:true}).click()]);const file=root+'/app-'+mode+'.png';await download.saveAs(file);const bytes=await readFile(file),decoded=png(bytes),actual=await page.evaluate(mode=>mode==='current'?window.__nativeFractalUi.captures.at(-1).capture:window.__nativeFractalUi.generated.findLast(r=>r.context.quality==='export').output,mode);
+   assert.equal(decoded.width,96);assert.equal(decoded.height,80);assert.equal(actual.backend,'native');assert.equal(actual.formulas?.labels?.length??0,0);assert.equal(decoded.rgbaSha256,actual.pixelSha256,'PNG full RGBA equals actual generated pixels');assert.ok(actual.fractal.execution.samples>0);assert.ok(actual.fractal.color.samples>0);if(mode==='current'){assert.equal(actual.image.scale,1);assert.deepEqual(actual.live.presentation.evaluatedFractalScene,preview.output.live.presentation.evaluatedFractalScene);}else{assert.equal(actual.image,undefined);assert.equal(actual.live,undefined);}
+   result[mode]={file,sha256:sha(bytes),decoded,actual};console.log(JSON.stringify({uiStage:'export-validated',mode}));await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();
+  }
+  result.audit=await page.evaluate(()=>window.__nativeFractalUi);assert.deepEqual(result.audit.errors,[]);assert.deepEqual(errors,[]);result.status='passed';return result;
+ }catch(error){await page.screenshot({path:root+'/app-failed.png'}).catch(()=>{});await writeFile(root+'/app-failed.json',JSON.stringify({error:String(error),errors,consoleErrors,requestFailures,url:page.url(),html:await page.content().catch(()=>null),body:await page.locator('body').innerText().catch(()=>null),audit:await page.evaluate(()=>window.__nativeFractalUi).catch(()=>null)},null,2));throw error;}finally{await page.close();}
+}

@@ -7,8 +7,12 @@ import {SourceFractalPlaybackSession} from './sourceFractalPlayback';
 import {SourceFractalSceneRuntime} from './sourceFractalSceneRuntime';
 import {bindSourceFractalFrame,prepareSourceFractalScene} from './sourceFractalTimeline';
 import {fractalRecordingFrameFacts,SourceFractalRecordingError,validateFractalRecordingFrameInput} from './sourceFractalRecording';
+import {runGenerationEffects,runGenerationEffectsAsync} from './generationEffects';
 
 const WORK_LIMIT=2_000_000;
+type Render=(scene:SceneDocument,context:GenerateContext,prepared?:ReturnType<typeof prepareFractalRender>)=>SceneOutput;
+export interface SourceFractalFreshRecordingOptions {asyncRender?:(...args:Parameters<Render>)=>SceneOutput|PromiseLike<SceneOutput>;}
+type DrawEffect={scene:SceneDocument;context:GenerateContext;prepared:ReturnType<typeof prepareFractalRender>};
 /** Fixed recording is time-addressable local reconstruction, not a retained
  * live host. One numerical instance and one display owner advance together.
  * Skipped displays require state transitions but no pixel buffers: the source
@@ -16,15 +20,43 @@ const WORK_LIMIT=2_000_000;
 export class SourceFractalFreshRecordingSession {
  private key='';private next=0;private playback?:SourceFractalPlaybackSession;private runtime?:SourceFractalSceneRuntime;
  private display=new SourceFractalDisplay();private author?:SceneDocument;private work=0;private cancelled?:()=>boolean;private busy=false;
- constructor(private readonly render:(scene:SceneDocument,context:GenerateContext,prepared?:ReturnType<typeof prepareFractalRender>)=>SceneOutput=generateFractal){}
- reset():void {if(this.busy)throw new SourceFractalRecordingError('state','分形录制重建期间不能重置');this.clear();}
+ private inFlight?:Promise<SceneOutput>;private resetting?:Promise<void>;private operationRevision=0;private revoked?:()=>boolean;
+ constructor(private readonly render:Render=generateFractal,private readonly options:SourceFractalFreshRecordingOptions={}){this.options={...options};}
+ private get executing(){return this.busy||!!this.inFlight||!!this.resetting;}
+ reset():void {if(this.executing)throw new SourceFractalRecordingError('state','分形录制重建期间不能重置');this.clear();}
+ async settle():Promise<void>{await this.inFlight?.catch(()=>{});}
+ resetAsync():Promise<void>{
+  if(this.resetting)return this.resetting;if(this.busy&&!this.inFlight)return Promise.reject(new SourceFractalRecordingError('state','分形录制重建期间不能重置'));this.operationRevision++;
+  const pending=(async()=>{await this.settle();this.clear();})();this.resetting=pending;
+  void pending.then(()=>{if(this.resetting===pending)this.resetting=undefined;},()=>{if(this.resetting===pending)this.resetting=undefined;});return pending;
+ }
  private clear():void {this.key='';this.next=0;this.playback=undefined;this.runtime=undefined;this.author=undefined;this.display=new SourceFractalDisplay();}
- private check():void {if(this.cancelled?.())throw new SourceFractalRecordingError('cancelled','分形录制显示重建已取消');}
+ private check():void {if(this.revoked?.()||this.cancelled?.())throw new SourceFractalRecordingError('cancelled','分形录制显示重建已取消');}
  private reserve=(units:number):void=>{
   this.check();if(!Number.isSafeInteger(units)||units<0||units>WORK_LIMIT-this.work)throw new SourceFractalRecordingError('capacity','分形录制显示重建、队列与参数循环超过共享 200 万工作预算');this.work+=units;
  };
  generate(scene:SceneDocument,context:GenerateContext):SceneOutput {
+  if(this.options.asyncRender)throw new SourceFractalRecordingError('state','异步分形 renderer 必须使用 generateAsync');
+  if(this.executing)throw new SourceFractalRecordingError('state','分形录制显示重建不能重入');
+  return runGenerationEffects(this.generateOperation(scene,context),({scene,context,prepared})=>prepared.colorPlan?this.display.display(sourceFractalDisplayInput(prepared,scene),facts=>this.render(scene,{...context,fractalDisplay:facts},prepared)):this.render(scene,context,prepared));
+ }
+ generateAsync(scene:SceneDocument,context:GenerateContext):Promise<SceneOutput>{
+  if(this.executing)return Promise.reject(new SourceFractalRecordingError('state','分形录制显示重建不能重入'));
+  const savedScene=structuredClone(scene),savedContext={...snapshotGenerationInput(context),fractalDisplay:context.fractalDisplay,isCancelled:context.isCancelled,onProgress:context.onProgress,onStatus:context.onStatus},revision=this.operationRevision;
+  const pending=Promise.resolve().then(async()=>{
+   this.revoked=()=>revision!==this.operationRevision;
+   try{return await runGenerationEffectsAsync(this.generateOperation(savedScene,savedContext),async({scene,context,prepared})=>{
+    const render=this.options.asyncRender??this.render,c={...context,isCancelled:()=>Boolean(this.revoked?.()||context.isCancelled?.())};
+    const draw=async(facts?:GenerateContext['fractalDisplay'])=>{this.check();const output=await render(scene,{...c,...(facts?{fractalDisplay:facts}:{})},prepared);this.check();return output;};
+    return prepared.colorPlan?this.display.displayAsync(sourceFractalDisplayInput(prepared,scene),draw):draw();
+   });}finally{this.revoked=undefined;}
+  });this.inFlight=pending;
+  void pending.then(()=>{if(this.inFlight===pending)this.inFlight=undefined;},()=>{if(this.inFlight===pending)this.inFlight=undefined;});return pending;
+ }
+ private *generateOperation(scene:SceneDocument,context:GenerateContext):Generator<DrawEffect,SceneOutput,SceneOutput>{
   if(this.busy)throw new SourceFractalRecordingError('state','分形录制显示重建不能重入');
+  let publishing=true;const progress=context.onProgress;
+  context={...context,onProgress:progress?value=>{if(!publishing)throw new SourceFractalRecordingError('cancelled','分形进度所属操作已结束');this.check();progress(value);}:undefined};
   this.busy=true;this.work=0;this.cancelled=context.isCancelled;
   try{
    this.check();const request=validateFractalRecordingFrameInput(context.fractalRecording);
@@ -50,21 +82,19 @@ export class SourceFractalFreshRecordingSession {
     // Account for that work during random-access history reconstruction too.
     this.reserve(1024+(current.fractalSourceColor?.palette.colors.length??0));
     const prepared=prepareFractalRender(current,context);
-    const renderRequested=(display?:import('./sourceFractalDisplay').SourceFractalDisplayFacts)=>{
-     if(ordinal!==request.displayFrame)return;
-     const result=this.render(current,{...context,time:frame.scene.sceneTime,fractalDisplay:display},prepared);
-     this.check();if(result.type!=='raster')throw new SourceFractalRecordingError('state','分形录制没有生成像素画面');
-     result.fractalRecording=fractalRecordingFrameFacts(frame,request);output=result;
-    };
     // Arithmetic-only source documents retain their previous local colors and
     // schedule; only the complete source profile owns native display facts.
-    if(prepared.colorPlan)this.display.display(sourceFractalDisplayInput(prepared,current),renderRequested);
-    else renderRequested();
+    if(ordinal!==request.displayFrame){if(prepared.colorPlan)this.display.display(sourceFractalDisplayInput(prepared,current),()=>{});}
+    else{
+     const result=yield{scene:current,context:{...context,time:frame.scene.sceneTime},prepared};
+     this.check();if(result.type!=='raster')throw new SourceFractalRecordingError('state','分形录制没有生成像素画面');
+     result.fractalRecording=fractalRecordingFrameFacts(frame,request);output=result;
+    }
     this.next++;
    }
    if(!output)throw new SourceFractalRecordingError('state','分形录制没有生成请求的显示帧');
    return output;
   }catch(error){this.clear();throw error;}
-  finally{this.busy=false;this.cancelled=undefined;}
+  finally{publishing=false;this.busy=false;this.cancelled=undefined;}
  }
 }

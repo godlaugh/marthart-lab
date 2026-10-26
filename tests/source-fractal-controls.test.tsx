@@ -47,7 +47,7 @@ describe('source fractal authoring controls',()=>{
  });
  it('retains CPU selection with an actionable error and exposes backend/render-method recovery',()=>{
   const s=scene();s.settings.fractalBackend='cpu';const change=vi.fn(),tree=<SourceFractalControls scene={s} section="formula" onChange={change}/>;
-  expect(field(tree,'计算后端').value).toBe('cpu');expect(renderToStaticMarkup(tree)).toContain('请选择自动或 WebGL2');
+  expect(field(tree,'计算后端').value).toBe('cpu');expect(renderToStaticMarkup(tree)).toContain('请选择自动或 GPU');
   changeValue(tree,'计算后端','auto');expect(change.mock.calls[0][0].settings.fractalBackend).toBe('auto');expect(change.mock.calls[0][0].fractalSource).toEqual(s.fractalSource);
   changeValue(tree,'渲染方法','one-pass');expect(change.mock.calls[1][0].settings.renderMethod).toBe('one-pass');
  });

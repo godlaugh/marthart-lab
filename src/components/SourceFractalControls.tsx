@@ -46,11 +46,11 @@ export function SourceFractalControls({scene,onChange,section='all'}:Props){
    </div></details>
    <details open className="inspector-section"><summary>{t('分形视口与计算')}</summary><div className="section-body">
     {([['centerX','中心 X',0],['centerY','中心 Y',0],['centerXLow','中心 X 低位',0],['centerYLow','中心 Y 低位',0],['zoom','缩放',1],['rotation','旋转（弧度）',0],['iterations','最大迭代',200]] as const).map(([key,label,fallback])=>number(key,label,Number(scene.settings[key]??fallback),n=>change({...scene,settings:{...scene.settings,[key]:key==='iterations'?Math.max(1,Math.trunc(n)):n}}),key==='zoom'?1e-6:key==='iterations'?1:undefined,key==='zoom'?1e28:undefined,key==='iterations'?1:undefined))}
-    <Control spec={{key:'fractal-source-backend',label:'计算后端',type:'select',group:'计算',options:[{value:'auto',label:'自动'},{value:'webgl2',label:'WebGL2'},{value:'cpu',label:'CPU'}]}} value={String(scene.settings.fractalBackend??'auto')} onChange={v=>change({...scene,settings:{...scene.settings,fractalBackend:v}},'apply')}/>
-    {scene.settings.fractalBackend==='cpu'&&<p role="alert">{t(id==='newton'||id==='nova'?'当前选择 CPU；源 Newton/Nova 需要 WebGL2。请选择自动或 WebGL2 后端，或切回本地数值规则。':'当前选择 CPU；源分形需要 WebGL2。请选择自动或 WebGL2 后端，或切回本地数值规则。')}</p>}
+    <Control spec={{key:'fractal-source-backend',label:'计算后端',type:'select',group:'计算',options:[{value:'auto',label:'自动'},{value:'webgl2',label:'GPU'},{value:'cpu',label:'CPU'}]}} value={String(scene.settings.fractalBackend??'auto')} onChange={v=>change({...scene,settings:{...scene.settings,fractalBackend:v}},'apply')}/>
+    {scene.settings.fractalBackend==='cpu'&&<p role="alert">{t('当前选择 CPU；此分形需要 GPU。请选择自动或 GPU，或切回本地数值规则。')}</p>}
     <Control spec={{key:'fractal-source-render-method',label:'渲染方法',type:'select',group:'计算',options:[{value:'multi-pass',label:'多遍渲染'},{value:'one-pass',label:'单遍渲染'},{value:'guessing',label:'猜测填充'}]}} value={String(scene.settings.renderMethod??'multi-pass')} onChange={v=>change({...scene,settings:{...scene.settings,renderMethod:v}},'stage')}/>
     <Control spec={{key:'fractal-source-precision',label:'扰动精度',type:'select',group:'计算',options:precisionOptions}} value={precision} onChange={v=>change({...scene,settings:{...scene.settings,perturbationPrecision:v}},'stage')}/>
-    <p className="muted">{t('原版分形使用 WebGL2。动画按队列执行，前一片段结束后下一帧开始后续片段。')}</p>
+    <p className="muted">{t('动画按队列执行，前一片段结束后下一帧开始后续片段。')}</p>
    </div></details>
   </>}
   {section!=='formula'&&<FractalSourceColorControls scene={scene} onChange={next=>change(next,'apply')} onStage={next=>change(next,'stage')}/>}
