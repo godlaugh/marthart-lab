@@ -10,6 +10,7 @@ export type SourceDomainViewportGesture=
 export interface SourceDomainHostOptions {
  readonly paused?:boolean;
  readonly now?:()=>number;
+ readonly hostClock?:{readonly now:()=>number;readonly source:'worker-wall-clock'|'page-wall-clock'};
  readonly isCancelled?:()=>boolean;
  readonly reserve?:(units:number)=>void;
 }
@@ -19,7 +20,7 @@ export interface SourceDomainHostSnapshot {
  readonly updateOrdinal:number;
  readonly paused:boolean;
  readonly state:ReturnType<SourceDomainSceneRuntime['snapshot']>;
- readonly hostClock:ReturnType<SourceSceneHostClock['diagnostics']>;
+ readonly hostClock:ReturnType<SourceSceneHostClock<'worker-wall-clock'|'page-wall-clock'>['diagnostics']>;
  readonly recording?:{readonly simulationFps:number;readonly ordinal:number;readonly warmup:boolean;readonly complete:boolean};
 }
 const F=Math.fround,WORK_LIMIT=2_000_000;
@@ -32,15 +33,15 @@ const unusedCamera={phi:0,theta:0,gamma:0};
  * recording never substitutes simulation FPS for observed PApplet.frameRate. */
 export class SourceDomainHostSession {
  private runtime!:SourceDomainSceneRuntime;
- private hostClock!:SourceSceneHostClock;
+ private hostClock!:SourceSceneHostClock<'worker-wall-clock'|'page-wall-clock'>;
  private applied!:SourceDomainSceneConfiguration;
  private updateOrdinal=-1;
  private recording?:{handle:SourceDomainHostRecordingHandle;simulationFps:number;ordinal:number};
  private serial=0;private failed=false;private work=0;
  private readonly options:SourceDomainHostOptions;
  constructor(configuration:SourceDomainSceneConfiguration,options:SourceDomainHostOptions={}){
-  if(!options||options.now!==undefined&&typeof options.now!=='function'||options.isCancelled!==undefined&&typeof options.isCancelled!=='function'||options.reserve!==undefined&&typeof options.reserve!=='function')throw Error('域着色宿主回调无效');
-  this.options={...options};this.fullLoad(configuration,{paused:options.paused??false});
+  if(!options||options.now!==undefined&&typeof options.now!=='function'||options.hostClock!==undefined&&(!options.hostClock||typeof options.hostClock.now!=='function'||!['worker-wall-clock','page-wall-clock'].includes(options.hostClock.source))||options.isCancelled!==undefined&&typeof options.isCancelled!=='function'||options.reserve!==undefined&&typeof options.reserve!=='function')throw Error('域着色宿主回调无效');
+  this.options={...options,...(options.hostClock?{hostClock:{...options.hostClock}}:{})};this.fullLoad(configuration,{paused:options.paused??false});
  }
  private check():void {if(this.options.isCancelled?.())throw new DOMException('域着色宿主已取消','AbortError');}
  private ensure():void {if(this.failed)throw Error('域着色宿主更新失败，需要 fullLoad 重建');}
@@ -49,7 +50,7 @@ export class SourceDomainHostSession {
  private mutate<T>(operation:()=>T):T {this.work=0;this.check();try{return operation();}catch(error){this.failed=true;throw error;}}
  private prepare(configuration:SourceDomainSceneConfiguration,paused:boolean){
   validateSourceSceneClockRequest({paused});this.work=0;this.check();
-  const runtime=new SourceDomainSceneRuntime(configuration,{reserve:this.reserve}),hostClock=new SourceSceneHostClock(paused,unusedCamera,this.options.now),applied=structuredClone(configuration);
+  const runtime=new SourceDomainSceneRuntime(configuration,{reserve:this.reserve}),hostClock=new SourceSceneHostClock(paused,unusedCamera,this.options.hostClock?.now??this.options.now,this.options.hostClock?.source??'worker-wall-clock'),applied=structuredClone(configuration);
   this.check();return{runtime,hostClock,applied};
  }
  private install(candidate:ReturnType<SourceDomainHostSession['prepare']>):void {this.runtime=candidate.runtime;this.hostClock=candidate.hostClock;this.updateOrdinal=-1;this.recording=undefined;this.failed=false;}

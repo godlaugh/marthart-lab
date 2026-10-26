@@ -1,6 +1,7 @@
 /** Real Generator/Worker/Queue Domain recording transport; no native GUI claim. */
 import {chromium} from '@playwright/test';
-import {createServer} from 'vite';
+import {sourceNativeVerificationServer} from './lib/source-native-verification-server.mjs';
+import {measureFamily} from './browser-process-cost.mjs';
 import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const directory=process.argv[2]??`.cache/domain-recording-worker-${Date.now()}`;
@@ -9,17 +10,19 @@ const report={at:new Date().toISOString(),status:'running',scope:'Unmodified Gen
 async function files(dir){const out=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())out.push(...await files(p));else if(e.isFile())out.push(p);}return out;}
 async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-domain-recording-worker.mjs','tests/fixtures/source-domain-clock/recording.json'].sort().map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));}
 report.sourceBefore=await hashes();
-const started=performance.now(),errors=[];let server,browser;
+const started=performance.now(),errors=[];let server,browser,host;
 try{
- server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();
+ host=await sourceNativeVerificationServer(directory,process.argv[3]);server=host.server;report.nativeBackend=host.backend;if(host.native)report.scope='Unmodified public Generator/Queue retained Domain recording through native CGL and CPU, using saved original JVM numerical evidence. No original pixel oracle in this run.';
  browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();
  const page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/domain-recording-worker-verifier',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Domain recording owner verification</title>'}));
  await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/domain-recording-worker-verifier`);
  const fixture=JSON.parse(await readFile('tests/fixtures/source-domain-clock/recording.json','utf8'));
- report.result=await page.evaluate(async fixture=>{
+ report.result=await measureFamily(process.pid,()=>page.evaluate(async fixture=>{
+  const{sourceDrawingPolicy}=await import('/src/engine/sourceDrawingPixels.ts'),gpuBackend=sourceDrawingPolicy()==='native'?'native':'webgl2';
   const {Generator}=await import('/src/engine/client.ts'),{GenerationQueue}=await import('/src/engine/generationQueue.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{defaultFormulas}=await import('/src/engine/formulas.ts');
-  const check=(v,m)=>{if(!v)throw Error(m);},equal=(a,b,m)=>check(JSON.stringify(a)===JSON.stringify(b),m);
+  const{sameSourceRecordingValue}=await import('/src/engine/sourceRecordingValue.ts');
+  const check=(v,m)=>{if(!v)throw Error(m);},equal=(a,b,m)=>check(sameSourceRecordingValue(a,b),m);
   const bits=x=>{const v=new DataView(new ArrayBuffer(4));v.setFloat32(0,x);return v.getUint32(0).toString(16).padStart(8,'0');};
   const digest=async pixels=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',pixels)),b=>b.toString(16).padStart(2,'0')).join('');
   const rows=[];
@@ -30,7 +33,7 @@ try{
    scene.formulas=defaultFormulas();scene.formulas.main.visible=true;scene.formulas.main.latex='captured';
    const c={time:0,width:48*density,height:32*density,quality:'export',domainTarget:{logicalWidth:48,logicalHeight:32,pixelDensity:density},domainLive:{sessionId:`${backend}-${density}`,revision:0,clock:{paused:true,timestampMs:1000},actualFrameRate:29,viewport:{logicalWidth:48,logicalHeight:32,pixelDensity:density}}};
    const owner=new Generator(),cold=performance.now(),primary=await owner.generate(scene,c),initialMs=performance.now()-cold;
-   check(primary.domainRender.effective.backend===(backend==='gpu'?'webgl2':'cpu'),'requested backend absent');
+   check(primary.domainRender.effective.backend===(backend==='gpu'?gpuBackend:'cpu'),'requested backend absent');
    await owner.updateDomainParameters(primary,{...scene,parameters:{...scene.parameters,a:.8}},[['a',.8]]);await owner.navigateDomainPaused(primary,{kind:'pan',dx:5,dy:2});
    const draft=structuredClone(scene);draft.equations.f='(';draft.formulas.main.latex='staged';
    const staged=await owner.generate(draft,c);
@@ -42,7 +45,7 @@ try{
     check(Math.abs(s.parameters.a-e.values.a.value)<1e-13&&s.parameters.b===e.values.b.value,'observed FPS did not drive parameters');
     check(out.domainLive.actualFrameRate===e.pAppletFrameRate.value&&out.domainLive.clockSource==='fixed-step','mixed observed/simulation clocks');
     check(out.domainLive.recording.complete===expected.actualAutoRecordingComplete,'completion differs from original');
-    check(out.domainRender.effective.backend===(backend==='gpu'?'webgl2':'cpu'),'recording changed requested backend');
+    check(out.domainRender.effective.backend===(backend==='gpu'?gpuBackend:'cpu'),'recording changed requested backend');
     check(out.width===Math.floor(159/density+.5)*density&&out.height===Math.floor(111/density+.5)*density,'recording size lost source 3x/density rounding');
     check(out.formulaPresentation.labels[0].latex==='captured'&&out.domainLive.presentation.equations.f===scene.equations.f,'draft entered recording');
     frames.push({displayFrame:expected.index,warmup:expected.index===0,actualFrameRate:e.pAppletFrameRate.value,parameterA:s.parameters.a,sceneTime:s.clock.sceneTime,rgba:await digest(out.pixels),width:out.width,height:out.height,target:out.domainRender.target,elapsedMs});
@@ -50,7 +53,7 @@ try{
    check(new Set(frames.map(f=>f.rgba)).size>1,'recording rendered no pixel changes');
    let missing=false;try{await owner.nextSourceRecordingFrame(start.handle,1);}catch{missing=true;}check(missing,'invalid frame sequence accepted');
    const stop=await owner.finishSourceRecording(start.handle);
-   equal(stop.scene,draft,'finish discarded author draft');
+   if(!sameSourceRecordingValue(stop.scene,draft))window.__domainRecordingFailure={actual:stop.scene,expected:draft};equal(stop.scene,draft,'finish discarded author draft');
    check(stop.preview.domainLive.updateOrdinal===row.frames.length-1&&stop.preview.domainLive.sceneTime===row.frames.at(-1).state.sceneTime.value,'finish advanced numerical state');
    check(stop.preview.domainLive.renderKind==='snapshot'&&stop.preview.domainLive.target==='primary'&&!stop.preview.domainLive.paused&&!stop.preview.domainLive.recording,'invalid primary handoff');
    check(stop.preview.width===c.width&&stop.preview.height===c.height,'primary dimensions not restored');
@@ -98,12 +101,12 @@ try{
    }finally{queue.dispose();}
   }
   return {direct:rows,queue:queueRows};
- },fixture);
+ },fixture));
  if(errors.length)throw Error(errors.join('\n'));
  report.status='passed';
-}catch(error){report.status='failed';report.error=error.stack??String(error);process.exitCode=1;}
+}catch(error){report.status='failed';report.error=error.stack??String(error);report.failure=await browser?.contexts()[0]?.pages()[0]?.evaluate(()=>window.__domainRecordingFailure).catch(()=>undefined);process.exitCode=1;}
 finally{
- await browser?.close();await server?.close();report.elapsedMs=performance.now()-started;report.errors=errors;report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);
+ await browser?.close();await host?.close();report.remainingProcesses=host?.service?.ownedProcessCount??0;report.elapsedMs=performance.now()-started;report.errors=errors;report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);
  if(!report.sourceStable){report.status='failed';process.exitCode=1;}
  await writeFile(`${directory}/report.json`,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,report:`${directory}/report.json`,elapsedMs:report.elapsedMs,error:report.error}));
 }

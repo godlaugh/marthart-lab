@@ -35,3 +35,11 @@ it('rejects control/image API mismatches before sending a request',async()=>{
  await expect(renderSourceNativeFrame(control())).rejects.toMatchObject({kind:'input'});
  await expect(controlSourceBouncingState(frame())).rejects.toMatchObject({kind:'input'});expect(fetch).not.toHaveBeenCalled();
 });
+it.each(['context','compile','link','allocation','render','readback'])('preserves explicit native GPU stage %s',async gpuStage=>{
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({kind:'runtime',gpuStage,error:'observed GL failure'}),{status:502})));
+ await expect(renderSourceNativeFrame(frame())).rejects.toMatchObject({kind:'runtime',gpuStage});
+});
+it.each([{kind:'unknown',gpuStage:'compile'},{kind:'runtime',gpuStage:['compile']},{kind:'runtime',gpuStage:'cleanup'},{kind:'capacity',gpuStage:'compile'},{kind:'runtime',gpuStage:7}])('rejects malformed GPU attribution %j',async error=>{
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({...error,error:'invalid attribution'}),{status:502})));
+ await expect(renderSourceNativeFrame(frame())).rejects.toMatchObject({kind:'protocol'});
+});

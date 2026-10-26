@@ -57,6 +57,16 @@ describe('Domain recording production transport',()=>{
   }
   q.dispose();
  });
+ it('returns the application editor from a direct recording lease while Worker messages remain projected',async()=>{
+  const f=await setup(),editor={...f.scene.domainPaletteEditor!,useCosine:true,colorCount:5},uiOnly=()=>undefined;
+  Object.assign(editor,{uiOnly});const draft={...f.scene,equations:{...f.scene.equations,f:'('},domainPaletteEditor:editor};
+  const expected={...structuredClone({...draft,domainPaletteEditor:undefined}),domainPaletteEditor:editor};
+  const output=await f.g.generate(draft,f.context),start=await f.g.beginSourceRecording(output,options);
+  draft.equations.f='later edit';const stop=await f.g.finishSourceRecording(start.handle);
+  expect(stop.scene).toEqual(expected);expect(stop.scene.domainPaletteEditor).toBe(editor);
+  for(const request of port.sent)if(request.operation==='generate')expect(request.scene).not.toHaveProperty('domainPaletteEditor');
+  expect(raster(stop.preview).domainLive!.presentation.equations.f).toBe(f.scene.equations.f);f.g.dispose();
+ });
  it('preserves signed zero observations instead of substituting simulation FPS',async()=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,{...options,actualFrameRate:-0});
   expect(Object.is(start.warmup.domainLive!.actualFrameRate,-0)).toBe(true);

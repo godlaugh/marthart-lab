@@ -21,6 +21,13 @@ describe.skipIf(process.platform!=='darwin')('loopback native frame transport',(
   const s=await service();try{for(const sequence of [1,1,9]){const r=await post(s.url,packet(sequence));expect(r.status).toBe(200);expect(r.headers.get('x-source-generation')).toBe('3');expect(r.headers.get('x-source-sequence')).toBe(String(sequence));expect(r.headers.get('x-source-row-order')).toBe('bottom-up');const b=new Uint8Array(await r.arrayBuffer());expect(b.length).toBe(140);for(let i=0;i<b.length;i+=4)expect([...b.subarray(i,i+4)]).toEqual([255,0,128,255]);}expect(s.app.ownedProcessCount).toBe(1);}
   finally{await s.app.close();expect(s.app.ownedProcessCount).toBe(0);}
  });
+ it('preserves an actual compiler failure stage through the loopback HTTP boundary',async()=>{
+  const s=await service();try{
+   const frame=encodeSourceDrawingFrame({generation:1,sequence:1,width:7,height:5,samples:0,clear:[0,0,0,1],drawing:{model:'source-drawing-v1',textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0,commands:[{primitive:'triangles',vertexShader:'not GLSL',fragmentShader:'out vec4 c;void main(){c=vec4(1);}',attributes:[{name:'position',size:2,divisor:0,values:new Float32Array([0,0,1,0,0,1])}],first:0,count:3,instances:1,uniforms:[],depthTest:false,depthWrite:false,depthFunction:'less-equal',frontFace:'counter-clockwise',passes:['both'],blend:'source-alpha-over'}]}});
+   if(!frame.ok)throw Error(frame.error.reason);const response=await post(s.url,Buffer.from(frame.value));expect(response.status).toBe(502);expect(await response.json()).toMatchObject({kind:'runtime',gpuStage:'compile'});
+   const recovered=await post(s.url);expect(recovered.status).toBe(200);expect(recovered.headers.get('x-source-context')).toBe('2');await recovered.arrayBuffer();
+  }finally{await s.app.close();expect(s.app.ownedProcessCount).toBe(0);}
+ });
  it('rejects external origin, wrong MIME, oversized body and malformed frames',async()=>{const s=await service();try{
   expect((await post(s.url,packet(),{origin:'https://example.com'})).status).toBe(403);
   expect((await post(s.url,packet(),{'content-type':'text/plain'})).status).toBe(415);

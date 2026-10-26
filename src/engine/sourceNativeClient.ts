@@ -21,7 +21,8 @@ const errorKinds=new Set(['input','capacity','closed','unavailable','cancelled',
 async function remoteError(response:Response,signal:AbortSignal):Promise<never>{
  let value:Record<string,unknown>;try{const parsed:unknown=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await bytes(response,8192,signal)));if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new SourceNativeError('protocol','原生后端错误响应不是对象');value=parsed as Record<string,unknown>;}catch(error){if(signal.aborted)throw error;throw new SourceNativeError('protocol','原生后端错误响应无效');}
  const kind=typeof value.kind==='string'&&errorKinds.has(value.kind)?value.kind:response.status===503?'unavailable':response.status===429?'capacity':'runtime';
- throw new SourceNativeError(kind,typeof value.error==='string'?value.error:'原生渲染失败');
+ if(value.gpuStage!==undefined&&(value.kind!=='runtime'||typeof value.gpuStage!=='string'||!['context','compile','link','allocation','render','readback'].includes(value.gpuStage)))throw new SourceNativeError('protocol','原生 GPU 失败阶段无效');
+ throw new SourceNativeError(kind,typeof value.error==='string'?value.error:'原生渲染失败',value.gpuStage as import('./sourceNativeError').SourceNativeGpuStage|undefined);
 }
 export interface SourceNativeAcknowledgement {generation:number;sequence:number;uploadedParticles:number;rendererIdentity:string;requestBytes:number}
 export interface SourceNativeSamilaResponse extends SourceSamilaNativeResponse {width:number;height:number;generation:number;sequence:number;rendererIdentity:string;contextSerial:number;sessionSerial:number;requestBytes:number;}

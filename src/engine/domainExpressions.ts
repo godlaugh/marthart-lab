@@ -7,7 +7,13 @@ import {parseDomainIterationVersion,normalizeDomainNativeNext,type DomainIterati
 
 export const MAX_DOMAIN_EXPRESSIONS=8;
 export interface DomainExpressionInput {formula:string;next?:string;parameters:Readonly<Record<string,number>>;iterationVersion?:DomainIterationVersion;nextEnabled?:boolean;}
-export interface DomainGpuSource {readonly source:string;readonly fragmentLibrary:string;readonly parameters:readonly string[];readonly key:string;}
+export interface DomainGpuSource {
+ readonly source:string;readonly fragmentLibrary:string;readonly parameters:readonly string[];readonly key:string;
+ /** Already lowered by the parsed-expression owner; native drawing must not parse again. */
+ readonly formulaSource:string;readonly iterationSource?:string;
+ /** Preserve parameterN slots while omitting unreferenced authored values from native uploads. */
+ readonly referencedParameterIndices:readonly number[];
+}
 export interface DomainExpressions {readonly f:ComplexFn;readonly next?:ComplexFn;readonly parameterNames:readonly string[];readonly nodeCost:number;readonly referencesConstant:boolean;readonly warnings:readonly string[];readonly effectiveFormula:string;readonly effectiveNext?:string;readonly nativeGpuFailure?:string;gpuSource():DomainGpuSource;}
 
 /** One worker-local owner for parsed Domain structures. Values, time, camera,
@@ -34,8 +40,8 @@ export class DomainExpressionCache {
   const stage=version==='mathart-1.7.8-gpu'?'gpu':'cpu';
   const compile=(node:MathNode)=>native?compileDomainNativeNode(node,allowed,stage):compileNode(node,allowed);
   const f=compile(tree),next=nextEnabled&&nextTree?compile(nextTree):undefined;
-  let nodeCost=0,referencesConstant=false;
-  const collect=(n:MathNode)=>{nodeCost++;if(n.type==='SymbolNode'&&(n as unknown as {name:string}).name==='c')referencesConstant=true;};
+  let nodeCost=0,referencesConstant=false;const referencedParameters=new Set<string>();
+  const collect=(n:MathNode)=>{nodeCost++;if(n.type==='SymbolNode'){const name=(n as unknown as {name:string}).name;if(name==='c')referencesConstant=true;else if(!['z','w','i','pi','e'].includes(name))referencedParameters.add(name);}};
   tree.traverse(collect);if(nextEnabled)nextTree?.traverse(collect);
   let nativeGpuFailure:string|undefined;
   if(native){
@@ -50,14 +56,14 @@ export class DomainExpressionCache {
    try{if(version==='mathart-1.7.8-cpu')throw new Error('原产物 CPU 公式执行规则不能由 float32 shader 替代');
     if(nativeGpuFailure&&native)throw new Error(nativeGpuFailure);
     const lower=native?compileDomainNativeGlslNode:compileComplexGlslNode;
-    gpu=buildSource(parameters,lower(tree,parameters),nextEnabled&&nextTree?lower(nextTree,parameters):undefined,native);return gpu;}catch(error){gpuError=error;throw error;}
+    gpu=buildSource(parameters,lower(tree,parameters),nextEnabled&&nextTree?lower(nextTree,parameters):undefined,native,Object.freeze(parameters.flatMap((name,index)=>referencedParameters.has(name)?[index]:[])));return gpu;}catch(error){gpuError=error;throw error;}
   }});
   this.entries.set(key,value);if(this.entries.size>MAX_DOMAIN_EXPRESSIONS)this.entries.delete(this.entries.keys().next().value!);
   return value;
  }
 }
 export const domainExpressions=new DomainExpressionCache();
-function buildSource(parameters:readonly string[],f:string,next?:string,native=false):DomainGpuSource{
+function buildSource(parameters:readonly string[],f:string,next:string|undefined,native:boolean,referencedParameterIndices:readonly number[]):DomainGpuSource{
  const uniforms=`uniform vec2 constantValue;uniform int iterate,iterationSteps,seedMode;uniform float bailout;
 ${parameters.map((_,i)=>`uniform float parameter${i};`).join('\n')}`;
  const functions=`${native?domainNativeGlslPrelude:complexGlslPrelude}
@@ -84,5 +90,5 @@ void main(){${body}
  result=vec4(value,complexRepair?1.:0.,0.);gl_Position=vec4(0.);
 }`;
  const fragmentLibrary=`${uniforms}\n${functions}\nvec2 domainEvaluate(vec2 pixel){${body}return value;}`;
- return Object.freeze({source,fragmentLibrary,parameters,key:source});
+ return Object.freeze({source,fragmentLibrary,parameters,key:source,formulaSource:f,iterationSource:next,referencedParameterIndices});
 }

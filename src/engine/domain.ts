@@ -1,6 +1,13 @@
+import {runGenerationEffects,runGenerationEffectsAsync} from './generationEffects';
+import {prepareDomainNativeDrawing,supportsDomainNativeModel} from './sourceDomainNativeDrawing';
+import {SourceNativeError} from './sourceNativeError';
+import {renderSourceNativeFrame} from './sourceNativeClient';
+import {ensureSourceNativeLease} from './sourceNativeLease';
+import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import {prepareDomainRasterTarget,admitDomainTarget,presentDomainRgbLinear,type DomainRasterTarget} from './domainRasterTarget';
-import type {DomainRepairPixel} from './domainGpuRaster';
+import {MAX_DOMAIN_RASTER_SCRATCH_BYTES,DOMAIN_TILE_WIDTH,DOMAIN_TILE_HEIGHT,type DomainRepairPixel} from './domainGpuRaster';
+import {SOURCE_FRAME_BUDGET} from './sourceDrawingFrame';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {domainPixel,domainViewportWarnings} from './domainViewport';
 import {parseDomainModel,parseDomainCpuChainModel,requestedDomainRenderRules,domainEvaluator,shadeDomainValue,domainGpuPrecisionReason,type DomainModel} from './domainModel';
@@ -14,10 +21,26 @@ const aborted=(error:unknown)=>error instanceof DOMException&&error.name==='Abor
 const message=(error:unknown)=>error instanceof Error?error.message:String(error);
 const pixelWork=(model:DomainModel)=>(model.iteration?model.steps:1)*model.supersampling**2*5*(model.execution.arithmetic==='local'?1:model.expressionCost);
 const sourceCpuLattice=(m:DomainModel)=>m.execution.arithmetic==='native-cpu'&&m.colorVersion==='mathart-1.7.8-cpu'&&m.view.version==='mathart-1.7.8-cpu';
-type DomainOutput=Extract<SceneOutput,{type:'raster'}>&{backend?:'cpu'|'webgl2'};
+type DomainOutput=Extract<SceneOutput,{type:'raster'}>&{backend?:'cpu'|'webgl2'|'native'};
 type RenderedDomain=DomainOutput & {domainPresentation?:'webgl-linear'|'software-linear'|'direct'};
 
-export function generateDomain(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession):DomainOutput{
+type DomainEffect={model:DomainModel;context:GenerateContext;started:number;recover:(error:unknown)=>DomainModel|undefined;target?:DomainRasterTarget};
+export interface DomainAsyncOptions {retainedBytes?:number;}
+/** Select the transport from saved rules without parsing a second model. A
+ * source program rejection still enters the shared recovery owner below. */
+export function usesDomainNativeRendering(scene:SceneDocument):boolean {
+ if(scene.kind!=='domain')return false;
+ const rules=requestedDomainRenderRules(scene.settings);
+ return rules.formula==='mathart-1.7.8-gpu'&&rules.color==='mathart-1.7.8-gpu'&&rules.viewport==='mathart-1.7.8-gpu'&&rules.backend!=='cpu'&&(scene.settings.supersampling??1)===1&&parseDomainRenderPolicy(scene.settings.domainRenderPolicy)!=='source-cpu-always-v1';
+}
+export function generateDomain(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession):DomainOutput {
+ return runGenerationEffects(generateDomainOperation(scene,context,session),effect=>renderDomainModel(effect.model,effect.context,effect.started,effect.recover,effect.target));
+}
+export async function generateDomainAsync(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession,options:DomainAsyncOptions={}):Promise<DomainOutput> {
+ if(!Number.isSafeInteger(options.retainedBytes??0)||(options.retainedBytes??0)<0)throw Error('域着色保留像素字节数无效');
+ return runGenerationEffectsAsync(generateDomainOperation(scene,context,session),effect=>sourceDrawingPolicy()==='native'&&supportsDomainNativeModel(effect.model)?renderDomainNative(effect,options):renderDomainModel(effect.model,effect.context,effect.started,effect.recover,effect.target,undefined,options.retainedBytes??0));
+}
+function* generateDomainOperation(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession):Generator<DomainEffect,DomainOutput,RenderedDomain>{
  scene=domainPaletteRuntimeScene(scene);
  if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');
  validateRasterRequest(context);
@@ -52,8 +75,9 @@ export function generateDomain(scene:SceneDocument,context:GenerateContext,sessi
    if(recoverWholeChain&&error instanceof DomainGpuError){model=fail(error.failure);return model;}
    return undefined;
   };
-  const {domainPresentation,...output}=renderDomainModel(model,context,started,recover,target);
-  output.domainRender={policy,requested,effective:{formula:model.execution.version,color:model.colorVersion,viewport:model.view.version,backend:output.backend??'cpu'},route,trigger,sticky,view:model.view,constant:[...model.constant],sourceConstantUpload:model.sourceConstantUpload,...(target?{target:{...target,presentation:domainPresentation??'direct',sampling:output.backend==='webgl2'?'physical-fragments':sourceCpuLattice(model)?'logical-rgb-linear':'physical-cpu-reference'}}:{})};
+  const {domainPresentation,...output}=yield{model,context,started,recover,target};
+  if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');
+  output.domainRender={policy,requested,effective:{formula:model.execution.version,color:model.colorVersion,viewport:model.view.version,backend:output.backend??'cpu'},route,trigger,sticky,view:model.view,constant:[...model.constant],sourceConstantUpload:model.sourceConstantUpload,...(target?{target:{...target,presentation:domainPresentation??'direct',sampling:output.backend==='webgl2'||output.backend==='native'?'physical-fragments':sourceCpuLattice(model)?'logical-rgb-linear':'physical-cpu-reference'}}:{})};
   const frame=scene.evaluatedDomainScene;
   if(frame)output.domainRender={...output.domainRender,sourceClock:{displayFrame:frame.displayFrame,simulationFps:frame.simulationFps,parameterFps:frame.parameterFps,sceneTime:frame.clock.sceneTime,rawDt:frame.clock.rawDt,activeDt:frame.clock.activeDt,queueIndex:frame.clock.queueIndex,queueComplete:frame.clock.queueComplete,rotationRate:frame.rotationRate,paletteOffset:frame.paletteOffset}};
   if(route==='source-cpu-failure')output.warnings=[`域着色整链 CPU 回退${sticky?'（保留本作品此前的 GPU 失败状态）':''}：${trigger!.reason}；当前图像使用 CPU 公式、CPU 坐标和 CPU 着色。`,...(output.warnings??[])];
@@ -66,7 +90,36 @@ export function generateDomain(scene:SceneDocument,context:GenerateContext,sessi
  }
 }
 
-function renderDomainModel(model:DomainModel,context:GenerateContext,started:number,recover:(error:unknown)=>DomainModel|undefined,target?:DomainRasterTarget,reusePixels?:Uint8ClampedArray):RenderedDomain{
+// Generic frames own no retained native target. Each response is nevertheless
+// bound to a unique request; cancellation waits for ACK before discarding it.
+let nativeSequence=0;
+async function renderDomainNative({model,context,started,target,recover}:DomainEffect,options:DomainAsyncOptions):Promise<RenderedDomain> {
+ if(!supportsDomainNativeModel(model))throw Error('域着色原生模型不匹配');
+ const check=()=>{if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');};check();
+ const warnings=[...model.gradientWarnings,...model.executionWarnings,...domainViewportWarnings(model.view)];
+ const work=pixelWork(model),[width,height]=target?[target.width,target.height]:rasterDimensions(context,work,'webgl2',warnings);
+ if(target)admitDomainTarget(context,target,work,'webgl2',false);
+ const drawing=prepareDomainNativeDrawing(model,{width,height,logicalWidth:target?.logicalWidth??width,logicalHeight:target?.logicalHeight??height});
+ if(nativeSequence>=0xffffffff)throw Error('域着色原生帧序号已耗尽');
+ await ensureSourceNativeLease(new AbortController().signal);check();
+ let result:Awaited<ReturnType<typeof renderSourceNativeFrame>>;
+ try{result=await renderSourceNativeFrame({generation:1,sequence:++nativeSequence,width,height,samples:0,clear:[...model.background,1],drawing},options);}
+ catch(error){
+  check();
+  // Only a stage emitted by the native GL operation establishes GPU failure.
+  // Transport/runtime strings, validation and cleanup failures do not.
+  if(!(error instanceof SourceNativeError)||!error.gpuStage)throw error;
+  const recovered=recover(new DomainGpuError(error.gpuStage,error.message,{cause:error}));
+  const output=renderDomainModel(recovered??{...model,backend:'cpu'},context,started,recover,target,undefined,options.retainedBytes??0);
+  if(!recovered)output.warnings=[`域着色原生 GPU 回退 CPU：${error.message}`,...(output.warnings??[])];
+  return output;
+ }
+ check();
+ warnings.push('原生 OpenGL 执行原版域着色完整公式、迭代与着色程序；数值溢出由该程序处理，未单独测量无效轨道数量，也未进行 CPU 像素修复。');
+ return{type:'raster',dimension:2,cameraResolved:true,backend:'native',domainPresentation:'direct',width,height,pixels:result.pixels,sourcePixelRenderer:{backend:'native',identity:result.rendererIdentity,generation:result.generation,sequence:result.sequence,samples:0},stats:{samples:width*height,generated:width*height,invalid:0,elapsedMs:performance.now()-started},warnings};
+}
+
+function renderDomainModel(model:DomainModel,context:GenerateContext,started:number,recover:(error:unknown)=>DomainModel|undefined,target?:DomainRasterTarget,reusePixels?:Uint8ClampedArray,retainedBytes?:number):RenderedDomain{
  const cancel=()=>{if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');};cancel();
  const evaluate=domainEvaluator(model,context.isCancelled),nativeGpu=model.execution.arithmetic==='native-gpu',warnings:string[]=[...model.gradientWarnings,...model.executionWarnings,...domainViewportWarnings(model.view)];
  if(model.execution.arithmetic==='native-cpu')warnings.push('MathArt 1.7.8 CPU 公式规则来自静态产物；Java Math 与 JavaScript Math 的逐位一致性尚未验证。');
@@ -83,6 +136,17 @@ function renderDomainModel(model:DomainModel,context:GenerateContext,started:num
  if(target)admitDomainTarget(context,target,workPerPixel,gpu?'webgl2':'cpu',logicalCpu);
  else [width,height]=rasterDimensions(context,workPerPixel,gpu?'webgl2':'cpu',warnings);
  const sampleWidth=logicalCpu?target!.logicalWidth:width,sampleHeight=logicalCpu?target!.logicalHeight:height;
+ // Async main-thread generation shares the native frame's total budget.
+ // Include a replaced output still on the recursive caller's stack, logical
+ // CPU pixels, presentation textures/row, or bounded WebGL attachments/scratch.
+ // Sync Worker generation retains its existing separate admission contract.
+ if(retainedBytes!==undefined){
+  const outputBytes=width*height*4,oldBytes=reusePixels&&reusePixels.byteLength!==outputBytes?reusePixels.byteLength:0;
+  const logicalBytes=logicalCpu&&target!.density>1?sampleWidth*sampleHeight*4:0;
+  const presentationBytes=logicalBytes?logicalBytes+outputBytes+width*4:0;
+  const gpuBytes=gpu?8*(model.view.version==='mathart-1.7.8-gpu'?width*height:DOMAIN_TILE_WIDTH*DOMAIN_TILE_HEIGHT)+MAX_DOMAIN_RASTER_SCRATCH_BYTES:0;
+  if(retainedBytes+oldBytes+outputBytes+logicalBytes+presentationBytes+gpuBytes>SOURCE_FRAME_BUDGET)throw new SourceNativeError('capacity','域着色保留画面、输出与渲染临时缓冲超过 256 MiB 预算');
+ }
  const s=model.supersampling,samplesPerPixel=s*s,pixels=reusePixels?.length===width*height*4?reusePixels:new Uint8ClampedArray(width*height*4),bg=model.background.map(v=>Math.round(v*255));
  const samplePixels=logicalCpu&&target!.density>1?new Uint8ClampedArray(sampleWidth*sampleHeight*4):pixels;
  const cpuPixel:DomainRepairPixel=(index,coordinates)=>{
@@ -107,7 +171,7 @@ function renderDomainModel(model:DomainModel,context:GenerateContext,started:num
     // Full-resolution exports reuse their single RGBA allocation on failure.
     // Only a preview whose CPU budget changes dimensions needs a smaller result.
     const cpuModel=recovered??{...model,backend:'cpu' as const},cpuSize=target?[target.width,target.height]:rasterDimensions(context,pixelWork(cpuModel),'cpu',[]);
-    if(target||recovered||cpuSize[0]!==width||cpuSize[1]!==height){const result=renderDomainModel(cpuModel,context,started,recover,target,pixels);if(!recovered)result.warnings=[`域着色 GPU 回退 CPU：${fallbackReason}`,...(result.warnings??[])];return result;}
+    if(target||recovered||cpuSize[0]!==width||cpuSize[1]!==height){const result=renderDomainModel(cpuModel,context,started,recover,target,pixels,retainedBytes);if(!recovered)result.warnings=[`域着色 GPU 回退 CPU：${fallbackReason}`,...(result.warnings??[])];return result;}
    }
   }
   if(!gpu)for(let index=0;index<sampleWidth*sampleHeight;index++){if((index&127)===0)cancel();const valid=cpuPixel(index);invalidSamples+=samplesPerPixel-valid;if(valid)generated++;else invalid++;}

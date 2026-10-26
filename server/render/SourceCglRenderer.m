@@ -157,7 +157,7 @@ static NSData *readPacket(FILE *f,BOOL stream){
  if(!stream)INPUT(fgetc(f)==EOF&&!ferror(f),@"Trailing packet file bytes");return data;
 }
 static void writeFile(NSString *root,NSString *name,NSData *data){NSError *e=nil;RUNTIME([data writeToFile:[root stringByAppendingPathComponent:name] options:NSDataWritingAtomic error:&e],e.description?:@"Output write failed");}
-static GLuint compile(GLenum kind,NSString *source){GLuint shader=glCreateShader(kind);NSString *text=[@"#version 410\n" stringByAppendingString:source];const char *p=text.UTF8String;glShaderSource(shader,1,&p,NULL);glCompileShader(shader);GLint ok=0;glGetShaderiv(shader,GL_COMPILE_STATUS,&ok);if(!ok){char log[8192]={0};glGetShaderInfoLog(shader,sizeof(log),NULL,log);glDeleteShader(shader);RUNTIME(NO,[NSString stringWithUTF8String:log]?:@"Shader compile failed");}return shader;}
+static GLuint compile(GLenum kind,NSString *source){GLuint shader=glCreateShader(kind);NSString *text=[@"#version 410\n" stringByAppendingString:source];const char *p=text.UTF8String;glShaderSource(shader,1,&p,NULL);glCompileShader(shader);GLint ok=0;glGetShaderiv(shader,GL_COMPILE_STATUS,&ok);if(!ok){char log[8192]={0};glGetShaderInfoLog(shader,sizeof(log),NULL,log);glDeleteShader(shader);ensure(NO,@"gpu-compile",[NSString stringWithUTF8String:log]?:@"Shader compile failed");}return shader;}
 static GLenum uniformType(uint32_t kind){switch(kind){case 1:case 8:return GL_FLOAT;case 2:return GL_INT;case 3:return GL_FLOAT_VEC2;case 4:return GL_INT_VEC2;case 5:case 10:return GL_FLOAT_VEC3;case 6:return GL_FLOAT_VEC4;case 7:return GL_FLOAT_MAT4;case 9:return GL_SAMPLER_2D;case 11:return GL_BOOL;}return 0;}
 static void uploadUniforms(GLuint program,NSArray *uniforms){
   for(NSDictionary *u in uniforms){GLint loc=glGetUniformLocation(program,[u[@"name"]UTF8String]);if(loc<0)continue;int kind=[u[@"kind"]intValue];NSData *values=u[@"bytes"];const GLfloat *v=values.bytes;const GLint *iv=values.bytes;switch(kind){case 1:case 8:glUniform1fv(loc,[u[@"count"]intValue],v);break;case 2:case 11:glUniform1iv(loc,1,iv);break;case 3:glUniform2fv(loc,1,v);break;case 4:glUniform2iv(loc,1,iv);break;case 5:case 10:glUniform3fv(loc,[u[@"count"]intValue],v);break;case 6:glUniform4fv(loc,1,v);break;case 7:glUniformMatrix4fv(loc,1,GL_FALSE,v);break;case 9:glUniform1i(loc,[u[@"texture"]intValue]);break;}}
@@ -174,7 +174,7 @@ static void draw(NSDictionary *d,NSArray *textures){
  GLuint vao=0,vs=0,fs=0,program=0;NSMutableData *bufferIds=[NSMutableData dataWithLength:(attributes.count+1)*sizeof(GLuint)],*textureIds=[NSMutableData dataWithLength:textures.count*sizeof(GLuint)];GLuint *buffers=bufferIds.mutableBytes,*tex=textureIds.mutableBytes;
  @try{
   glGenVertexArrays(1,&vao);glBindVertexArray(vao);glGenBuffers((GLsizei)attributes.count+1,buffers);
-  vs=compile(GL_VERTEX_SHADER,d[@"vertex"]);fs=compile(GL_FRAGMENT_SHADER,d[@"fragment"]);program=glCreateProgram();glAttachShader(program,vs);glAttachShader(program,fs);glLinkProgram(program);GLint ok=0;glGetProgramiv(program,GL_LINK_STATUS,&ok);RUNTIME(ok,@"Program link failed");glUseProgram(program);
+  vs=compile(GL_VERTEX_SHADER,d[@"vertex"]);fs=compile(GL_FRAGMENT_SHADER,d[@"fragment"]);program=glCreateProgram();glAttachShader(program,vs);glAttachShader(program,fs);glLinkProgram(program);GLint ok=0;glGetProgramiv(program,GL_LINK_STATUS,&ok);ensure(ok,@"gpu-link",@"Program link failed");glUseProgram(program);
   for(NSUInteger i=0;i<attributes.count;i++){NSDictionary *a=attributes[i];GLint loc=glGetAttribLocation(program,[a[@"name"]UTF8String]);if(loc<0)continue;NSData *bytes=a[@"bytes"];glBindBuffer(GL_ARRAY_BUFFER,buffers[i]);glBufferData(GL_ARRAY_BUFFER,bytes.length,bytes.bytes,GL_STATIC_DRAW);glEnableVertexAttribArray(loc);glVertexAttribPointer(loc,[a[@"size"]intValue],GL_FLOAT,GL_FALSE,0,NULL);glVertexAttribDivisor(loc,[a[@"divisor"]intValue]);}
   NSData *indices=d[@"indices"];GLenum indexType=[d[@"indexType"]intValue]==16?GL_UNSIGNED_SHORT:GL_UNSIGNED_INT;
   if([d[@"indexType"]intValue]){glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,buffers[attributes.count]);glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.length,indices.bytes,GL_STATIC_DRAW);}
@@ -190,13 +190,13 @@ static void draw(NSDictionary *d,NSArray *textures){
   uint32_t flags=[d[@"flags"]unsignedIntValue];if(flags&1)glEnable(GL_DEPTH_TEST);else glDisable(GL_DEPTH_TEST);glDepthMask((flags&2)?GL_TRUE:GL_FALSE);glDepthFunc(GL_LEQUAL);glFrontFace((flags&4)?GL_CW:GL_CCW);glEnable(GL_BLEND);glDisable(GL_DITHER);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,(flags&16)?GL_SRC_ALPHA:GL_ONE,(flags&16)?GL_ONE_MINUS_SRC_ALPHA:GL_ONE);glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);
   GLenum primitive=(flags&8)?GL_POINTS:GL_TRIANGLES;if(flags&8)glEnable(GL_PROGRAM_POINT_SIZE);else glDisable(GL_PROGRAM_POINT_SIZE);
   for(NSNumber *pass in d[@"passes"]){int p=pass.intValue;if(p==0)glDisable(GL_CULL_FACE);else{glEnable(GL_CULL_FACE);glCullFace(p==1?GL_BACK:GL_FRONT);}GLsizei n=[d[@"count"]intValue],instances=[d[@"instances"]intValue];GLint first=[d[@"first"]intValue];if([d[@"indexType"]intValue])glDrawElementsInstanced(primitive,n,indexType,(void*)(uintptr_t)((NSUInteger)first*([d[@"indexType"]intValue]/8)),instances);else glDrawArraysInstanced(primitive,first,n,instances);}
-  RUNTIME(glGetError()==GL_NO_ERROR,@"OpenGL draw failed");
+  ensure(glGetError()==GL_NO_ERROR,@"gpu-render",@"OpenGL draw failed");
  }@finally{glUseProgram(0);glBindVertexArray(0);glDeleteBuffers((GLsizei)attributes.count+1,buffers);glDeleteTextures((GLsizei)textures.count,tex);if(vao)glDeleteVertexArrays(1,&vao);if(program)glDeleteProgram(program);if(vs)glDeleteShader(vs);if(fs)glDeleteShader(fs);}
 }
 static void createContext(CGLContextObj *context){
  CGLPixelFormatObj format=NULL;
  @try{CGLPixelFormatAttribute attrs[]={kCGLPFAOpenGLProfile,(CGLPixelFormatAttribute)kCGLOGLPVersion_GL4_Core,kCGLPFAAccelerated,(CGLPixelFormatAttribute)0};GLint n=0;
-  RUNTIME(CGLChoosePixelFormat(attrs,&format,&n)==kCGLNoError&&format&&n>0,@"No accelerated CGL format");RUNTIME(CGLCreateContext(format,NULL,context)==kCGLNoError,@"CGL context creation failed");RUNTIME(CGLSetCurrentContext(*context)==kCGLNoError,@"CGL make-current failed");
+  ensure(CGLChoosePixelFormat(attrs,&format,&n)==kCGLNoError&&format&&n>0,@"gpu-context",@"No accelerated CGL format");ensure(CGLCreateContext(format,NULL,context)==kCGLNoError,@"gpu-context",@"CGL context creation failed");ensure(CGLSetCurrentContext(*context)==kCGLNoError,@"gpu-context",@"CGL make-current failed");
  }@finally{if(format)CGLDestroyPixelFormat(format);}
 }
 static void destroyContext(CGLContextObj *context){if(*context){RUNTIME(CGLSetCurrentContext(NULL)==kCGLNoError,@"Cannot unset CGL context");RUNTIME(CGLDestroyContext(*context)==kCGLNoError,@"Cannot destroy CGL context");*context=NULL;}}
@@ -205,7 +205,7 @@ static void destroyContext(CGLContextObj *context){if(*context){RUNTIME(CGLSetCu
 static NSData *readFrame(GLuint fb,GLuint resolved,GLsizei w,GLsizei h){
  if(resolved){glBindFramebuffer(GL_READ_FRAMEBUFFER,fb);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,resolved);glBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);glBindFramebuffer(GL_READ_FRAMEBUFFER,resolved);}
  NSMutableData *rgba=[NSMutableData dataWithLength:(NSUInteger)w*h*4];glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,rgba.mutableBytes);
- RUNTIME(glGetError()==GL_NO_ERROR,@"Frame resolve/readback failed");glBindFramebuffer(GL_FRAMEBUFFER,fb);return rgba;
+ ensure(glGetError()==GL_NO_ERROR,@"gpu-readback",@"Frame resolve/readback failed");glBindFramebuffer(GL_FRAMEBUFFER,fb);return rgba;
 }
 static NSData *renderFrameWithDraw(NSDictionary *frame,NSString *out,uint64_t retainedBytes,void (^render)(NSDictionary*,NSArray*)){
  GLuint fb=0,resolved=0,color=0,multiColor=0,depth=0;
@@ -218,12 +218,12 @@ static NSData *renderFrameWithDraw(NSDictionary *frame,NSString *out,uint64_t re
   glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenTextures(1,&color);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,color);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,color,0);
   if(samples){
    resolved=fb;glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenRenderbuffers(1,&multiColor);glBindRenderbuffer(GL_RENDERBUFFER,multiColor);glRenderbufferStorageMultisample(GL_RENDERBUFFER,samples,GL_RGBA8,w,h);glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,multiColor);
-   GLint actual=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actual);RUNTIME(glGetError()==GL_NO_ERROR,@"Multisample color allocation failed");ensure(actual==samples,@"unsupported",@"Driver rounded the requested color sample count");
+   GLint actual=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actual);ensure(glGetError()==GL_NO_ERROR,@"gpu-allocation",@"Multisample color allocation failed");ensure(actual==samples,@"unsupported",@"Driver rounded the requested color sample count");
   }
   glGenRenderbuffers(1,&depth);glBindRenderbuffer(GL_RENDERBUFFER,depth);
   if(samples)glRenderbufferStorageMultisample(GL_RENDERBUFFER,samples,GL_DEPTH_COMPONENT24,w,h);else glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,w,h);
-  GLint actualDepth=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actualDepth);RUNTIME(glGetError()==GL_NO_ERROR,@"Depth allocation failed");ensure(actualDepth==samples,@"unsupported",@"Driver rounded the requested depth sample count");
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);RUNTIME(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE,@"Incomplete framebuffer");glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,w,h);
+  GLint actualDepth=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actualDepth);ensure(glGetError()==GL_NO_ERROR,@"gpu-allocation",@"Depth allocation failed");ensure(actualDepth==samples,@"unsupported",@"Driver rounded the requested depth sample count");
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);ensure(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE,@"gpu-allocation",@"Incomplete framebuffer");glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,w,h);
   if(samples)glEnable(GL_MULTISAMPLE);else glDisable(GL_MULTISAMPLE);
   glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);glDisable(GL_SAMPLE_ALPHA_TO_ONE);glDisable(GL_SAMPLE_COVERAGE);glDisable(GL_SAMPLE_MASK);
   glDisable(GL_SCISSOR_TEST);glDisable(GL_DITHER);glDisable(GL_FRAMEBUFFER_SRGB);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDepthMask(GL_TRUE);
@@ -257,7 +257,7 @@ static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData 
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");
 }
-static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:[kind isEqual:@"state-lost"]?5:[kind isEqual:@"ownership"]?6:4;}
+static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:[kind isEqual:@"state-lost"]?5:[kind isEqual:@"ownership"]?6:[kind isEqual:@"gpu-compile"]?7:[kind isEqual:@"gpu-link"]?8:[kind isEqual:@"gpu-context"]?9:[kind isEqual:@"gpu-allocation"]?10:[kind isEqual:@"gpu-render"]?11:[kind isEqual:@"gpu-readback"]?12:4;}
 int main(int argc,const char **argv){@autoreleasepool{
  CGLContextObj ctx=NULL;SourceCglBouncingState *bouncing=nil;NSData *bouncingResource=nil;NSMutableDictionary<NSData*,SourceCglSamilaState*> *samila=[NSMutableDictionary new];NSMutableDictionary<NSData*,id<SourceCglIteratedStateOwner>> *iterated=[NSMutableDictionary new];NSMutableDictionary<NSData*,NSDictionary*> *inks=[NSMutableDictionary new];NSMutableDictionary<NSData*,SourceCglFractalState*> *fractals=[NSMutableDictionary new];FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
  @try{
@@ -315,7 +315,7 @@ int main(int argc,const char **argv){@autoreleasepool{
     // next valid frame; invalid input never touches an existing good context.
     // Fractal v11 poisons its owner instead, preserving custody until release.
     // A transport may retire this whole process after receiving that failure.
-    uint32_t status=errorCode(e.name);if(status==4&&indexAt(packet,1,4)!=11){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}destroyContext(&ctx);}
+    uint32_t status=errorCode(e.name);if((status==4||status>=7)&&indexAt(packet,1,4)!=11){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}destroyContext(&ctx);}
     NSData *message=[(e.reason?:@"Native frame failed") dataUsingEncoding:NSUTF8StringEncoding];if(!message||message.length>8192)message=[@"Native frame failed; diagnostic exceeded response budget" dataUsingEncoding:NSUTF8StringEncoding];
     reply(packet,status,serial,message);
    }

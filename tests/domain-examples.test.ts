@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {definition} from '../src/scenes';
-import {createScene,parseScene} from '../src/engine/document';
+import {createScene,parseScene,persistentScene} from '../src/engine/document';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseDomainModel,domainEvaluator} from '../src/engine/domainModel';
 import {sceneAtTime} from '../src/engine/timeline';
@@ -9,7 +9,7 @@ import type {SceneDocument} from '../src/types';
 const def=definition('domain');
 const preset=(n:number)=>def.presets.find(p=>p.id===`guide-domain-${n}`)!;
 function persistentContent(scene:SceneDocument){
- const copy=structuredClone(scene);delete copy.provenance?.reference;
+ const copy=structuredClone(persistentScene(scene));delete copy.provenance?.reference;
  copy.provenance!.warnings=copy.provenance!.warnings.filter(w=>!recipes.some(r=>r.reference.assumptions.some(a=>a===w)));
  copy.timeline.tracks.forEach((track,i)=>{track.id=`track-${i}`;track.actions?.forEach((a,j)=>{a.id=`action-${j}`;});});
  const {id,name,description,kind,favorite,...content}=copy;void id;void name;void description;void kind;void favorite;return content;
@@ -19,7 +19,7 @@ describe('complete guide Domain examples',()=>{
   expect(def.presets.filter(p=>p.id.startsWith('guide-domain-')).map(p=>p.id)).toEqual(Array.from({length:8},(_,i)=>`guide-domain-${i+1}`));
   expect(def.presets.filter(p=>!p.id.startsWith('guide-domain-')).map(p=>p.id)).toEqual(['cubic','sine-ratio','complex-power','newton-domain','sine-iteration','essential']);
  });
- it.each(recipes)('binds generated $id to the current production import owner and preserves every authored field',recipe=>{
+ it.each(recipes)('binds generated $id to the current production import owner and preserves every persistent authored field',recipe=>{
   const actual=createScene(def,def.presets.find(p=>p.id===recipe.id)),expected=parseProjectFile(JSON.stringify(recipe.config)).scene;
   expect(persistentContent(actual)).toEqual(persistentContent(expected));
   expect(actual.provenance?.original).toEqual(recipe.config);
@@ -34,8 +34,8 @@ describe('complete guide Domain examples',()=>{
   const scene=createScene(def,preset(n));expect(scene.equations.f).toBe(f);expect(scene.settings).toMatchObject({scale,phaseDensity:phase,modDensity:mod,domainIterationVersion:'mathart-1.7.8-gpu',domainViewportVersion:'mathart-1.7.8-gpu',domainColorVersion:'mathart-1.7.8-gpu'});
   if([1,2,3,4,8].includes(n)){expect(scene.equations.next).toBe('');expect(scene.settings.iterationEnabled).toBe(false);}
  });
- it('does not inherit default t/a parameters, a dormant next or a source palette when absent',()=>{
-  const s=createScene(def,preset(1));expect(s.parameters).toEqual({});expect(s.equations.next).toBe('');expect(s.domainSourcePalette).toBeUndefined();
+ it('uses the source project seven-color default without inventing t/a parameters or a dormant next',()=>{
+  const s=createScene(def,preset(1));expect(s.parameters).toEqual({});expect(s.equations.next).toBe('');expect(s.domainSourcePalette?.colors).toEqual(['#FC6255','#FF862F','#FFFF00','#59743E','#83C167','#1D4A81','#9A72AC']);
   const cpu={...s,settings:{...s.settings,domainIterationVersion:'mathart-1.7.8-cpu'}};
   const value=domainEvaluator(parseDomainModel(cpu,0))([2,0]);expect(value[0]).toBeCloseTo(7,12);expect(value[1]).toBeCloseTo(0,12);
  });

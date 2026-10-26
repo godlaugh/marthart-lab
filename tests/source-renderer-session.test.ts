@@ -49,7 +49,7 @@ describe.skipIf(process.platform!=='darwin')('real persistent CGL session',()=>{
    const bad=Buffer.from(request(2));bad.writeUInt32LE(0xffffffff,48);expect(await s.render(bad)).toMatchObject({ok:false,error:{kind:'input'}});
    expect((await s.render(request(3))).value.contextSerial).toBe(1);
    const f:SourceDrawingFrame['drawing']={model:'source-drawing-v1',textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0,commands:[{primitive:'triangles',vertexShader:'not GLSL',fragmentShader:'out vec4 color;void main(){color=vec4(1);}',attributes:[{name:'position',size:2,divisor:0,values:new Float32Array([0,0,1,0,0,1])}],first:0,count:3,instances:1,uniforms:[],depthTest:false,depthWrite:false,depthFunction:'less-equal',frontFace:'counter-clockwise',passes:['both'],blend:'source-alpha-over-additive-alpha'}]};
-   expect(await s.render(request(4,{drawing:f}))).toMatchObject({ok:false,error:{kind:'runtime'}});
+   expect(await s.render(request(4,{drawing:f}))).toMatchObject({ok:false,error:{kind:'runtime',gpuStage:'compile'}});
    expect((await s.render(request(5))).value).toMatchObject({sessionSerial:1,contextSerial:2});
   }finally{await s.close();}
  });

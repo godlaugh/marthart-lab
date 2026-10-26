@@ -18,7 +18,7 @@ import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
 import {validateRootsControlReceipt,type RootsControlReceipt} from './rootsControl';
 import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize,PausedCaptureResult,SourceRecordingOptions,SourceRecordingHandle,SourceRecordingStart,SourceRecordingStop,SourceRecordingRaster} from './generationProtocol';
-import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError,RootsLiveGenerationError,ImplicitControlGenerationError} from './generationProtocol';
+import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError,DomainLiveGenerationError,RootsLiveGenerationError,ImplicitControlGenerationError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
@@ -192,7 +192,7 @@ export class GenerationQueue {
       return !surfaceEdit&&request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
     void operation.then(output=>{this.acknowledgeRoots(output,request);this.acknowledgeImplicit(output,request);if(current()&&(liveKey(request)||request.context.implicitControls)){if(request.context.implicitLive||request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
-      if(current()&&cached&&(liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError||liveKey(request)==='rootsLive'&&error instanceof RootsLiveGenerationError||request.context.implicitControls&&error instanceof ImplicitControlGenerationError)&&error.previewRetained){
+      if(current()&&cached&&(liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError||liveKey(request)==='domainLive'&&error instanceof DomainLiveGenerationError||liveKey(request)==='rootsLive'&&error instanceof RootsLiveGenerationError||request.context.implicitControls&&error instanceof ImplicitControlGenerationError)&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
         request.context=snapshotGenerationInput(cached.request.context);this.completedLive={request,output:cached.output};

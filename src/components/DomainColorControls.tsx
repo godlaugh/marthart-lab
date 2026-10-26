@@ -18,7 +18,7 @@ export function DomainRenderSummary({facts,time}:{facts:RenderFacts;time?:number
  const {t}=useI18n();
  const label=(value:string)=>value==='local-v1'?t('本地原有规则'):value==='mathart-1.7.8'?t('旧兼容规则'):value==='mathart-1.7.8-cpu'?'MathArt 1.7.8 CPU':'MathArt 1.7.8 GPU';
  return <div role="status" data-testid="domain-render-summary">
-  <p>{t('实际完成画面：{backend} · 公式 {formula} · 视口 {viewport} · 着色 {color}',{backend:facts.effective.backend==='webgl2'?'GPU':'CPU',formula:label(facts.effective.formula),viewport:label(facts.effective.viewport),color:label(facts.effective.color)})}{time!==undefined&&` · ${time.toFixed(3)} s`}</p>
+  <p>{t('实际完成画面：{backend} · 公式 {formula} · 视口 {viewport} · 着色 {color}',{backend:facts.effective.backend==='native'?'原生 GPU':facts.effective.backend==='webgl2'?'GPU':'CPU',formula:label(facts.effective.formula),viewport:label(facts.effective.viewport),color:label(facts.effective.color)})}{time!==undefined&&` · ${time.toFixed(3)} s`}</p>
   {facts.route==='source-cpu-failure'&&<p>{t('GPU 故障后整幅图使用原产物 CPU 规则；保存的三项选择未改变。')}</p>}
   {facts.route==='source-cpu-forced'&&<p>{t('已固定使用 CPU 整链；保存的三项规则暂未使用，可随时恢复。')}</p>}
   {facts.trigger&&<details><summary>{t('GPU 故障详情')}</summary><p>{facts.trigger.stage}: {t(facts.trigger.reason)}</p></details>}

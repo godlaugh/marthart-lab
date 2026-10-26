@@ -3,6 +3,7 @@
  * The generated complete documents keep runtime scene definitions independent of the importer. */
 import {readFileSync,writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
+import {persistentScene} from '../src/engine/document';
 import {parseProjectFile} from '../src/engine/legacyImport';
 const root=new URL('../',import.meta.url);
 const recipes=JSON.parse(readFileSync(new URL('src/scenes/domainExamples.recipes.json',root),'utf8'));
@@ -12,7 +13,7 @@ const presets=recipes.map((recipe:any)=>{
  scene.timeline.tracks.forEach((track,index)=>{track.id=`${recipe.id}-track-${index}`;track.actions?.forEach((action,j)=>{action.id=`${track.id}-action-${j}`;});});
  scene.provenance!.reference=recipe.reference;
  scene.provenance!.warnings.push(...recipe.reference.assumptions);
- const {id,name,description,kind,favorite,...document}=scene;
+ const {id,name,description,kind,favorite,...document}=persistentScene(scene);
  void id;void name;void description;void kind;void favorite;
  return{id:recipe.id,name:recipe.name,description:recipe.description,document};
 });

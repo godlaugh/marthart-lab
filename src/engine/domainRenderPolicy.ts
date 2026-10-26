@@ -20,7 +20,7 @@ export interface DomainRenderRules {
 export interface DomainRenderFacts {
  readonly policy:DomainRenderPolicy;
  readonly requested:DomainRenderRules & {readonly backend:'auto'|'cpu'|'gpu'};
- readonly effective:DomainRenderRules & {readonly backend:'cpu'|'webgl2'};
+ readonly effective:DomainRenderRules & {readonly backend:'cpu'|'webgl2'|'native'};
  readonly route:'selected'|'source-cpu-failure'|'source-cpu-forced';
  readonly trigger?:DomainGpuFailureFacts;
  /** True when this request reused a previously observed failure. */

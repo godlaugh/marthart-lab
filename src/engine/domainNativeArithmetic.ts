@@ -169,16 +169,9 @@ export function compileDomainNativeGlslNode(tree:MathNode,parameters:readonly st
  return emit(tree);
 }
 
-/** Shipped native helper bodies, with no stable-math substitutions or repair
- * instrumentation. The two finite predicates and false flag are adapter facts
- * only; color repair must consume the actual GPU result, never rerun this orbit
- * with local CPU arithmetic. GLSL ES 3.00 supplies the same function vocabulary;
- * driver precision/undefined domains remain explicit compatibility boundaries. */
-export const domainNativeGlslPrelude=`
-bool complexRepair=false;
-bool cFinite(float v){return (floatBitsToUint(v)&0x7f800000u)!=0x7f800000u;}
-bool cFinite2(vec2 v){return cFinite(v.x)&&cFinite(v.y);}
-vec2 c_mul(vec2 a, vec2 b) {
+/** Unmodified MathArt 1.7.8 complex helper bodies. Shared by source-template
+ * native drawing and the existing WebGL adapter; no repair instrumentation. */
+export const domainNativeComplexFunctions=`vec2 c_mul(vec2 a, vec2 b) {
     return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
 }
 
@@ -299,3 +292,11 @@ vec2 c_re(vec2 z) { return vec2(z.x, 0.0); }
 vec2 c_im(vec2 z) { return vec2(z.y, 0.0); }
 
 `;
+
+/** Existing WebGL adapter facts remain byte-identical. They are deliberately
+ * absent from the native source-template program. */
+export const domainNativeGlslPrelude=`
+bool complexRepair=false;
+bool cFinite(float v){return (floatBitsToUint(v)&0x7f800000u)!=0x7f800000u;}
+bool cFinite2(vec2 v){return cFinite(v.x)&&cFinite(v.y);}
+${domainNativeComplexFunctions}`;

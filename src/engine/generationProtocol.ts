@@ -26,6 +26,9 @@ export class SourceRecordingOperationError extends Error {
 export class FractalLiveGenerationError extends Error {
  constructor(message:string,readonly previewRetained:boolean){super(message);this.name='FractalLiveGenerationError';}
 }
+export class DomainLiveGenerationError extends Error {
+ constructor(message:string,readonly previewRetained:boolean){super(message);this.name='DomainLiveGenerationError';}
+}
 export class RootsLiveGenerationError extends Error {
  constructor(message:string,readonly previewRetained:boolean){super(message);this.name='RootsLiveGenerationError';}
 }

@@ -16,6 +16,7 @@ import {snapshotGenerationInput} from './generationInput';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {planDomainRecordingClock} from './sourceDomainRecording';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
+import {runGenerationEffects,runGenerationEffectsAsync} from './generationEffects';
 
 export interface SourceDomainLiveContext {
  sessionId:string;revision:number;clock:SourceSceneClockRequest;
@@ -34,7 +35,7 @@ export type SourceDomainLivePresentation=Pick<SceneDocument,
  'equations'|'parameters'|'settings'|'palette'|'camera'|'sourceCamera'|'timeline'|'formulas'|'projectResolution'|'domainSourcePalette'|'evaluatedDomainScene'|'evaluatedDomainGradient'>;
 export interface SourceDomainLiveFacts {
  sessionId:string;revision:number;target:'primary'|'offscreen';renderKind:'update'|'snapshot';
- clockSource:'worker-wall-clock'|'injected'|'fixed-step';sceneTime:number;rawDt:number;activeDt:number;
+ clockSource:'worker-wall-clock'|'page-wall-clock'|'injected'|'fixed-step';sceneTime:number;rawDt:number;activeDt:number;
  queueIndex:number;queueComplete:boolean;paused:boolean;updateOrdinal:number;
  actualFrameRate:number;presentation:SourceDomainLivePresentation;
  recording?:SourceDomainHostSnapshot['recording'];
@@ -44,6 +45,14 @@ export interface SourceDomainLiveFacts {
 type Raster=Extract<SceneOutput,{type:'raster'}>;
 type LiveRaster=Raster&{domainLive:SourceDomainLiveFacts;formulaPresentation:FormulaPresentation};
 type Render=(scene:SceneDocument,context:GenerateContext,session:DomainRenderSession)=>SceneOutput;
+export interface SourceDomainLiveSessionOptions {
+ asyncRender?:(scene:SceneDocument,context:GenerateContext,session:DomainRenderSession,options:{retainedBytes:number})=>SceneOutput|PromiseLike<SceneOutput>;
+ hostClock?:{now:()=>number;source:'worker-wall-clock'|'page-wall-clock'};
+}
+type DrawEffect={scene:SceneDocument;context:GenerateContext;session:DomainRenderSession;retainedBytes:number};
+type Operation<T>=Generator<DrawEffect,T,SceneOutput>;
+type RecordingStart={handle:SourceDomainHostRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceQueueRecordingClock;warmup:LiveRaster};
+type RecordingStop={scene:SceneDocument;context:GenerationInput;preview:LiveRaster};
 const copy=<T>(value:T):T=>structuredClone(value);
 
 function context(c:GenerateContext):SourceDomainLiveContext {
@@ -88,26 +97,76 @@ export class SourceDomainLiveSession {
  private completed?:{sceneId:string;sessionId:string;revision:number;width:number;height:number;context:GenerationInput};
  private recording?:{handle:SourceDomainHostRecordingHandle;clock:SourceQueueRecordingClock;author:SceneDocument;primary:GenerationInput;target:GenerationInput;next:number;cancel?:()=>boolean;pending?:SourceDomainHostSnapshot;finished?:SourceDomainHostSnapshot};
  private handoff?:NonNullable<SourceDomainLiveSession['recording']>;
- constructor(private readonly render:Render=generateDomain){}
- reset():void {
-  if(this.busy||this.recording&&!this.failed)throw Error('请先结束域着色生成或录制再释放实例');
-  this.recording=undefined;this.handoff=undefined;
-  this.renderer?.reset();this.host=undefined;this.renderer=undefined;this.retained=undefined;this.formulas=undefined;
+ private inFlight?:Promise<unknown>;private resetting?:Promise<void>;private operationRevision=0;private revoked?:()=>boolean;
+ constructor(private readonly render:Render=generateDomain,private readonly options:SourceDomainLiveSessionOptions={}){
+  if(!options||options.asyncRender!==undefined&&typeof options.asyncRender!=='function'||options.hostClock!==undefined&&(!options.hostClock||typeof options.hostClock.now!=='function'||!['worker-wall-clock','page-wall-clock'].includes(options.hostClock.source)))throw Error('域着色实时 renderer 或宿主时钟无效');
+  this.options={...options,...(options.hostClock?{hostClock:{...options.hostClock}}:{})};
+ }
+ private get executing(){return this.busy||!!this.inFlight||!!this.resetting;}
+ private clear():void {
+  // Keep all owned state until its existing failure owner accepts reset.
+  this.renderer?.reset();this.recording=undefined;this.handoff=undefined;
+  this.host=undefined;this.renderer=undefined;this.retained=undefined;this.formulas=undefined;
   this.completed=undefined;this.cancel=undefined;this.sessionId='';this.revision=0;this.startAt=undefined;this.failed=false;
  }
+ reset():void {
+  if(this.executing||this.recording&&!this.failed)throw Error('请先结束域着色生成或录制再释放实例');
+  this.clear();
+ }
+ /** Wait for renderer ACK and the owning operation's catch/finally. External
+  * renderer resources remain their caller's responsibility. */
+ async settle():Promise<void>{await this.inFlight?.catch(()=>{});}
+ resetAsync():Promise<void>{
+  if(this.resetting)return this.resetting;
+  if(this.busy&&!this.inFlight)return Promise.reject(Error('域着色生成结束前不能重置实例'));
+  if(!this.inFlight&&this.recording&&!this.failed)return Promise.reject(Error('请先结束域着色录制再释放实例'));
+  this.operationRevision++;
+  const pending=(async()=>{await this.settle();if(this.recording&&!this.failed)throw Error('请先结束域着色录制再释放实例');this.clear();})();this.resetting=pending;
+  void pending.then(()=>{if(this.resetting===pending)this.resetting=undefined;},()=>{if(this.resetting===pending)this.resetting=undefined;});return pending;
+ }
+ private check(c?:GenerateContext):void {if(this.revoked?.()||c?.isCancelled?.())throw new DOMException('域着色生成已取消','AbortError');}
+ private run<T>(operation:Operation<T>):T {
+  if(this.options.asyncRender)throw Error('异步域着色 renderer 必须使用 Async 操作');
+  if(this.executing)throw Error('域着色实时会话正在生成或清理');
+  return runGenerationEffects(operation,e=>this.render(e.scene,e.context,e.session));
+ }
+ private runAsync<T>(operation:()=>Operation<T>):Promise<T>{
+  if(this.executing)return Promise.reject(Error('域着色实时会话正在生成或清理'));
+  const revision=this.operationRevision;
+  const pending=Promise.resolve().then(async()=>{
+   this.revoked=()=>revision!==this.operationRevision;
+   try{this.check();return await runGenerationEffectsAsync(operation(),e=>this.options.asyncRender?this.options.asyncRender(e.scene,e.context,e.session,{retainedBytes:e.retainedBytes}):this.render(e.scene,e.context,e.session));}
+   finally{this.revoked=undefined;}
+  });this.inFlight=pending;
+  void pending.then(()=>{if(this.inFlight===pending)this.inFlight=undefined;},()=>{if(this.inFlight===pending)this.inFlight=undefined;});return pending;
+ }
+ private snapshot(scene:SceneDocument,c:GenerateContext){return{scene:clean(scene),context:{...snapshotGenerationInput(c),isCancelled:c.isCancelled,onProgress:c.onProgress,onStatus:c.onStatus}};}
+ private prepareAsync<T>(scene:SceneDocument,c:GenerateContext,operation:(scene:SceneDocument,c:GenerateContext)=>Operation<T>):Promise<T>{
+  if(this.executing)return Promise.reject(Error('域着色实时会话正在生成或清理'));
+  try{const saved=this.snapshot(scene,c);return this.runAsync(()=>operation(saved.scene,saved.context));}catch(error){return Promise.reject(error);}
+ }
+ private *draw(scene:SceneDocument,c:GenerateContext,session:DomainRenderSession,retainedBytes=0):Operation<SceneOutput>{
+  if(!Number.isSafeInteger(retainedBytes)||retainedBytes<0)throw Error('域着色内部保留像素字节数无效');
+  this.check(c);let active=true;
+  const context:GenerateContext={...c,isCancelled:()=>!active||Boolean(this.revoked?.()||c.isCancelled?.()),
+   onProgress:c.onProgress?value=>{if(!active||this.revoked?.()||c.isCancelled?.())return;c.onProgress!(value);this.check(c);}:undefined,
+   onStatus:c.onStatus?value=>{if(!active||this.revoked?.()||c.isCancelled?.())return;c.onStatus!(value);this.check(c);}:undefined};
+  try{const result=yield{scene,context,session,retainedBytes};this.check(c);return result;}finally{active=false;}
+ }
  diagnostics(){return{sessionId:this.sessionId,revision:this.revision,failed:this.failed,host:this.host&&!this.failed?this.host.snapshot():undefined,renderFailure:this.renderer?.failure(),retainedBytes:this.retained?JSON.stringify(this.retained).length*2:0};}
- matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {
+ matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {return !this.inFlight&&!this.resetting&&this.matchesPrimary(scene,c);}
+ private matchesPrimary(scene:SceneDocument,c:GenerateContext):boolean {
   const done=this.completed,v=c.domainLive,p=v?.viewport,saved=done?.context.domainLive?.viewport,a=c.domainTarget,b=done?.context.domainTarget;
   return !this.busy&&!this.failed&&!this.recording&&!!done&&!!v&&scene.kind==='domain'&&scene.id===done.sceneId&&v.sessionId===done.sessionId&&v.revision===done.revision&&v.startAt===this.startAt&&c.width===done.width&&c.height===done.height&&p?.logicalWidth===saved?.logicalWidth&&p?.logicalHeight===saved?.logicalHeight&&p?.pixelDensity===saved?.pixelDensity&&(a===b||!!a&&!!b&&a.logicalWidth===b.logicalWidth&&a.logicalHeight===b.logicalHeight&&a.pixelDensity===b.pixelDensity);
  }
  setPaused(paused:boolean,timestampMs?:number):void {
-  if(this.busy||this.failed||!this.host||!this.completed)throw Error('域着色播放控制需要已完成且可用的实时主预览');
+  if(this.executing||this.recording||this.failed||!this.host||!this.completed)throw Error('域着色播放控制需要已完成且可用的实时主预览');
   validateSourceSceneClockRequest({paused,timestampMs});
   try{this.host.setPaused(paused,timestampMs);this.handoff=undefined;this.completed.context.domainLive!.clock={...this.completed.context.domainLive!.clock,paused};}catch(error){this.failed=true;this.completed=undefined;throw error;}
  }
  private requireCompleted(scene:SceneDocument,c:GenerateContext):void {
   const live=context(c);
-  if(!this.matchesCompletedPrimary(scene,c)||!this.host)throw Error('域着色编辑需要匹配的已完成实时主预览');
+  if(!this.matchesPrimary(scene,c)||!this.host)throw Error('域着色编辑需要匹配的已完成实时主预览');
   if(this.host.snapshot().paused!==live.clock.paused)throw Error('域着色暂停状态必须通过独立 setPaused 操作修改');
   if(c.isCancelled?.())throw new DOMException('域着色实时编辑已取消','AbortError');
  }
@@ -118,6 +177,7 @@ export class SourceDomainLiveSession {
  /** Same-object hot batch; one budget/failure transaction, deliberately no
   * render or numerical host update. Each ordered write still reapplies config. */
  updateParameters(scene:SceneDocument,c:GenerateContext,writes:readonly (readonly [string,number])[]):void {
+  if(this.executing)throw Error('域着色实时会话正在生成或清理');
   this.requireCompleted(scene,c);this.busy=true;this.cancel=c.isCancelled;let changed=false;
   try{this.host!.updateParameters(writes);changed=true;this.handoff=undefined;if(this.cancel?.())throw new DOMException('域着色实时编辑已取消','AbortError');}
   catch(error){if(changed)this.invalidate();else this.checkFailedHost();throw error;}
@@ -125,7 +185,11 @@ export class SourceDomainLiveSession {
  }
  /** A paused gesture redraws the current state at the completed primary's
   * raster profile. Neither the authored document nor full-load anchor changes. */
- navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceDomainNavigationEvent):LiveRaster {
+ navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceDomainNavigationEvent):LiveRaster {return this.run(this.navigateOperation(scene,c,event));}
+ navigatePausedAsync(scene:SceneDocument,c:GenerateContext,event:SourceDomainNavigationEvent):Promise<LiveRaster>{
+  const saved=event&&{...event};return this.prepareAsync(scene,c,(scene,c)=>this.navigateOperation(scene,c,saved));
+ }
+ private *navigateOperation(scene:SceneDocument,c:GenerateContext,event:SourceDomainNavigationEvent):Operation<LiveRaster> {
   this.requireCompleted(scene,c);
   const completed=this.completed!,viewport=completed.context.domainLive!.viewport;
   if(!viewport)throw Error('域着色导航需要已完成主预览的逻辑视口');
@@ -136,7 +200,7 @@ export class SourceDomainLiveSession {
   try{
    const snapshot=this.host!.navigatePaused(gesture);changed=true;this.handoff=undefined;this.completed=undefined;
    const renderContext={...completed.context,isCancelled:c.isCancelled,onProgress:c.onProgress,onStatus:c.onStatus};
-   const result=this.renderSnapshot(snapshot,renderContext,'snapshot');
+   const result=yield* this.renderSnapshot(snapshot,renderContext,'snapshot');
    if(this.cancel?.())throw new DOMException('域着色实时导航已取消','AbortError');
    this.completed=completed;return result;
   }catch(error){if(changed)this.invalidate();else this.checkFailedHost();throw error;}
@@ -145,7 +209,7 @@ export class SourceDomainLiveSession {
  private admit(scene:SceneDocument,live:SourceDomainLiveContext){
   if(!usesSourceDomain(scene))throw Error('域着色实时预览需要显式源队列');
   const retained=clean(scene),configuration=prepareSourceDomainScene(retained);
-  const host=new SourceDomainHostSession(configuration,{paused:live.clock.paused,isCancelled:()=>this.cancel?.()??false});
+  const host=new SourceDomainHostSession(configuration,{paused:live.clock.paused,hostClock:this.options.hostClock,isCancelled:()=>Boolean(this.revoked?.()||this.cancel?.())});
   const initial=display(retained,host.snapshot()),policy=parseDomainRenderPolicy(initial.settings.domainRenderPolicy);
   // Validate the selected numerical/rendering configuration before replacing a
   // valid host. GPU readiness remains the actual renderer's responsibility.
@@ -164,14 +228,16 @@ export class SourceDomainLiveSession {
   if(output.type!=='raster'||!output.domainRender||!this.formulas||!Number.isInteger(output.width)||!Number.isInteger(output.height)||output.width<1||output.height<1||output.width>c.width||output.height>c.height||c.quality==='export'&&(output.width!==c.width||output.height!==c.height)||output.width*output.height>MAX_RASTER_PIXELS||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.length!==output.width*output.height*4)throw Error('域着色实时预览未返回有效源栅格事实');
   return Object.assign(output,{domainLive:copy(facts),formulaPresentation:copy(this.formulas)});
  }
- private renderSnapshot(snapshot:SourceDomainHostSnapshot,c:GenerateContext,kind:SourceDomainLiveFacts['renderKind'],target:SourceDomainLiveFacts['target']='primary'):LiveRaster {
+ private *renderSnapshot(snapshot:SourceDomainHostSnapshot,c:GenerateContext,kind:SourceDomainLiveFacts['renderKind'],target:SourceDomainLiveFacts['target']='primary',retainedBytes=0):Operation<LiveRaster> {
   const renderScene=display(this.retained!,snapshot),facts=this.facts(snapshot,renderScene,kind,target),bind=(output:SceneOutput)=>this.bind(output,facts,c);
   if(target==='primary'&&c.domainLive?.viewport)facts.viewport=copy(c.domainLive.viewport);
-  return bind(this.render(renderScene,{...c,time:snapshot.state.clock.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined},this.renderer!));
+  return bind(yield* this.draw(renderScene,{...c,time:snapshot.state.clock.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined},this.renderer!,retainedBytes));
  }
  /** Capture and primary redraw share the current numerical snapshot and
   * renderer failure owner. Neither operation advances or reconstructs time. */
- capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):PausedCaptureResult {
+ capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):PausedCaptureResult {return this.run(this.captureOperation(scene,c,options));}
+ capturePausedAsync(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):Promise<PausedCaptureResult>{const saved={...options};return this.prepareAsync(scene,c,(scene,c)=>this.captureOperation(scene,c,saved));}
+ private *captureOperation(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}):Operation<PausedCaptureResult> {
   const retained=this.completed;
   if(!retained)throw Error('域着色当前帧截图需要已完成主预览');
   this.requireCompleted(scene,{...c,width:retained.width,height:retained.height,domainTarget:retained.context.domainTarget});
@@ -186,9 +252,9 @@ export class SourceDomainLiveSession {
   if(c.isCancelled?.())throw new DOMException('域着色当前帧截图已取消','AbortError');
   this.busy=true;this.cancel=c.isCancelled;this.completed=undefined;this.handoff=undefined;
   try{
-   const captured=this.renderSnapshot(snapshot,capture,'snapshot','offscreen');
+   const captured=yield* this.renderSnapshot(snapshot,capture,'snapshot','offscreen',extra);
    if(this.cancel?.())throw new DOMException('域着色当前帧截图已取消','AbortError');
-   const preview=this.renderSnapshot(snapshot,primary,'snapshot');
+   const preview=yield* this.renderSnapshot(snapshot,primary,'snapshot','primary',extra+captured.pixels.byteLength);
    if(this.cancel?.())throw new DOMException('域着色当前帧截图已取消','AbortError');
    this.completed=retained;return{capture:captured,preview};
   }catch(error){this.invalidate();throw error;}finally{this.busy=false;this.cancel=undefined;}
@@ -196,7 +262,9 @@ export class SourceDomainLiveSession {
  /** Toolbar recording reloads the full Apply anchor. Stage the fresh numerical
   * host/renderer until the warmup succeeds, preserving the completed primary
   * if local admission, cancellation or that first render fails. */
- beginRecording(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions){
+ beginRecording(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions):RecordingStart{return this.run(this.beginOperation(scene,c,options));}
+ beginRecordingAsync(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions):Promise<RecordingStart>{const saved={...options};return this.prepareAsync(scene,c,(scene,c)=>this.beginOperation(scene,c,saved));}
+ private *beginOperation(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions):Operation<RecordingStart>{
   this.requireCompleted(scene,c);
   validateSourceDomainFrameRate(options.actualFrameRate);
   const primary=snapshotGenerationInput(this.completed!.context),live=primary.domainLive!;
@@ -209,10 +277,10 @@ export class SourceDomainLiveSession {
   this.busy=true;this.cancel=c.isCancelled;
   const renderer=new DomainRenderSession();let committed=false;
   try{
-   const host=new SourceDomainHostSession(prepareSourceDomainScene(this.retained!),{isCancelled:()=>this.cancel?.()??false});
+   const host=new SourceDomainHostSession(prepareSourceDomainScene(this.retained!),{hostClock:this.options.hostClock,isCancelled:()=>Boolean(this.revoked?.()||this.cancel?.())});
    const started=host.beginRecording(options.simulationFps,options.actualFrameRate),snapshot=started.warmup;
    const renderScene=display(this.retained!,snapshot),renderContext={...target,time:snapshot.state.clock.sceneTime,isCancelled:this.cancel};
-   const warmup=this.bind(this.render(renderScene,renderContext,renderer),this.facts(snapshot,renderScene,'update','offscreen'),renderContext);
+   const warmup=this.bind(yield* this.draw(renderScene,renderContext,renderer),this.facts(snapshot,renderScene,'update','offscreen'),renderContext);
    this.assertRecording(snapshot,clock,0);
    if(this.cancel?.())throw new DOMException('域着色录制开始已取消','AbortError');
    this.renderer?.reset();this.renderer=renderer;this.host=host;this.completed=undefined;this.handoff=undefined;
@@ -228,7 +296,9 @@ export class SourceDomainLiveSession {
  /** FPS belongs to this update, independently of simulation FPS. A failed
   * raster retry reuses the pending numerical snapshot and requires the same
   * observation; it never advances the host twice or replaces that observation. */
- nextRecordingFrame(handle:object,displayFrame:number,actualFrameRate?:number):LiveRaster {
+ nextRecordingFrame(handle:object,displayFrame:number,actualFrameRate?:number):LiveRaster {return this.run(this.nextOperation(handle,displayFrame,actualFrameRate));}
+ nextRecordingFrameAsync(handle:object,displayFrame:number,actualFrameRate?:number):Promise<LiveRaster>{return this.runAsync(()=>this.nextOperation(handle,displayFrame,actualFrameRate));}
+ private *nextOperation(handle:object,displayFrame:number,actualFrameRate?:number):Operation<LiveRaster> {
   const record=this.recording;
   if(this.busy||!record||!this.ownsRecording(handle)||record.finished||displayFrame!==record.next||displayFrame>record.clock.lastDisplayFrame)throw Error('域着色录制身份或连续帧序号无效');
   validateSourceDomainFrameRate(actualFrameRate);
@@ -241,7 +311,7 @@ export class SourceDomainLiveSession {
     catch(error){this.checkFailedHost();throw error;}
    }
    this.assertRecording(record.pending,record.clock,displayFrame);
-   const output=this.renderSnapshot(record.pending,{...record.target,isCancelled:this.cancel},'update','offscreen');
+   const output=yield* this.renderSnapshot(record.pending,{...record.target,isCancelled:this.cancel},'update','offscreen');
    if(this.cancel?.())throw new DOMException('域着色录制更新已取消','AbortError');
    record.next++;record.pending=undefined;return output;
   }finally{this.busy=false;this.cancel=undefined;}
@@ -249,7 +319,9 @@ export class SourceDomainLiveSession {
  /** Finish resets wall time once and redraws the retained final state. Keep
   * the snapshot across failed redraw/publication so a retry cannot update it.
   * Cleanup deliberately does not inherit the recording cancellation callback. */
- finishRecording(handle:object,timestampMs?:number):{scene:SceneDocument;context:GenerationInput;preview:LiveRaster} {
+ finishRecording(handle:object,timestampMs?:number):RecordingStop {return this.run(this.finishOperation(handle,timestampMs));}
+ finishRecordingAsync(handle:object,timestampMs?:number):Promise<RecordingStop>{return this.runAsync(()=>this.finishOperation(handle,timestampMs));}
+ private *finishOperation(handle:object,timestampMs?:number):Operation<RecordingStop> {
   const record=this.recording??this.handoff;
   if(this.failed||this.busy||!record||record.handle!==handle||(!this.recording&&!this.completed))throw Error('域着色录制身份无效');
   this.busy=true;
@@ -257,13 +329,15 @@ export class SourceDomainLiveSession {
    record.finished??=this.host!.finishRecording(record.handle,timestampMs);
    const snapshot=record.finished,context=snapshotGenerationInput(record.primary);
    context.time=snapshot.state.clock.sceneTime;context.domainLive!.actualFrameRate=snapshot.state.parameterFps;
-   const preview=this.renderSnapshot(snapshot,context,'snapshot');
+   const preview=yield* this.renderSnapshot(snapshot,context,'snapshot');
    this.completed={sceneId:record.author.id,sessionId:this.sessionId,revision:this.revision,width:context.width,height:context.height,context:snapshotGenerationInput(context)};
    this.recording=undefined;this.handoff=record;
    return{scene:clean(record.author),context,preview};
   }finally{this.busy=false;}
  }
- generate(scene:SceneDocument,c:GenerateContext):LiveRaster {
+ generate(scene:SceneDocument,c:GenerateContext):LiveRaster {return this.run(this.generateOperation(scene,c));}
+ generateAsync(scene:SceneDocument,c:GenerateContext):Promise<LiveRaster>{return this.prepareAsync(scene,c,(scene,c)=>this.generateOperation(scene,c));}
+ private *generateOperation(scene:SceneDocument,c:GenerateContext):Operation<LiveRaster> {
   const live=context(c);
   if(scene.kind!=='domain')throw Error('域着色实时上下文只能用于域着色场景');
   if(this.busy||this.recording)throw Error('域着色实时会话正在生成或录制');
@@ -290,7 +364,7 @@ export class SourceDomainLiveSession {
    const snapshotOnly=reconstructed||live.clock.paused&&this.completed!==undefined;
    this.completed=undefined;this.handoff=undefined;mutated=true;
    const snapshot=snapshotOnly?this.host!.snapshot():this.host!.update(live.clock,live.actualFrameRate);
-   const result=this.renderSnapshot(snapshot,c,snapshotOnly?'snapshot':'update');
+   const result=yield* this.renderSnapshot(snapshot,c,snapshotOnly?'snapshot':'update');
    if(this.cancel?.())throw new DOMException('域着色实时预览已取消','AbortError');
    const saved=snapshotGenerationInput({...c,domainLive:{...live,configuration:undefined}});
    this.completed={sceneId:scene.id,sessionId:this.sessionId,revision:this.revision,width:c.width,height:c.height,context:saved};return result;

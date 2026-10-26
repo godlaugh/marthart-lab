@@ -1,4 +1,5 @@
 import {usesSourceFractal} from './engine/sourceFractalDocument';
+import {usesDomainNativeRendering} from './engine/domain';
 import {sourceIteratedPreviewPixelDensity} from './engine/sourceIteratedPresentation';
 import {beginSymmetryCustomValidation,type SymmetryCustomValidation} from './engine/symmetryCustomValidation';
 import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,writeSourceSamilaSetting,syncSourceSamilaPaletteSession,openSourceSamilaPaletteEditor,applySourceSamilaPalette,restartSourceSamilaPalette,retainSourceSamilaPaletteOnSave} from './engine/sourceSamilaPaletteEditing';
@@ -9,7 +10,7 @@ import {ImplicitEditorSession,assertImplicitEditorRetention,type ImplicitEditorC
 import {implicitEditorActionFor,type ImplicitEditorIntent} from './engine/implicitEditIntent';
 import {SourceImplicitPaletteEditor} from './components/SourceImplicitPaletteEditor';
 import {openImplicitPaletteEditor,retainImplicitPaletteEditorOnSave} from './engine/implicitPaletteEditing';
-import {ImplicitControlGenerationError} from './engine/generationProtocol';
+import {ImplicitControlGenerationError,DomainLiveGenerationError} from './engine/generationProtocol';
 import {domainPaletteRuntimeScene,retainDomainPaletteEditorOnSave} from './engine/domainPaletteEditing';
 import {usesSourceImplicitCpuMesh} from './engine/sourceImplicitPresentation';
 import {implicitCameraFrame} from './engine/sourceImplicitResponse';
@@ -945,7 +946,7 @@ export default function App() {
   }
   function nativePreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision];}
   function pauseForExport(){
-    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||sourceLivePreviewKind(sceneRef.current)==='fractal')?nativeExportPreview.current.open(nativePreviewInput()):undefined;
+    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current))?nativeExportPreview.current.open(nativePreviewInput()):undefined;
     if(ticket)setNativeExportPaused(false);
     const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
     if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}
@@ -1227,6 +1228,10 @@ export default function App() {
           retireRootsGesture();
         }else if(error instanceof ImplicitControlGenerationError&&error.previewRetained){
           if(implicitEditor.current?.pendingCount)implicitNeedsApply.current=true;
+        }else if(error instanceof DomainLiveGenerationError&&error.previewRetained){
+          // The rejected draft has not replaced the retained numerical owner.
+          // Pause that owner through the same ACK path used by the toolbar.
+          void play(false);
         }else interruptLivePlayback();
         playingRef.current=false;setError(error.message);setPlaying(false);
       },

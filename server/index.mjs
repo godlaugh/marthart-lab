@@ -231,7 +231,7 @@ export async function createExportServer(options={}){
     if(nativeSequence===0xffffffff){if(nativeGeneration===0xffffffff)throw new HttpError(503,'原生请求编号已耗尽，请重启服务');nativeGeneration++;nativeSequence=0;}
     const packet=Buffer.from(bytes);packet.writeUInt32LE(nativeGeneration,12);packet.writeUInt32LE(++nativeSequence,16);
     const result=await native.render(packet,{signal:controller.signal});
-    if(!result.ok)return json(res,{input:400,'state-lost':409,ownership:409,unsupported:422,capacity:429,cancelled:499,closed:503,unavailable:503,timeout:504,protocol:502,runtime:502,cleanup:503}[result.error.kind]??502,{error:result.error.message,kind:result.error.kind});
+    if(!result.ok)return json(res,{input:400,'state-lost':409,ownership:409,unsupported:422,capacity:429,cancelled:499,closed:503,unavailable:503,timeout:504,protocol:502,runtime:502,cleanup:503}[result.error.kind]??502,{error:result.error.message,kind:result.error.kind,...(result.error.gpuStage?{gpuStage:result.error.gpuStage}:{})});
     if(controller.signal.aborted||res.destroyed)return;
     const image=result.value;
     await new Promise((resolve,reject)=>{
