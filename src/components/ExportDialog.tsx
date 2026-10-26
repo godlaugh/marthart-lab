@@ -34,8 +34,9 @@ import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimension
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import {encodeSourcePausedPng} from '../engine/sourcePausedPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
-import {usesSourceAttractorCpu} from '../engine/sourceAttractorDocument';
-import {encodeSourceGeometryImage,usesSourceGeometryImage,sourceAttractorImageTarget} from '../engine/sourceGeometryImage';
+import {usesSourceAttractor,usesSourceAttractorCpu} from '../engine/sourceAttractorDocument';
+import {sourceAttractorImageTarget} from '../engine/sourceAttractorImageTarget';
+import {encodeSourceGeometryImage,usesSourceGeometryImage} from '../engine/sourceGeometryImage';
 import { Generator } from "../engine/client";
 import { ArtRenderer,artExportPurpose } from "../engine/renderer";
 import { sceneAtTime, normalizeTimelineTime,resolveTimeline } from "../engine/timeline";
@@ -110,7 +111,7 @@ export function ExportDialog({
 }) {
   const {t}=useI18n();
   const sourceFractal=usesSourceFractal(scene),sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource,sourceSamila=usesSourceSamilaSampling(scene),sourceIterated=sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map';
-  const sourceImplicit=usesSourceImplicitCpuMesh(scene),sourceAttractorCpu=usesSourceAttractorCpu(scene);
+  const sourceImplicit=usesSourceImplicitCpuMesh(scene),sourceAttractor=usesSourceAttractor(scene);
   const sourceImplicitLive=!!currentImplicitCapture,sourceGeometryLive=!!currentImplicitCapture||!!currentSurfaceCapture;
   const sourceSurfaceLive=!!currentSurfaceCapture,sourceFractalLive=!!currentFractalCapture,sourceDomainLive=!!currentDomainCapture,sourceNumericalLive=sourceFractalLive||sourceDomainLive;
   const recordingMode=mode!=='export';
@@ -186,7 +187,7 @@ export function ExportDialog({
   const pausedSourceImage=kind==='image'&&(sourceGeometryLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
   let attractorTarget:ReturnType<typeof sourceAttractorImageTarget>|undefined;
-  if(sourceAttractorCpu)try{attractorTarget=sourceAttractorImageTarget(scene,{width,height},previewPointPixelDensity??NaN,previewLogicalHeight??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}
+  if(sourceAttractor)try{attractorTarget=sourceAttractorImageTarget(scene,{width,height},previewPointPixelDensity??NaN,previewLogicalHeight??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}
   if((sourceGeometryLive||sourceNumericalLive)&&pausedSourceImage){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceImplicitLive?previewPointPixelDensity:sourceSurfaceLive?surfacePixelDensity:sourceDomainLive?domainPixelDensity:fractalPixelDensity)??NaN,sourceGeometryLive?undefined:MAX_RASTER_PIXELS);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   else if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
@@ -337,7 +338,7 @@ export function ExportDialog({
       const bouncing=bouncingPlan?.ok?bouncingPlan.value:undefined;
       const timeline=sourceFrames||sourceBouncing||perlinFrames||fractalFrames?exportScene.timeline:resolveTimeline(exportScene);
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
-      if((usesSourceSurfaceParticles(exportScene)||usesSourceImplicitCpuMesh(exportScene)||usesSourceAttractorCpu(exportScene))&&previewPointPixelDensity===undefined)throw new Error('源几何导出缺少已呈现预览的像素密度，请等待预览完成');
+      if((usesSourceSurfaceParticles(exportScene)||usesSourceImplicitCpuMesh(exportScene)||usesSourceAttractor(exportScene))&&previewPointPixelDensity===undefined)throw new Error('源场景导出缺少已呈现预览的像素密度，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
       if(usesSourceMapPresentation(exportScene)&&sourceMapToneReference===undefined)throw Error('Map 导出缺少已呈现主画布尺寸，请等待预览完成');

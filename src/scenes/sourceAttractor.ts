@@ -12,6 +12,7 @@ import {SourceAttractorGpuReplaySession} from '../engine/sourceAttractorGpuRepla
 import {ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
 import {defaultFormulas,presentFormulas,resolveFormulaContent,validateFormulas} from '../engine/formulas';
 import {sourceAttractorVariableNames} from '../engine/sourceAttractorEquation';
+import {sourceAttractorPixelDensity} from '../engine/sourceAttractorImageTarget';
 
 const identityNumber=(_key:string,value:unknown)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value;
 
@@ -64,9 +65,12 @@ export class SourceAttractorSession {
    const key=JSON.stringify([scene.id,prepared.configuration,prepared.visualConfiguration,prepared.camera,prepared.backgroundColor,
     scene.equations,scene.parameters,scene.timeline.tracks,scene.timeline.fps],identityNumber);
    if(prepared.backend==='gpu'){
+    const pixelDensity=sourceAttractorPixelDensity(context.sourcePointPixelDensity);
     if(key!==this.key){this.clear();this.key=key;this.gpu=new SourceAttractorGpuReplaySession({...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time});}
     this.formulas=formulaState;
     const output=this.gpu!.generate({time:context.time,viewport:initial.viewport,width:context.width,height:context.height,backgroundColor:prepared.backgroundColor,isCancelled:()=>this.revoked||!!context.isCancelled?.()});
+    if(output.type!=='raster')throw Error('源 GPU 吸引子没有生成像素帧');
+    if(pixelDensity!==undefined)output.sourceAttractorPixelDensity=pixelDensity;
     output.formulaPresentation=formulas;return output;
    }
    const options={...prepared,tracks:scene.timeline.tracks,fps:scene.timeline.fps,time:context.time,

@@ -449,6 +449,9 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  /** Primary display density supplied to the source Attractor request; absent
+   * remains unknown. This is independent of the raster's quality/sample size. */
+  sourceAttractorPixelDensity?:number;
   implicitControls?: {sessionId:string}&import('./engine/implicitPaletteControl').ImplicitPaletteControlReceipt;
   /** Actual pixel producer for a geometry capture; absent for older outputs. */
   sourcePixelRenderer?:{backend:'webgl'}|{backend:'native';identity:string;generation:number;sequence:number;samples:number};

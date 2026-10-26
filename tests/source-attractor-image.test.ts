@@ -1,5 +1,6 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {encodeSourceGeometryImage,sourceAttractorImageTarget,usesSourceGeometryImage} from '../src/engine/sourceGeometryImage';
+import {encodeSourceGeometryImage,usesSourceGeometryImage} from '../src/engine/sourceGeometryImage';
+import {sourceAttractorImageTarget} from '../src/engine/sourceAttractorImageTarget';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {formulaPresentation} from '../src/engine/formulas';
 import {prepareSourceDrawingPlan} from '../src/engine/sourceDrawingSnapshot';

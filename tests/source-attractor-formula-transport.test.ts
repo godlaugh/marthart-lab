@@ -54,4 +54,16 @@ describe('GPU Attractor source-camera raster formula ownership (simulated device
    else{expect((await caught).message).toContain('公式标注');expect(worker.terminated).toBe(true);}
   }finally{generator.dispose();}
  });
+ it.each(['valid','missing','wrong','unexpected'] as const)('binds completed display density to the issued Worker request: %s',async variant=>{
+  WorkerPort.instances=[];vi.stubGlobal('Worker',WorkerPort);const {s}=fixture(),input={...context,sourcePointPixelDensity:variant==='unexpected'?undefined:2},output=generateScene(s,input),generator=new Generator();
+  if(output.type!=='raster')throw Error('raster expected');
+  if(variant==='missing')delete output.sourceAttractorPixelDensity;
+  if(variant==='wrong')output.sourceAttractorPixelDensity=1;
+  if(variant==='unexpected')output.sourceAttractorPixelDensity=2;
+  try{
+   const pending=generator.generate(s,input),caught=pending.catch(error=>error),worker=WorkerPort.instances[0],request=worker.messages[0];worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});
+   if(variant==='valid'){expect(await pending).toHaveProperty('sourceAttractorPixelDensity',2);expect(worker.terminated).toBe(false);}
+   else{expect(await caught).toBeInstanceOf(Error);expect(worker.terminated).toBe(true);}
+  }finally{generator.dispose();}
+ });
 });

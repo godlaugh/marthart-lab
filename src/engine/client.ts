@@ -25,6 +25,7 @@ import {sourceSamilaOwnerScene} from './sourceSamilaPaletteEditing';
 import {assertSourceSamilaRecordingFrame} from './sourceSamilaRecording';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourceAttractor,usesSourceAttractorCpu} from './sourceAttractorDocument';
+import {validSourceAttractorRasterDensity} from './sourceAttractorImageTarget';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SourceSamilaAsyncSession} from './sourceSamilaAsyncSession';
@@ -82,20 +83,21 @@ type FormulaOutputContract =
  |{kind:'roots-runtime-raster';viewport:SourceCameraViewport}
  |{kind:'source-raster';layout:'source-surface-centered-v1'|undefined;viewport:FormulaViewport|undefined}
  |{kind:'implicit-runtime-geometry'}
- |{kind:'source-camera-raster';layout:'source-surface-centered-v1'|undefined}
+ |{kind:'source-camera-raster';layout:'source-surface-centered-v1'|undefined;pixelDensity:number|undefined}
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
  if(context.implicitControls)return{kind:'implicit-runtime-geometry'};
  if(context.rootsLive?.controls)return{kind:'roots-runtime-raster',viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene)||usesSourceAttractorCpu(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
- if(usesSourceAttractor(scene))return{kind:'source-camera-raster',layout:scene.formulas?.layout};
+ if(usesSourceAttractor(scene))return{kind:'source-camera-raster',layout:scene.formulas?.layout,pixelDensity:context.sourcePointPixelDensity};
  return usesSourceFractal(scene)?{kind:'source-raster',layout:scene.formulas?.layout,viewport:context.fractalViewport}:{kind:'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
   if(!output||(contract.kind==='raster'||contract.kind==='fractal-runtime-raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'||contract.kind==='source-camera-raster')&&output.type!=='raster'||(contract.kind==='source-geometry'||contract.kind==='implicit-runtime-geometry')&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
+  if(contract.kind==='source-camera-raster'&&!validSourceAttractorRasterDensity(output,contract.pixelDensity))return false;
   output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'||contract.kind==='fractal-runtime-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
   return contract.kind!=='source-geometry'&&contract.kind!=='source-raster'&&contract.kind!=='source-camera-raster'||output.formulaPresentation.layout===contract.layout;
  }catch{return false;}

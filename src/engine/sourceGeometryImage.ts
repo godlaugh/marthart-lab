@@ -2,8 +2,6 @@ import type {ArtRenderer} from './renderer';
 import type {SceneDocument,SceneOutput} from '../types';
 import {usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
-import {ordinarySourceViewport} from './ordinarySourceCamera';
-import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import {outputBuffers} from './outputBuffers';
 import {readSourceDrawingPixels,sourceDrawingPolicy} from './sourceDrawingPixels';
 import {ensureSourceNativeLease} from './sourceNativeLease';
@@ -14,17 +12,6 @@ import {validateFormulaPresentation} from './formulaConfig';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 
 export const usesSourceGeometryImage=(scene:SceneDocument)=>usesSourceImplicitCpuMesh(scene)||usesSourceAttractorCpu(scene);
-
-/** Existing fixed-time replay exports use the requested physical resolution.
- * They do not acquire the original auto-recording exportScaleFactor=3 merely
- * by sharing its noSmooth drawing target. Processing rounds logical dimensions
- * before applying the primary display's density. */
-export function sourceAttractorImageTarget(scene:SceneDocument,size:{width:number;height:number},pixelDensity:number,referenceLogicalHeight:number){
- if(!usesSourceAttractorCpu(scene))throw Error('源吸引子图像需要明确的 CPU 场景');
- if(!Number.isFinite(referenceLogicalHeight)||referenceLogicalHeight<=0)throw Error('源吸引子图像缺少已呈现预览的逻辑高度');
- const target=prepareSourcePausedCaptureSize(size,pixelDensity);
- return{...target,sourceViewport:ordinarySourceViewport(scene,target.logicalWidth,target.logicalHeight,'offscreen',referenceLogicalHeight)};
-}
 
 let generation=0;
 const pendingPlans=new Set<SourceDrawingPlan>();

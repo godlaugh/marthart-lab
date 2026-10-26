@@ -1,6 +1,7 @@
 import {usesSourceFractal} from './engine/sourceFractalDocument';
 import {usesDomainNativeRendering} from './engine/domain';
 import {sourceIteratedPreviewPixelDensity} from './engine/sourceIteratedPresentation';
+import {sourceAttractorPreviewPixelDensity} from './engine/sourceAttractorImageTarget';
 import {beginSymmetryCustomValidation,type SymmetryCustomValidation} from './engine/symmetryCustomValidation';
 import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,writeSourceSamilaSetting,syncSourceSamilaPaletteSession,openSourceSamilaPaletteEditor,applySourceSamilaPalette,restartSourceSamilaPalette,retainSourceSamilaPaletteOnSave} from './engine/sourceSamilaPaletteEditing';
 import {assertSymmetryPaletteRetention,ensureSymmetryPaletteSession,openSymmetryPaletteEditor,applySymmetrySourcePalette,restartSymmetrySourcePalette,retainSymmetryPaletteOnSave,retainSymmetryPaletteAfterRecording} from './engine/sourceSymmetryPaletteEditing';
@@ -1571,7 +1572,7 @@ export default function App() {
               renderPending={generationActive}
               planeFrameReady={completedFrameReady}
               time={renderTime}
-              pixelRatio={previewProfile(renderPreferences.quality,devicePixelRatio,{integerPixelDensity:sourceBouncing||usesSourceSamilaSampling(scene)||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)||sourceLivePreviewKind(scene)==='domain'}).pixelRatio}
+              pixelRatio={previewProfile(renderPreferences.quality,devicePixelRatio,{integerPixelDensity:sourceBouncing||usesSourceAttractor(scene)||usesSourceSamilaSampling(scene)||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)||sourceLivePreviewKind(scene)==='domain'}).pixelRatio}
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}),sourceLivePreviewKind(sceneRef.current)==='fractal'?'fractal-hot':undefined)}
@@ -2037,7 +2038,7 @@ export default function App() {
           fractalPixelDensity={presentedSource===scene&&presentedOutput?.type==='raster'&&presentedOutput.fractalRender?viewportMeasurement?.pixelRatio:undefined}
           sourcePerlinViewport={presentedSource===scene?presentedOutput?.sourcePerlinFrame?.sourceViewport:undefined}
           previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):usesSourceFractal(scene)?(presentedSource===scene&&presentedOutput?.type==='raster'?(presentedOutput.formulaPresentation?.layout==='source-surface-centered-v1'?presentedOutput.formulaPresentation.primaryLogicalHeight:presentedOutput.fractalRender?.logicalSize[1]):undefined):viewportSize?.[1]}
-          previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?(presentedOutput.sourcePointAppearance?.referencePixelDensity??presentedOutput.sourceImplicitPresentation?.referencePixelDensity):undefined}
+          previewPointPixelDensity={presentedSource===scene?(usesSourceAttractor(scene)?sourceAttractorPreviewPixelDensity(scene,presentedOutput):presentedOutput?.type==='geometry'?(presentedOutput.sourcePointAppearance?.referencePixelDensity??presentedOutput.sourceImplicitPresentation?.referencePixelDensity):undefined):undefined}
           sourceMapToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceMapPresentation?.reference:undefined}
           sourceSymmetryToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceSymmetryPresentation?.reference:undefined}
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
