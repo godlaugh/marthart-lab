@@ -3,10 +3,11 @@ import {SOURCE_FRACTAL_ACTION_LIMITS} from './sourceFractalActionConfig';
 const parameters=new Set(Object.values(SOURCE_FRACTAL_FORMULA_METADATA).flatMap(items=>items.map(item=>item.name)));
 const index=(value:unknown,max:number)=>typeof value==='string'&&/^(?:0|[1-9][0-9]*)$/.test(value)&&Number(value)<max;
 const has=(value:unknown,keys:readonly string[])=>typeof value==='string'&&keys.includes(value);
-export const SOURCE_FRACTAL_STATIC_NUMBER_FIELDS=20+parameters.size*2;
+export const SOURCE_FRACTAL_STATIC_NUMBER_FIELDS=23+parameters.size*2;
 /** Source adapters retain only consumed scalar tokens. Structural paths stay
  * exact arrays, including names containing dots; no wildcard prefix matching. */
 export function sourceFractalNumberField(path:readonly unknown[]):boolean {
+ if(path[0]==='main_equation')return path.length===2&&path[1]==='scale'||path.length===3&&path[1]==='position'&&index(path[2],2);
  if(path[0]==='fractal'){
   if(path.length===2)return has(path[1],['formula_id','formulaId','type','power','bailout','rotation','iterations']);
   if(path[1]==='formula_params'&&path.length===3)return has(path[2],['power','param1','param2','param3']);

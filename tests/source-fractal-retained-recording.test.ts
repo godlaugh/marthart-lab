@@ -44,7 +44,7 @@ describe('retained Fractal recording owns the full-load anchor and final numeric
   const authorBefore=structuredClone(staged),start=f.owner.beginRecording(staged,paused,options),clock=planFractalRecordingClock(s,60),control=new SourceFractalSceneRuntime({...prepareSourceFractalScene(s),fps:60},{reserve:()=>{}});
   expect(start.clock).toEqual(clock);expect(start.clock.encodedFrames).toBeGreaterThan(0);expect(start.scene).toEqual(s);expect(start.context.fractalLive).toMatchObject({sessionId:'retained',revision:1,actualFrameRate:17,clock:{paused:false}});expect(start.context.fractalLive).not.toHaveProperty('configuration');
   expect(start.warmup).toMatchObject({width:10,height:16,fractalRecording:{displayFrame:0,warmup:true},fractalLive:{clock:'fixed-source-queue',clockSource:'fixed-step',target:'offscreen',paused:false,actualFrameRate:60}});
-  expect(f.contexts.at(-1)!.fractalViewport).toEqual({logicalWidth:5,logicalHeight:8,target:'offscreen'});
+  expect(f.contexts.at(-1)!.fractalViewport).toEqual({logicalWidth:5,logicalHeight:8,referenceLogicalHeight:8,target:'offscreen'});
   const frames=[start.warmup];for(let ordinal=1;ordinal<=clock.lastDisplayFrame;ordinal++)frames.push(f.owner.nextRecordingFrame(start.handle,ordinal));
   for(const [ordinal,frame] of frames.entries()){
    control.clock.step(Math.fround(1/60));

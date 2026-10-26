@@ -1,7 +1,10 @@
 import {SOURCE_FRACTAL_FORMULA_METADATA,type SourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
 import {sourceFractalFormulaIdentity} from './sourceFractalIdentity';
+import {isJavaBlank} from './sourceJavaText';
 
 const templates:Readonly<Record<string,string>>={
+ mandelbrot:String.raw`z_{n+1} = z_n^{{power}} + c`,
+ julia:String.raw`z_{n+1} = z_n^{{power}} + {julia_seed}`,
  newton:String.raw`z_{n+1} = z_n - {relaxation} \frac{z_n^{{{exponent}}} - 1}{{{exponent}} z_n^{{{exponent}}-1}}`,
  nova:String.raw`z_{n+1} = z_n - {relaxation} \frac{z_n^{{{exponent}}} - 1}{{{exponent}} z_n^{{{exponent}}-1}} + {julia_seed}`,
 };
@@ -29,6 +32,10 @@ export function sourceFractalFormulaComplex(value:readonly number[]|null):string
  * not rewrite the Scene's existing TexMobject. Explicit custom text is owned
  * by the separate local formula configuration. */
 export function sourceFractalFormulaLatex(configuration:SourceFractalFormulaConfiguration):string {
+ // Missing/blank registry IDs use the source's original formula string, which
+ // this canonical numeric configuration does not retain. Do not substitute a
+ // registry template merely because the renderer resolves a fallback identity.
+ if(configuration.formulaId==null||isJavaBlank(configuration.formulaId))throw Error('原版分形缺省公式字符串的主方程标注尚未验证');
  const id=sourceFractalFormulaIdentity(configuration),template=Object.hasOwn(templates,id)?templates[id]:undefined;
  if(template===undefined)throw Error(`原版分形公式 ${id} 的主方程标注尚未验证`);
  let result=template;

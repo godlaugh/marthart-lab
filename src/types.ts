@@ -586,7 +586,10 @@ export interface GenerateContext {
    * Offscreen requests use the explicit export dimensions; neither proves
    * the original application's operating-system DPI or framebuffer scale. */
   fractalRecording?:SourceFractalRecordingFrameInput;
-  fractalViewport?:{logicalWidth:number;logicalHeight:number;target:'primary'|'offscreen'};
+  fractalViewport?:{logicalWidth:number;logicalHeight:number;target:'primary'|'offscreen';
+    /** Primary logical canvas height. Required for source-centered offscreen labels;
+     * never inferred from export dimensions or downsampled preview pixels. */
+    referenceLogicalHeight?:number};
   /** Runtime owner token. Saved document identity can change on Save As without
    * replacing a live Roots instance; explicit Open supplies a fresh token. */
   rootsSessionId?:string;

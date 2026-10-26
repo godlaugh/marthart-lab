@@ -1,3 +1,4 @@
+import {sourceFormulaPrimaryHeight} from '../engine/formulaConfig';
 import {assertSourceImplicitRecordingFrame} from '../engine/sourceImplicitResponse';
 import {assertRootsLiveRecordingFrame} from '../engine/sourceRootsRecordingLease';
 import type {SourceRecordingClock} from '../engine/sourceRecordingClock';
@@ -320,6 +321,7 @@ export function ExportDialog({
         checkCancelled();
         if(!noFrames)onDone(t('视频已编码并导出'));return;
       }
+      if(sourceFractal&&scene.formulas?.layout==='source-surface-centered-v1')sourceFormulaPrimaryHeight({target:'offscreen',logicalHeight:height,referenceLogicalHeight:previewLogicalHeight});
       g=new Generator();generator.current=g;
       const owned=g;let disposed=false;
       resource=exportSessionCleanup.registerResource(owned,async()=>{
@@ -337,8 +339,8 @@ export function ExportDialog({
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
       if(usesSourceMapPresentation(exportScene)&&sourceMapToneReference===undefined)throw Error('Map 导出缺少已呈现主画布尺寸，请等待预览完成');
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
-      const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
-      const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,target:'offscreen' as const}}:undefined;
+      const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:undefined;
       if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));

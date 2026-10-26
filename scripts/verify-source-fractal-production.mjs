@@ -11,6 +11,8 @@ import {measureFamily} from './browser-process-cost.mjs';
 import {verifyFractalNativeUi} from './fractal-native-production-ui.mjs';
 assert.equal(process.platform,'darwin');
 const workflowsOnly=process.argv.includes('--workflows-only'),uiOnly=process.argv.includes('--ui-only');
+const option=name=>{const at=process.argv.indexOf(name);if(at<0)return;const value=process.argv[at+1];assert.ok(value&&path.isAbsolute(value),name+' requires an absolute path');return value;};
+const formulaInput=option('--formula-input'),glyphBackendPath=option('--glyph-backend');assert.ok(!formulaInput||uiOnly&&glyphBackendPath,'Formula input requires --ui-only and --glyph-backend');
 const started=performance.now();await mkdir('.cache',{recursive:true});const root=await mkdtemp(path.resolve('.cache/fractal-native-production-'));
 const fixture=JSON.parse(await readFile('tests/fixtures/source-fractal-cgl/reference.json','utf8')),input=await readFile('tests/fixtures/source-fractal-cgl/mandelbrot.json','utf8');
 assert.deepEqual(fixture.cases.map(c=>c.name),['shallow','deep-1e5','deep-1e9']);
@@ -35,7 +37,7 @@ try{
  const binary=root+'/renderer';await command('/usr/bin/clang',['-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-Werror','-Wno-deprecated-declarations','-framework','Foundation','-framework','OpenGL','server/render/SourceCglRenderer.m','-o',binary],'compile');
  report.executableSha256=sha(await readFile(binary));
  const reservation=createSocketServer();await new Promise((resolve,reject)=>{reservation.once('error',reject);reservation.listen(0,'127.0.0.1',resolve);});const port=reservation.address().port;await new Promise(resolve=>reservation.close(resolve));
- service=await createExportServer({sourceRendererBackend:{executablePath:binary,executableSha256:report.executableSha256,timeoutMs:20000},root:root+'/exports',allowedOrigins:[`http://127.0.0.1:${port}`]});const api=await service.listen(0);
+ service=await createExportServer({...(glyphBackendPath?{glyphBackend:JSON.parse(await readFile(glyphBackendPath,'utf8'))}:{}),sourceRendererBackend:{executablePath:binary,executableSha256:report.executableSha256,timeoutMs:20000},root:root+'/exports',allowedOrigins:[`http://127.0.0.1:${port}`]});const api=await service.listen(0);
  server=await createServer({mode:'preview-v2',define:{'import.meta.env.VITE_SOURCE_RENDERER':JSON.stringify('native')},optimizeDeps:{entries:['index.html']},server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${api.port}`}},logLevel:'error'});await server.listen();
  browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-automation','--enable-angle-features=disableProgramCaching']});const cdp=await browser.newBrowserCDPSession();report.browserProcesses=await cdp.send('SystemInfo.getProcessInfo');
  const page=await browser.newPage();await page.route('**/probe',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'probe');
@@ -66,7 +68,7 @@ try{
    const start=await generator.beginSourceRecording(output,{width:96,height:80,simulationFps:30});check(start.clock.lastDisplayFrame>=1&&start.clock.lastDisplayFrame<=5,'unexpected small recording length');check(start.warmup.width===288&&start.warmup.height===240,'recording must keep original 3x physical render buffer');const recorded=[start.warmup];
    let wrong;try{await generator.nextSourceRecordingFrame(start.handle,2);}catch(e){wrong=e;}check(wrong?.recordingRetained===true,'out-of-order frame did not preserve recording');generator.cancel();check(generator.hasSourceRecording(start.handle),'queue cancellation destroyed live recording');
    for(let frame=1;frame<=start.clock.lastDisplayFrame;frame++)recorded.push(await generator.nextSourceRecordingFrame(start.handle,frame));
-   const fresh=withFractalFreshRecording(scene,30),coldContext={time:0,quality:'export',width:288,height:240,fractalPixelDensity:2,fractalViewport:{logicalWidth:144,logicalHeight:120,target:'offscreen'}},rows=[];
+   const fresh=withFractalFreshRecording(scene,30),coldContext={time:0,quality:'export',width:288,height:240,fractalPixelDensity:2,fractalViewport:{logicalWidth:144,logicalHeight:120,target:'offscreen',referenceLogicalHeight:40}},rows=[];
    for(let frame=0;frame<recorded.length;frame++){
     const independent=await cold.generate(fresh,{...coldContext,fractalRecording:{displayFrame:frame,simulationFps:30}}),actual=recorded[frame];check(await hash(actual.pixels)===await hash(independent.pixels),'retained/cold pixel disagreement '+JSON.stringify({frame,retained:{display:actual.fractalRender.display,state:actual.fractalLive?.presentation.evaluatedFractalScene},cold:{display:independent.fractalRender.display,state:independent.fractalRecording},firstActual:Array.from(actual.pixels.slice(0,24)),firstCold:Array.from(independent.pixels.slice(0,24))}));check(same(actual.fractalRecording,independent.fractalRecording),'retained/cold clock disagreement');rows.push({frame,sha256:await hash(actual.pixels),facts:actual.fractalRecording,display:actual.fractalRender.display});
    }
@@ -89,7 +91,7 @@ try{
    const afterFailure=await generator.generate(scene,{...context,fractalLive:{...context.fractalLive,sessionId:crypto.randomUUID()}});check(afterFailure.backend==='native','post-failure new session recovery failed');return result;
   }finally{restoreFetch?.();generator.dispose();cold.dispose();await generator.settledNativeCleanup();await cold.settledNativeCleanup();}
  },JSON.parse(input));console.log(JSON.stringify({workflows:'passed',recordingFrames:report.workflows.recording.frames.length}));}
- if(!workflowsOnly){await page.close();report.probeClosedBeforeUi=true;report.ui=await verifyFractalNativeUi(browser,server.resolvedUrls.local[0],root,JSON.parse(input));console.log(JSON.stringify({ui:'passed'}));}
+ if(!workflowsOnly){await page.close();report.probeClosedBeforeUi=true;report.ui=await verifyFractalNativeUi(browser,server.resolvedUrls.local[0],root,JSON.parse(formulaInput?await readFile(formulaInput,'utf8'):input));console.log(JSON.stringify({ui:'passed'}));}
  assert.equal(report.cases.length,workflowsOnly||uiOnly?0:3);report.referenceCasesSkipped=workflowsOnly||uiOnly;report.workflowsSkipped=uiOnly;report.uiSkipped=workflowsOnly;return {};});report.processFamily=measured.processFamily;report.measurement='250ms sampled Node/Chrome/native process family across compile, setup and all cases, excluding final cleanup. CPU may omit short-lived descendants; RSS sums shared pages and is a sampled lower bound on instantaneous peak. Each case creates a fresh native resource, then reuses it; OS/driver caches are not flushed. No equivalent prior native HTTP workflow exists for a before/after speed claim. GPU/VRAM and per-operation CPU/RSS are unmeasured.';report.status='passed';
 }catch(error){report.status='failed';report.error=String(error.stack??error);process.exitCode=1;}
 finally{

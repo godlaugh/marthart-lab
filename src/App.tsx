@@ -1,3 +1,4 @@
+import {usesSourceFractal} from './engine/sourceFractalDocument';
 import {sourceIteratedPreviewPixelDensity} from './engine/sourceIteratedPresentation';
 import {beginSymmetryCustomValidation,type SymmetryCustomValidation} from './engine/symmetryCustomValidation';
 import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,writeSourceSamilaSetting,syncSourceSamilaPaletteSession,openSourceSamilaPaletteEditor,applySourceSamilaPalette,restartSourceSamilaPalette,retainSourceSamilaPaletteOnSave} from './engine/sourceSamilaPaletteEditing';
@@ -2030,7 +2031,7 @@ export default function App() {
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}
           fractalPixelDensity={presentedSource===scene&&presentedOutput?.type==='raster'&&presentedOutput.fractalRender?viewportMeasurement?.pixelRatio:undefined}
           sourcePerlinViewport={presentedSource===scene?presentedOutput?.sourcePerlinFrame?.sourceViewport:undefined}
-          previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
+          previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):usesSourceFractal(scene)?(presentedSource===scene&&presentedOutput?.type==='raster'?(presentedOutput.formulaPresentation?.layout==='source-surface-centered-v1'?presentedOutput.formulaPresentation.primaryLogicalHeight:presentedOutput.fractalRender?.logicalSize[1]):undefined):viewportSize?.[1]}
           previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?(presentedOutput.sourcePointAppearance?.referencePixelDensity??presentedOutput.sourceImplicitPresentation?.referencePixelDensity):undefined}
           sourceMapToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceMapPresentation?.reference:undefined}
           sourceSymmetryToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceSymmetryPresentation?.reference:undefined}

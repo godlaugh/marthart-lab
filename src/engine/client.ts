@@ -60,15 +60,16 @@ import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperation
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
-import {validateFrameFormulas} from './formulaConfig';
+import {validateFrameFormulas,type FormulaViewport} from './formulaConfig';
 import {usesSourceFractal} from './sourceFractalDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 type FormulaOutputContract =
  |{kind:'optional'}
  |{kind:'raster'}
+ |{kind:'fractal-runtime-raster';viewport:FormulaViewport|undefined}
  |{kind:'roots-runtime-raster';viewport:SourceCameraViewport}
- |{kind:'source-raster';layout:'source-surface-centered-v1';viewport:SourceCameraViewport}
+ |{kind:'source-raster';layout:'source-surface-centered-v1'|undefined;viewport:FormulaViewport|undefined}
  |{kind:'implicit-runtime-geometry'}
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
@@ -76,13 +77,13 @@ function generationFormulaContract(scene:SceneDocument,context:GenerationInput):
  if(context.rootsLive?.controls)return{kind:'roots-runtime-raster',viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
- return{kind:usesSourceFractal(scene)?'raster':'optional'};
+ return usesSourceFractal(scene)?{kind:'source-raster',layout:scene.formulas?.layout,viewport:context.fractalViewport}:{kind:'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
-  if(!output||(contract.kind==='raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster')&&output.type!=='raster'||(contract.kind==='source-geometry'||contract.kind==='implicit-runtime-geometry')&&output.type!=='geometry')return false;
+  if(!output||(contract.kind==='raster'||contract.kind==='fractal-runtime-raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster')&&output.type!=='raster'||(contract.kind==='source-geometry'||contract.kind==='implicit-runtime-geometry')&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
-  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
+  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'||contract.kind==='fractal-runtime-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
   return contract.kind!=='source-geometry'&&contract.kind!=='source-raster'||output.formulaPresentation.layout===contract.layout;
  }catch{return false;}
 }
@@ -104,8 +105,8 @@ function recordingRaster(value:unknown,family:string):value is SourceRecordingRa
 type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:SceneOutput;surfaceFrame?:import('./ordinarySourceCameraTimeline').OrdinarySourceCameraFrame};
 const surfaceFrame=(source:Completed)=>source.surfaceFrame??(source.output.type==='geometry'?source.output.surfaceLive?.frame:undefined);
 type LiveRasterRequest={sessionId:string;revision:number;paused:boolean;actualFrameRate:number};
-function validFractalOutput(output:SceneOutput,request:LiveRasterRequest,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
-  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!validFractalSourceExecution(output)||!validOutputFormulas(output,{kind:'raster'}))return false;
+function validFractalOutput(output:SceneOutput,request:LiveRasterRequest,viewport:FormulaViewport|undefined,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
+  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!validFractalSourceExecution(output)||!validOutputFormulas(output,{kind:'fractal-runtime-raster',viewport}))return false;
   const live=output.fractalLive,frame=live?.presentation?.evaluatedFractalScene?.scene;
   return !!live&&live.sessionId===request.sessionId&&live.revision===request.revision&&live.target===target&&live.renderKind===renderKind&&live.paused===request.paused&&live.actualFrameRate===Math.fround(request.actualFrameRate)&&live.clock===clock&&(clock==='fixed-source-queue'?live.clockSource==='fixed-step':['worker-wall-clock','page-wall-clock','injected'].includes(live.clockSource))&&Number.isSafeInteger(live.updateOrdinal)&&live.updateOrdinal>=0&&Number.isSafeInteger(live.objectUpdates)&&live.objectUpdates>=0&&[live.sceneTime,live.rawDt,live.activeDt].every(Number.isFinite)&&Number.isSafeInteger(live.queueIndex)&&live.queueIndex>=0&&typeof live.queueComplete==='boolean'&&!!frame&&frame.sceneTime===live.sceneTime&&frame.queueIndex===live.queueIndex&&frame.queueComplete===live.queueComplete;
 }
@@ -120,6 +121,7 @@ function validDomainOutput(output:SceneOutput,request:LiveRasterRequest,input:Ge
 interface RetainedRecordingLease {
  options:SourceRecordingOptions;size:{width:number;height:number};primary:GenerationInput;
  clock?:SourceQueueRecordingClock;nextDisplayFrame:number;
+ formulas:SourceRecordingRaster['formulaPresentation'];
 }
 interface DomainRecordingLease extends RetainedRecordingLease {
  sceneId:string;size:ReturnType<typeof sourceRecordingSize>;
@@ -127,7 +129,6 @@ interface DomainRecordingLease extends RetainedRecordingLease {
  /** An owner-confirmed failed request may have consumed this update. Only
   * the same observation can be retried; stop may report either side of it. */
  attempt?:{displayFrame:number;actualFrameRate:number};
- formulas:SourceRecordingRaster['formulaPresentation'];
 }
 function validDomainRecordingContext(input:GenerationInput,lease:DomainRecordingLease):boolean {
  const live=input?.domainLive,old=lease.primary.domainLive;
@@ -162,19 +163,19 @@ function validFractalRecordingOutput(output:SceneOutput,lease:RetainedRecordingL
   if(!validSourceQueueRecordingClock(clock,lease.options.simulationFps))return false;
   assertFractalRecordingFrame(output,clock,displayFrame);
   const live=lease.primary.fractalLive;
-  if(!live||clock.simulationFps!==lease.options.simulationFps||!validFractalOutput(output,{sessionId:live.sessionId,revision:live.revision,paused:false,actualFrameRate:clock.simulationFps},'offscreen','update','fixed-source-queue')||output.type!=='raster')return false;
+  if(!live||clock.simulationFps!==lease.options.simulationFps||!validFractalOutput(output,{sessionId:live.sessionId,revision:live.revision,paused:false,actualFrameRate:clock.simulationFps},lease.primary.fractalViewport,'offscreen','update','fixed-source-queue')||output.type!=='raster')return false;
   const facts=output.fractalRecording!,actual=output.fractalLive!;
-  return output.width===lease.size.width&&output.height===lease.size.height&&facts.sceneTime===actual.sceneTime&&facts.queueIndex===actual.queueIndex&&facts.complete===actual.queueComplete&&actual.updateOrdinal===displayFrame;
+  return output.width===lease.size.width&&output.height===lease.size.height&&facts.sceneTime===actual.sceneTime&&facts.queueIndex===actual.queueIndex&&facts.complete===actual.queueComplete&&actual.updateOrdinal===displayFrame&&JSON.stringify(output.formulaPresentation)===JSON.stringify(lease.formulas);
  }catch{return false;}
 }
 function validFractalRecordingStop(stop:SourceRecordingStop,lease:RetainedRecordingLease):boolean {
  const live=stop?.context?.fractalLive,old=lease.primary.fractalLive,output=stop?.preview;
- if(!live||!old||!output||output.type!=='raster'||live.sessionId!==old.sessionId||live.revision!==old.revision||live.clock?.paused!==false||stop.context.quality!==lease.primary.quality||stop.context.fractalViewport?.target!=='primary'||stop.context.fractalViewport.logicalWidth!==lease.primary.fractalViewport?.logicalWidth||stop.context.fractalViewport.logicalHeight!==lease.primary.fractalViewport?.logicalHeight||stop.context.width!==lease.primary.width||stop.context.height!==lease.primary.height||!validFractalOutput(output,{...live,paused:false},'primary','snapshot'))return false;
+ if(!live||!old||!output||output.type!=='raster'||live.sessionId!==old.sessionId||live.revision!==old.revision||live.clock?.paused!==false||stop.context.quality!==lease.primary.quality||stop.context.fractalViewport?.target!=='primary'||stop.context.fractalViewport.logicalWidth!==lease.primary.fractalViewport?.logicalWidth||stop.context.fractalViewport.logicalHeight!==lease.primary.fractalViewport?.logicalHeight||stop.context.width!==lease.primary.width||stop.context.height!==lease.primary.height||!validFractalOutput(output,{...live,paused:false},lease.primary.fractalViewport,'primary','snapshot'))return false;
  const render=output.fractalRender;
  // Preview sampling may shrink this raster, including when the recording
  // anchor has a different iteration budget from the previous live document.
  // The renderer owns that decision and reports requested and actual sizes.
- return render!==undefined&&render.profile===sourceProfileForFormula(render.formula)&&validFractalSourceExecution(output)&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0;
+ return render!==undefined&&render.profile===sourceProfileForFormula(render.formula)&&validFractalSourceExecution(output)&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0&&JSON.stringify(output.formulaPresentation)===JSON.stringify(lease.formulas);
 }
 type SourceCaptureSize=ReturnType<typeof prepareSourcePausedCaptureSize>;
 function validCurrentImage(capture:PausedCaptureResult['capture'],size:PausedCaptureSize,scale:1|3|5,base:SourceCaptureSize):boolean {
@@ -194,11 +195,12 @@ function validDomainCapture(result:PausedCaptureResult,source:Completed,size:Pau
  const capture=result.capture,preview=result.preview,t=capture.domainRender?.target;
  return JSON.stringify(capture.domainLive!.presentation)===JSON.stringify(preview.domainLive!.presentation)&&!!t&&t.width===base.width&&t.height===base.height&&t.logicalWidth===base.logicalWidth&&t.logicalHeight===base.logicalHeight&&t.density===base.density&&validCurrentImage(capture,size,scale,base);
 }
-function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:PausedCaptureSize,scale:1|3|5,base:SourceCaptureSize):boolean {
+function validFractalCapture(result:PausedCaptureResult,completed:Completed,size:PausedCaptureSize,scale:1|3|5,base:SourceCaptureSize):boolean {
+ const source=completed.output;
  if(source.type!=='raster'||!source.fractalLive||!result?.capture||!result.preview)return false;
  const before=source.fractalLive,expected={...before,paused:true};
  for(const [output,target] of [[result.capture,'offscreen'],[result.preview,'primary']] as const){
-  if(!validFractalOutput(output,expected,target,'snapshot'))return false;
+  if(!validFractalOutput(output,expected,completed.context.fractalViewport,target,'snapshot')||JSON.stringify(output.formulaPresentation)!==JSON.stringify(source.formulaPresentation))return false;
   const live=output.fractalLive!;
   if(live.updateOrdinal!==before.updateOrdinal||live.sceneTime!==before.sceneTime||live.queueIndex!==before.queueIndex||live.queueComplete!==before.queueComplete||live.rawDt!==0||live.activeDt!==0||live.objectUpdates!==0||JSON.stringify(live.presentation.evaluatedFractalScene)!==JSON.stringify(before.presentation.evaluatedFractalScene)||JSON.stringify(live.presentation.evaluatedFractalGradient)!==JSON.stringify(before.presentation.evaluatedFractalGradient))return false;
  }
@@ -490,7 +492,7 @@ export class Generator {
         if(p.operation==='generate'&&p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){this.invalidate(new Error('Perlin 实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){this.invalidate(new Error('曲面实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.domain&&!validDomainOutput(data.output,p.domain,p.context)){this.invalidate(new Error('域着色实时进度响应身份或状态不匹配'));return;}
-        if(p.operation==='generate'&&p.fractal&&!validFractalOutput(data.output,p.fractal)){this.invalidate(new Error('分形实时进度响应身份或状态不匹配'));return;}
+        if(p.operation==='generate'&&p.fractal&&!validFractalOutput(data.output,p.fractal,p.context.fractalViewport)){this.invalidate(new Error('分形实时进度响应身份或状态不匹配'));return;}
         if (p.operation === 'generate') p.onProgress?.(data.output);
         return;
       }
@@ -531,7 +533,7 @@ export class Generator {
         if(p.context.implicitLive&&!validSourceImplicitOutput(data.output,p.context)){const error=new Error('隐式实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.domain&&!validDomainOutput(data.output,p.domain,p.context)){const error=new Error('域着色实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
-        if(p.fractal&&!validFractalOutput(data.output,p.fractal)){p.reject(new Error('分形实时响应身份或状态不匹配'));this.invalidate(new Error('分形实时响应身份或状态不匹配'));return;}
+        if(p.fractal&&!validFractalOutput(data.output,p.fractal,p.context.fractalViewport)){p.reject(new Error('分形实时响应身份或状态不匹配'));this.invalidate(new Error('分形实时响应身份或状态不匹配'));return;}
         if(data.id===this.currentInputId)this.completed={id:data.id,scene:p.scene,context:p.context,output:data.output};
         p.resolve(data.output);
       }
@@ -556,7 +558,7 @@ export class Generator {
             const error=new pausedCaptureContracts[p.operation].Error('复根截图公式与已完成的预览帧不匹配',false);p.reject(error);this.invalidate(error);return;
           }
         }
-        if(p.operation==='fractal-paused-capture'&&(!p.captureSize||!validFractalCapture(data.result,p.source.output,p.size,p.scale,p.captureSize))){const error=new pausedCaptureContracts[p.operation].Error('分形当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
+        if(p.operation==='fractal-paused-capture'&&(!p.captureSize||!validFractalCapture(data.result,p.source,p.size,p.scale,p.captureSize))){const error=new pausedCaptureContracts[p.operation].Error('分形当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
         if(data.id===this.currentInputId)this.completed={...p.source,id:data.id,output:data.result.preview};
         p.resolve(data.result);
       }
@@ -620,7 +622,7 @@ export class Generator {
                 owned.retained.bytes=previous?.output.type==='raster'?previous.output.pixels.byteLength:0;
                 try{
                   const output=await owned.session.generateAsync(snapshot,{...input,isCancelled:cancelled});
-                  if(!validFractalOutput(output,{...input.fractalLive,paused:input.fractalLive.clock.paused}))throw new SourceNativeError('protocol','分形原生主预览事实无效');return output;
+                  if(!validFractalOutput(output,{...input.fractalLive,paused:input.fractalLive.clock.paused},input.fractalViewport))throw new SourceNativeError('protocol','分形原生主预览事实无效');return output;
                 }finally{owned.retained.bytes=0;}
               }
               await this.releaseFractal();if(cancelled())throw new DOMException('已取消','AbortError');
@@ -885,7 +887,7 @@ export class Generator {
       void session.capturePausedAsync(source.scene,{...source.context,quality:'export',...size,isCancelled:()=>this.pending.get(id)!==pending},{additionalBytes:source.output.type==='raster'?source.output.pixels.byteLength:0}).then(result=>{
         rendered=true;if(this.pending.get(id)!==pending)return;
         result.capture.sourceCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[base.logicalWidth,base.logicalHeight],pixelDensity:base.density,baseSize:[base.width,base.height],scale};
-        if(!validFractalCapture(result,source.output,size,scale,base))throw Error('分形原生截图身份、尺寸或状态不匹配');
+        if(!validFractalCapture(result,source,size,scale,base))throw Error('分形原生截图身份、尺寸或状态不匹配');
         this.pending.delete(id);this.completed={...source,id,output:result.preview};resolve(result);
       }).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=!rendered&&this.matchesFractalPrimary(source.scene,source.context);if(retained)this.completed=source;reject(new ErrorType(error instanceof Error?error.message:String(error),retained));});
     });
@@ -894,7 +896,7 @@ export class Generator {
     const source=this.completed,session=this.nativeFractal!.session;
     if(this.recording||this.pending.size||!source||source.output!==output||!source.context.fractalLive||!this.matchesFractalPrimary(source.scene,source.context))return Promise.reject(new SourceRecordingOperationError('分形录制需要当前已完成的主预览',false,false));
     let validation:RetainedRecordingLease;
-    try{if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('分形录制模拟帧率必须为 1–120 的整数');validation={options:{...options},size:sourceRecordingSize(options,source.context.fractalPixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1};}
+    try{if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('分形录制模拟帧率必须为 1–120 的整数');validation={options:{...options},size:sourceRecordingSize(options,source.context.fractalPixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1,formulas:structuredClone(output.formulaPresentation)};}
     catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     const id=++this.counter,handle=Object.freeze({sessionId:this.sessionId,recordingId:id}),lease:NonNullable<Generator['recording']>={handle,family:'fractal',usable:false,nativeFractal:{backend:this.nativeFractal!.backend,session,validation}};
     this.currentInputId=id;this.completed=undefined;this.recording=lease;
@@ -1087,7 +1089,7 @@ export class Generator {
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='fractal')try{
       if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('分形录制模拟帧率必须为 1–120 的整数');
-      fractal={options:{...options},size:sourceRecordingSize(options,source.context.fractalPixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1};
+      fractal={options:{...options},size:sourceRecordingSize(options,source.context.fractalPixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1,formulas:structuredClone(output.formulaPresentation)};
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='domain')try{
       validateSourceDomainFrameRate(options.actualFrameRate);

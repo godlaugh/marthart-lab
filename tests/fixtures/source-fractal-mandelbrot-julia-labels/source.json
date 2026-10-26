@@ -1,0 +1,258 @@
+{
+  "provenance": {
+    "kind": "original-jvm-mandelbrot-julia-formula-labels",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "harnessSha256": "c585d2ed00649be3f89537d2dd0232984d6e4f208e8a1771ca1336d889a07cfb",
+    "rawOutputSha256": "91d7f423b4f87591ea4c40d4667bfe589c7263496150cc7a5fa19658c3599edb",
+    "repeatRawOutputSha256": "91d7f423b4f87591ea4c40d4667bfe589c7263496150cc7a5fa19658c3599edb",
+    "classes": {
+      "mathart/fractal/config/JsonComplexFractalConfig": "0eb27dc71f957a7d97c28baf62c30bc35c5aca69c405788ae8bbb06a9cfedac6",
+      "mathart/fractal/config/BaseComplexFractalConfig": "fe20a5205097459e79cbb34556ee3fe3cd099fa02fc500bce149aa5f49065b62",
+      "mathart/fractal/formula/StandardFormulaCatalog": "36d643048c6cd09851eb2e4cacac106956b5c04588aa017e332c7a02ebbdbf1a",
+      "mathart/fractal/formula/FormulaRegistry": "a938e5c2978731bbd67ff10786c31364152489a7005f546ec0f05b297e9a166f",
+      "mathart/fractal/formula/JsonFormulaParamBinder": "4e6de780a3397450a738031e50ac132dcd9602b514f54b6d8b10b2f7687c4150",
+      "mathart/fractal/formula/FormulaParamSet": "8ca80de40a8c52eb3e2d0f0e5f5d9870ee4577fa608da41aa2e93b91d6bd8d74",
+      "mathart/fractal/formula/FormulaParamDefinition": "e330f0a5304d04bfd31291ba3444363f9eb96e72d8f24ba0d4656ec9efb49129"
+    },
+    "executed": [
+      "Original JsonComplexFractalConfig(null, JSONObject) constructor and private buildFractalLatex(), using original formula metadata and JSON binder.",
+      "Two independent headless JVM processes returned identical 16-case outputs, exited 0 and DestroyJavaVM returned 0."
+    ],
+    "limits": [
+      "Inputs omit settings/main_equation/color and use no PApplet instance.",
+      "No Scene, TexMobject, rendering, GPU, visible window, license initialization, policy refresh or encoder execution.",
+      "Only the explicit registered Mandelbrot/Julia cases are added. Missing/blank formulaId fallback strings are not represented by the canonical numeric configuration.",
+      "Existing source-fractal-formula-labels/source.json numeric formatter provenance remains unchanged."
+    ]
+  },
+  "formula": [
+    {
+      "id": "mandelbrot-default",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot"
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + c"
+    },
+    {
+      "id": "mandelbrot-empty-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "parameters": {}
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + c"
+    },
+    {
+      "id": "mandelbrot-explicit-power",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "parameters": {
+            "power": 3.125
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^3.125 + c"
+    },
+    {
+      "id": "mandelbrot-float32-power",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "parameters": {
+            "power": 3.00015
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^3.0001 + c"
+    },
+    {
+      "id": "mandelbrot-clamped-power",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "parameters": {
+            "power": -3
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + c"
+    },
+    {
+      "id": "mandelbrot-legacy-fields-do-not-supply-label",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "power": 9,
+          "formula_params": {
+            "power": 7
+          },
+          "formula": "z^11 + c"
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + c"
+    },
+    {
+      "id": "mandelbrot-metadata-over-legacy",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "power": 9,
+          "formula_params": {
+            "power": 7
+          },
+          "parameters": {
+            "power": 5.5
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^5.5 + c"
+    },
+    {
+      "id": "mandelbrot-unrelated-metadata",
+      "input": {
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "parameters": {
+            "bailout": 123,
+            "start_point": [
+              2,
+              3
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + c"
+    },
+    {
+      "id": "julia-default",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "type": "JULIA"
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + -0.8 + 0.156i"
+    },
+    {
+      "id": "julia-empty-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "type": "JULIA",
+          "parameters": {}
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + -0.8 + 0.156i"
+    },
+    {
+      "id": "julia-explicit-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "type": "JULIA",
+          "parameters": {
+            "power": 3.125,
+            "julia_seed": [
+              -0.45,
+              0.875
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^3.125 + -0.45 + 0.875i"
+    },
+    {
+      "id": "julia-object-complex",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "parameters": {
+            "julia_seed": {
+              "re": 3.141592653589793,
+              "im": -0.33335
+            }
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + 3.1416 - 0.3334i"
+    },
+    {
+      "id": "julia-legacy-fields-do-not-supply-label",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "type": "JULIA",
+          "power": 9,
+          "formula_params": {
+            "power": 7
+          },
+          "julia_constant": [
+            0.7,
+            -0.8
+          ]
+        }
+      },
+      "output": "z_{n+1} = z_n^2 + -0.8 + 0.156i"
+    },
+    {
+      "id": "julia-metadata-over-legacy",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "type": "JULIA",
+          "power": 9,
+          "julia_constant": [
+            0.7,
+            -0.8
+          ],
+          "parameters": {
+            "power": 4.5,
+            "julia_seed": [
+              0,
+              -1
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^4.5 + -1i"
+    },
+    {
+      "id": "julia-template-independent-of-native-variant",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "type": "MANDELBROT",
+          "parameters": {
+            "power": 4,
+            "julia_seed": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^4 + 1 + 2i"
+    },
+    {
+      "id": "julia-float32-power-double-seed",
+      "input": {
+        "fractal": {
+          "formula_id": "julia",
+          "parameters": {
+            "power": 3.00015,
+            "julia_seed": [
+              1.00015,
+              -1.23455
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n^3.0001 + 1.0002 - 1.2346i"
+    }
+  ]
+}

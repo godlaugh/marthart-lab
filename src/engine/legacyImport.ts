@@ -92,6 +92,7 @@ import {parseSourceJson,type SourceJsonObjectMetadata} from './sourceJson';
 import {createRootsNativeMath,defaultRootNativeParameter,parseRootsMath} from './rootsMathConfig';
 import {prepareRootsSourceMemberOrder,prepareRootsSourceJsonInt,prepareRootsSourceJsonLong,prepareRootsSourceJsonString} from './rootsSourceOrder';
 import {isJavaBlank} from './sourceJavaText';
+import {sourceConfigPackedColor,SourceConfigColorError,SOURCE_COLOR_TEXT_BUDGET} from './sourceConfigColor';
 import {prepareOrdinarySourceScalarScope,prepareSurfaceSourceStringField,type OrdinarySourceScalarScope,type OrdinarySourceScalarResult,type OrdinarySourceCameraFamily} from './ordinarySourceCameraImport';
 import {prepareSourceSurfaceParticles} from './sourceSurfaceParticles';
 import {SOURCE_SURFACE_PARTICLES,SOURCE_SURFACE_HOST,usesSourceSurfaceParticles,usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -304,8 +305,37 @@ function common(r:Reader,s:SceneDocument){
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
+/** JsonComplexFractalConfig constructs only its generated main TexMobject.
+ * Local custom labels remain editable after import, but ignored source members
+ * must not silently become visible local labels. */
+function sourceFractalFormulaAnnotations(r:Reader,s:SceneDocument){
+ const config:FormulaConfig={layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]};
+ const at=(key:string)=>['main_equation',...key.split('.')];
+ if(r.has(['main_equation'])){
+  r.object(['main_equation']);
+  for(const key of ['scale','position.0','position.1'])r.retainNumberToken(at(key));
+  r.acknowledge(at('latex'),'原版分形忽略主公式 latex，按初始公式参数生成文字');
+  if(r.domainBoolean(at('enabled'),false,'default')){
+   const sourceFloat=(key:string,fallback:number)=>{const value=Math.fround(r.domainDouble(at(key),fallback));if(!Number.isFinite(value))fail(`main_equation.${key} 原版公式数值非有限，不能保存或绘制`);return value;};
+   const position=r.use(at('position'));
+   if(position!==undefined&&position!==null&&!Array.isArray(position))fail('main_equation.position 应为源数组或 null');
+   const hasPosition=Array.isArray(position)&&position.length>=2;
+   const rawColor=r.use(at('color'));let packed=0xffffffff;
+   if(typeof rawColor==='string'&&!isJavaBlank(rawColor)){
+    if(rawColor.length>SOURCE_COLOR_TEXT_BUDGET)fail('main_equation.color 超出源颜色文本预算');
+    try{packed=sourceConfigPackedColor(rawColor);}catch(error){if(!(error instanceof SourceConfigColorError))throw error;r.warnings.push('main_equation.color 按原版规则回退到白色；原值保留在 source。');}
+   }
+   if((packed>>>24)!==255)fail('main_equation.color 的源透明颜色尚不支持公式字形呈现');
+   config.main={visible:true,x:hasPosition?sourceFloat('position.0',NaN):0,y:hasPosition?sourceFloat('position.1',NaN):200,scale:sourceFloat('scale',.25),color:'#'+(packed&0xffffff).toString(16).padStart(6,'0'),anchor:'center'};
+  }else for(const key of ['position','scale','color'])r.acknowledge(at(key),'原版关闭的分形主公式不读取此字段');
+ }
+ r.acknowledge(['formulas'],'原版分形配置不读取附加公式；可在导入后作为本地标注添加');
+ try{s.formulas=validateFormulas(config);}catch(error){fail(error instanceof Error?error.message:String(error));}
+ r.warnings.push('源分形公式保留居中偏移与 Float32 缩放，由实际帧提供主画布逻辑高度并使用源字形后端。');
+}
 function formulaAnnotations(r:Reader,s:SceneDocument){
  if(!r.has('main_equation')&&!r.has('formulas'))return;
+ if(usesSourceFractal(s)){sourceFractalFormulaAnnotations(r,s);return;}
  const sourceImplicit=usesSourceImplicitPresentation(s),sourceCentered=usesSourceCenteredFormulaLayout(s),config:FormulaConfig=sourceCentered?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();
  const latex=(path:string)=>{const value=r.str(path,sourceImplicit)??'';if(value.length>8192)fail(`${path} 超过 8192 字符`);if(sourceImplicit)return value;const trimmed=value.trim();return trimmed.startsWith('\\(')&&trimmed.endsWith('\\)')||trimmed.startsWith('\\[')&&trimmed.endsWith('\\]')?trimmed.slice(2,-2).trim():value;};
  // JSONObject/JSONArray.getFloat use Double parsing followed by float32,

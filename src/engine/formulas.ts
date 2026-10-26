@@ -3,7 +3,7 @@ import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 import {sourceImplicitFormulaLatex} from './sourceImplicitFormulaLatex';
 import {parse} from 'mathjs';
-import type {SourceCameraViewport} from './sourceCamera';
+import type {FormulaViewport} from './formulaConfig';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import type {SceneDocument,FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation,FormulaContent} from '../types';
 import {fractalEquationLatex} from '../scenes/complex';
@@ -46,10 +46,10 @@ export function resolveFormulaContent(scene:SceneDocument):FormulaContent {
 }
 /** The producing frame binds the source's primary logical height once. A
  * consumer never derives it from document resolution, target aspect or DPR. */
-export function presentFormulas(content:FormulaContent,viewport?:SourceCameraViewport):FormulaPresentation {
+export function presentFormulas(content:FormulaContent,viewport?:FormulaViewport):FormulaPresentation {
   return validateFormulaPresentation(content.layout==='source-surface-centered-v1'?{...content,primaryLogicalHeight:sourceFormulaPrimaryHeight(viewport)}:content);
 }
-export function formulaPresentation(scene:SceneDocument,viewport?:SourceCameraViewport):FormulaPresentation {return presentFormulas(resolveFormulaContent(scene),viewport);}
+export function formulaPresentation(scene:SceneDocument,viewport?:FormulaViewport):FormulaPresentation {return presentFormulas(resolveFormulaContent(scene),viewport);}
 export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number;fontSize?:number;centerAnchor?:'integer-half-size'}){
   if(config.layout==='source-surface-centered-v1'){
     if(!('primaryLogicalHeight' in config)||!Number.isFinite(config.primaryLogicalHeight)||config.primaryLogicalHeight<=0)throw new Error('源曲面公式缺少实际主画布尺寸');

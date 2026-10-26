@@ -1,6 +1,6 @@
 import {SourceFractalDisplay,sourceFractalDisplayInput} from './sourceFractalDisplay';
-import type {FormulaPresentation,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
-import {formulaPresentation} from './formulas';
+import type {FormulaContent,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
+import {resolveFormulaContent,presentFormulas} from './formulas';
 import type {PausedCaptureResult} from './generationProtocol';
 import {snapshotGenerationInput} from './generationInput';
 import {generateFractal,prepareFractalRender} from '../scenes/complex';
@@ -92,8 +92,8 @@ export class SourceFractalLiveSession {
  /** Complete last full-load JSON/render anchor; hot edits never replace it. */
  private applied?:SceneDocument;
  /** TexMobjects belong to the full-loaded Scene, not the hot Mobject config. */
- private retainedFormulas?:FormulaPresentation;
- private appliedFormulas?:FormulaPresentation;
+ private retainedFormulas?:FormulaContent;
+ private appliedFormulas?:FormulaContent;
  private recording?:{handle:SourceFractalHostRecordingHandle;clock:SourceQueueRecordingClock;author:SceneDocument;primary:GenerationInput;target:GenerationInput;next:number;cancel?:()=>boolean;finished?:SourceFractalHostSnapshot};
  private handoff?:NonNullable<SourceFractalLiveSession['recording']>;
  private sessionId='';private revision=0;private startAt?:number;private failed=false;private busy=false;
@@ -136,7 +136,7 @@ export class SourceFractalLiveSession {
   return !this.inFlight&&!this.resetting&&this.matchesPrimary(scene,c);
  }
  private matchesPrimary(scene:SceneDocument,c:GenerateContext):boolean {
-  const value=this.completed,v=c.fractalLive;return !this.recording&&!this.failed&&!this.busy&&!!value&&!!v&&scene.id===value.sceneId&&v.sessionId===value.sessionId&&v.revision===value.revision&&c.width===value.width&&c.height===value.height&&c.fractalViewport?.target==='primary';
+  const value=this.completed,v=c.fractalLive;return !this.recording&&!this.failed&&!this.busy&&!!value&&!!v&&scene.id===value.sceneId&&v.sessionId===value.sessionId&&v.revision===value.revision&&c.width===value.width&&c.height===value.height&&c.fractalViewport?.target==='primary'&&c.fractalViewport.logicalWidth===value.context.fractalViewport?.logicalWidth&&c.fractalViewport.logicalHeight===value.context.fractalViewport?.logicalHeight;
  }
  setPaused(paused:boolean,timestampMs?:number):void {
   if(this.recording||this.executing||this.failed||!this.host||!this.completed)throw Error('分形播放控制需要已完成且可用的实时主预览');
@@ -166,14 +166,15 @@ export class SourceFractalLiveSession {
  private admit(scene:SceneDocument,c:GenerateContext){
   if(!supportsSourceFractalLive(scene))throw Error('分形实时预览需要完整受支持分形源配置与源队列');
   const configuration=prepareSourceFractalScene(scene),candidate=new SourceFractalHostSession(configuration,{paused:c.fractalLive!.clock.paused,hostClock:this.options.hostClock,isCancelled:()=>Boolean(this.revoked?.()||this.cancel?.())});
-  prepareFractalRender(display(scene,candidate.snapshot()),c);return{configuration,candidate,formulas:formulaPresentation(scene)};
+  const formulas=resolveFormulaContent(scene);presentFormulas(formulas,c.fractalViewport);
+  prepareFractalRender(display(scene,candidate.snapshot()),c);return{configuration,candidate,formulas};
  }
  private facts(snapshot:SourceFractalHostSnapshot,scene:SceneDocument,actualFrameRate:number,target:'primary'|'offscreen',updated:boolean):SourceFractalLiveFacts {
   const s=snapshot.state.scene;
   return{sessionId:this.sessionId,revision:this.revision,clock:snapshot.recording?'fixed-source-queue':'realtime-source-queue',clockSource:snapshot.recording?'fixed-step':snapshot.hostClock.clockSource,target,renderKind:updated?'update':'snapshot',sceneTime:s.sceneTime,rawDt:updated?s.rawDt:0,activeDt:updated?s.activeDt:0,queueIndex:s.queueIndex,queueComplete:s.queueComplete,paused:snapshot.paused,updateOrdinal:snapshot.updateOrdinal,objectUpdates:updated?s.objectUpdates.length:0,actualFrameRate:Math.fround(actualFrameRate),presentation:presentation(scene)};
  }
- private bind(output:SceneOutput,facts:SourceFractalLiveFacts):Raster {
-  if(output.type!=='raster'||!output.fractalRender||!this.retainedFormulas)throw Error('分形实时预览未返回源栅格事实');output.fractalLive=copy(facts);output.formulaPresentation=copy(this.retainedFormulas);return output;
+ private bind(output:SceneOutput,facts:SourceFractalLiveFacts,c:GenerationInput):Raster {
+  if(output.type!=='raster'||!output.fractalRender||!this.retainedFormulas)throw Error('分形实时预览未返回源栅格事实');output.fractalLive=copy(facts);output.formulaPresentation=presentFormulas(this.retainedFormulas,c.fractalViewport);return output;
  }
  /** Two complete renders bind the same numerical snapshot, never an update
   * or authored-document replay. The owned parent density determines logical
@@ -191,17 +192,18 @@ export class SourceFractalLiveSession {
   const snapshot=this.host.snapshot();if(!snapshot.paused)throw Error('请先暂停分形再保存当前帧');
   const retained=this.completed,renderScene=display(this.retained,snapshot),primary:GenerateContext={...retained.context,isCancelled:c.isCancelled,onProgress:undefined};
   const size=prepareSourcePausedCaptureSize(c,primary.fractalPixelDensity??NaN,MAX_RASTER_PIXELS);
-  const capture:GenerateContext={...primary,time:snapshot.state.scene.sceneTime,quality:'export',width:size.width,height:size.height,fractalViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,target:'offscreen'},fractalLive:undefined};
+  const capture:GenerateContext={...primary,time:snapshot.state.scene.sceneTime,quality:'export',width:size.width,height:size.height,fractalViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:primary.fractalViewport!.logicalHeight,target:'offscreen'},fractalLive:undefined};
   validateRasterRequest(capture);const extra=options.additionalBytes??0;
   if(!Number.isSafeInteger(extra)||extra<0||extra+capture.width*capture.height*8+primary.width*primary.height*4>768*1024*1024)throw Error('分形当前帧截图超过 768 MiB 工作预算');
+  presentFormulas(this.retainedFormulas!,capture.fractalViewport);presentFormulas(this.retainedFormulas!,primary.fractalViewport);
   prepareFractalRender(renderScene,capture);prepareFractalRender(renderScene,primary);
   if(c.isCancelled?.())throw new DOMException('分形当前帧截图已取消','AbortError');
   this.busy=true;this.completed=undefined;this.handoff=undefined;
   try{
    const actualFrameRate=retained.context.fractalLive!.actualFrameRate;
-   const captured=this.bind(yield* this.draw(renderScene,capture,extra),this.facts(snapshot,renderScene,actualFrameRate,'offscreen',false));
+   const captured=this.bind(yield* this.draw(renderScene,capture,extra),this.facts(snapshot,renderScene,actualFrameRate,'offscreen',false),capture);
    if(c.isCancelled?.())throw new DOMException('分形当前帧截图已取消','AbortError');
-   const preview=this.bind(yield* this.draw(display(this.retained,snapshot),primary,extra+captured.pixels.byteLength),this.facts(snapshot,renderScene,actualFrameRate,'primary',false));
+   const preview=this.bind(yield* this.draw(display(this.retained,snapshot),primary,extra+captured.pixels.byteLength),this.facts(snapshot,renderScene,actualFrameRate,'primary',false),primary);
    if(c.isCancelled?.())throw new DOMException('分形当前帧截图已取消','AbortError');
    this.completed=retained;return{capture:captured,preview};
   }catch(error){this.failed=true;throw error;}finally{this.busy=false;}
@@ -220,11 +222,12 @@ export class SourceFractalLiveSession {
    const source=this.completed!,primary=snapshotGenerationInput(source.context),live=primary.fractalLive!;
    primary.fractalLive={...live,clock:{paused:false}};delete primary.fractalLive.configuration;primary.time=0;
    const size=sourceRecordingSize(options,primary.fractalPixelDensity??NaN);
-   const target:GenerationInput={...primary,quality:'export',width:size.width,height:size.height,fractalViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,target:'offscreen'}};
+   const target:GenerationInput={...primary,quality:'export',width:size.width,height:size.height,fractalViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:primary.fractalViewport!.logicalHeight,target:'offscreen'}};
    validateRasterRequest(target);
    const clock=planFractalRecordingClock(this.applied,options.simulationFps,this.cancel),anchor=clean(this.applied),author=clean(scene);
    // Pure renderer admission precedes the same host's irreversible reset.
    const candidate=new SourceFractalHostSession({...prepareSourceFractalScene(anchor),fps:options.simulationFps},{hostClock:this.options.hostClock});
+   presentFormulas(this.appliedFormulas!,target.fractalViewport);presentFormulas(this.appliedFormulas!,primary.fractalViewport);
    prepareFractalRender(display(anchor,candidate.snapshot()),target);prepareFractalRender(display(anchor,candidate.snapshot()),primary);
    if(this.cancel?.())throw new DOMException('分形录制开始已取消','AbortError');
    this.busy=true;
@@ -242,7 +245,7 @@ export class SourceFractalLiveSession {
   const record=this.recording!,position=snapshot.recording!;
   if(this.cancel?.())throw new DOMException('分形录制更新已取消','AbortError');
   const scene=display(this.retained!,snapshot),c:GenerateContext={...record.target,time:snapshot.state.scene.sceneTime,isCancelled:this.cancel};
-  const output=this.bind(yield* this.draw(scene,c),this.facts(snapshot,scene,record.clock.simulationFps,'offscreen',true));
+  const output=this.bind(yield* this.draw(scene,c),this.facts(snapshot,scene,record.clock.simulationFps,'offscreen',true),c);
   output.fractalRecording=fractalRecordingFrameFacts(scene.evaluatedFractalScene!,{displayFrame:position.ordinal,simulationFps:record.clock.simulationFps});
   assertFractalRecordingFrame(output,record.clock,position.ordinal);
   if(this.cancel?.())throw new DOMException('分形录制更新已取消','AbortError');
@@ -272,7 +275,7 @@ export class SourceFractalLiveSession {
   try{
    record.finished??=this.host!.finishRecording(record.handle,timestampMs);
    const snapshot=record.finished,scene=display(this.retained!,snapshot),context={...snapshotGenerationInput(record.primary),time:snapshot.state.scene.sceneTime};
-   const preview=this.bind(yield* this.draw(scene,context),this.facts(snapshot,scene,context.fractalLive!.actualFrameRate,'primary',false));
+   const preview=this.bind(yield* this.draw(scene,context),this.facts(snapshot,scene,context.fractalLive!.actualFrameRate,'primary',false),context);
    this.completed={sceneId:record.author.id,sessionId:this.sessionId,revision:this.revision,width:context.width,height:context.height,context:snapshotGenerationInput(context)};
    this.recording=undefined;this.handoff=record;return{scene:clean(record.author),context,preview};
   }finally{this.busy=false;}
@@ -306,9 +309,10 @@ export class SourceFractalLiveSession {
    }
    // Same-revision author edits are staged, even if render-affecting. Only the
    // captured revision event above may replace live render configuration.
+   presentFormulas(this.retainedFormulas!,c.fractalViewport);
    this.completed=undefined;this.handoff=undefined;mutated=true;const snapshot=this.host!.update(live.clock,live.actualFrameRate),renderScene=display(this.retained!,snapshot),s=snapshot.state.scene;
    const facts=this.facts(snapshot,renderScene,live.actualFrameRate,'primary',true);
-   const bind=(output:SceneOutput):Raster=>this.bind(output,facts);
+   const bind=(output:SceneOutput):Raster=>this.bind(output,facts,c);
    const output=bind(yield* this.draw(renderScene,{...c,time:s.sceneTime,onProgress:c.onProgress?value=>{if(!publishing)throw new DOMException('分形进度所属操作已结束','AbortError');this.check(c);c.onProgress!(bind(value));}:undefined}));
    if(this.cancel?.())throw new DOMException('分形实时预览已取消','AbortError');
    const saved=snapshotGenerationInput(c);delete saved.fractalLive!.configuration;

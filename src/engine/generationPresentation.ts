@@ -12,7 +12,7 @@ export function prepareGenerationPresentation(scene:SceneDocument,context:Genera
     // A fresh source Scene constructs its labels from its input configuration,
     // before any source queue update. Deliver that same text with every pass.
     const implicitFormulas=usesSourceImplicitPresentation(scene);
-    const formulas=usesSourceFractal(scene)||implicitFormulas?formulaPresentation(scene,context.sourceViewport):undefined;
+    const formulas=usesSourceFractal(scene)||implicitFormulas?formulaPresentation(scene,usesSourceFractal(scene)?context.fractalViewport:context.sourceViewport):undefined;
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
     // simulation allocation. Progress frames may use an earlier scene time.

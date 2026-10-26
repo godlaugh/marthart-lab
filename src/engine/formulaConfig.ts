@@ -43,14 +43,16 @@ export function hasFormulaComposition(value:FormulaPresentation|undefined):boole
  return value.labels.length>0||(alpha??0)>0;
 }
 
-/** Shared interpretation of the source camera's primary logical reference. */
-export function sourceFormulaPrimaryHeight(viewport:SourceCameraViewport|undefined):number {
+/** Formula placement needs the target's primary reference, not camera optics. */
+export type FormulaViewport=Pick<SourceCameraViewport,'logicalHeight'|'target'>&{readonly referenceLogicalHeight?:number};
+/** Shared interpretation of the producing frame's primary logical reference. */
+export function sourceFormulaPrimaryHeight(viewport:FormulaViewport|undefined):number {
  if(!viewport||viewport.target!=='primary'&&viewport.target!=='offscreen')throw new Error('源曲面公式缺少实际主画布尺寸');
  const height=viewport.target==='primary'?viewport.logicalHeight:viewport.referenceLogicalHeight;
- if(!Number.isSafeInteger(height)||height<1||height>16384)throw new Error('源曲面公式缺少实际主画布尺寸');
+ if(typeof height!=='number'||!Number.isSafeInteger(height)||height<1||height>16384)throw new Error('源曲面公式缺少实际主画布尺寸');
  return height;
 }
-export function validateFrameFormulas(value:unknown,viewport?:SourceCameraViewport):FormulaPresentation {
+export function validateFrameFormulas(value:unknown,viewport?:FormulaViewport):FormulaPresentation {
  const result=validateFormulaPresentation(value);
  if(result.layout==='source-surface-centered-v1'&&result.primaryLogicalHeight!==sourceFormulaPrimaryHeight(viewport))throw new Error('源曲面公式与实际主画布尺寸不匹配');
  return result;
