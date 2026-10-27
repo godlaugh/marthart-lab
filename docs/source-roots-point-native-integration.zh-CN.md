@@ -4,6 +4,8 @@
 
 `2.0.0-preview.15` 的构建、签名、基本启动/恢复和 Roots 专项界面验证分别留存证据。证据仅来自同一台 Apple M2 Max Mac，未验证第二台设备。精简机器索引见 [fixture](../tests/fixtures/source-roots-point-native-integration/20261027.json)。原版参考资格、宿主校准、独立到达顺序差异及历史失败见[点云完整终点对照](source-roots-point-cloud-reference.zh-CN.md)；密度模式是[另一条已有验收](source-roots-dense-terminal.zh-CN.md)，本次不替代它。
 
+后续已补验同一发行包的录像、resize、跨场景与取消恢复，并完成 36 次原版动画状态和实际 shader 输入配对，见[桌面工作流验收](source-roots-desktop-workflows.zh-CN.md)。该记录更新本页末尾对应待验项；自然像素差及大负载范围仍保留。
+
 ## 生产输入与资源归属
 
 `rootsPointCloudDrawing.ts` 同时供 WebGL 和原生使用：shader 数学主体、14 项 typed uniform、256×1 RGBA8 LUT、clear/fade，以及 ring 最近窗口的分块顺序均在该处产生。原始 xyz 按 Float32 位传递；metric 由既有源函数限制到 [0,1]，保留负零。LUT 为 LINEAR、CLAMP_TO_EDGE、无 mip。原生适配器不重新解释相机、调色板或求根公式。

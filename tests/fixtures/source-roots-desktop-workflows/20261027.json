@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "status": "bounded-desktop-workflows-and-original-animation-clock-verified",
+  "baselineCommit": "836178ec2d4dd140a65aa411f003e851ab03bf24",
+  "productionChanged": false,
+  "milestone": "M3",
+  "goalComplete": false,
+  "wholeFamilyAccepted": false,
+  "scope": {
+    "familiesRetained": 11,
+    "platform": "This Apple M2 Max Mac only",
+    "samples": 131072,
+    "workers": 4,
+    "possibleRootPoints": 1310720,
+    "timelineSeconds": 9,
+    "simulationFps": 4,
+    "requestedVideoSize": [
+      96,
+      80
+    ],
+    "actualFrameSize": [
+      288,
+      240
+    ],
+    "originalMovieEncoderInvoked": false
+  },
+  "desktop": {
+    "version": "2.0.0-preview.15",
+    "asarSha256": "3a4e3e63ac3e6c28ef278edc237cd3af700c877251cd43ad26cce3ea8ec78f62",
+    "expectedRenderer": "0124373e11dcf7ad3162545f0e8fb7cfa24b39905e60a5fc6419ab3f900d9d11",
+    "firstRunWholeStatus": "failed-observer-read-cancel-state-too-early",
+    "firstRunValidSubsteps": [
+      "complete-math-current-PNG",
+      "resize-same-instance-and-exact-size-restore",
+      "roots-to-spirograph-and-complete-roots-return",
+      "complete-35-frame-movie-and-resume"
+    ],
+    "cancelRunStatus": "passed",
+    "seconds": {
+      "fullWorkflow": 342.65467674999996,
+      "focusedCancel": 115.816001292
+    },
+    "bundleAndInputStable": true,
+    "closed": [
+      {
+        "exitCode": 0,
+        "processGroupAfter": [],
+        "portClosed": true
+      },
+      {
+        "exitCode": 0,
+        "processGroupAfter": [],
+        "portClosed": true
+      }
+    ],
+    "hidden": {
+      "visibleWindows": 0,
+      "showEvents": []
+    }
+  },
+  "video": {
+    "metadata": {
+      "width": 96,
+      "height": 80,
+      "pix_fmt": "yuvj444p",
+      "color_range": "pc",
+      "color_space": "bt709",
+      "r_frame_rate": "4/1",
+      "duration": "8.750000",
+      "nb_read_frames": "35"
+    },
+    "actualEncodedFrames": 35,
+    "inputFramesAllNativeThenFormulaThenUploadedPngExact": true,
+    "decodedRgbComparedToIndependentRawInputEncoding": {
+      "differentChannels": 0,
+      "distinctFrames": 32,
+      "sequenceSensitivity": {
+        "swappedDistinctPairRejected": [
+          0,
+          2
+        ],
+        "repeatedFirstFrameRejectedAt": 2
+      }
+    },
+    "scope": "Actual production MP4 versus same FFmpeg codec fed independent raw frames; not original MathArt movie parity or lossless H264."
+  },
+  "cancellation": {
+    "acceptedUploads": 2,
+    "actualProducedFrames": 3,
+    "savedVideo": false,
+    "finalSceneTime": 1,
+    "finalFrame": 4,
+    "instance": 2,
+    "deleteAcknowledged": true,
+    "noFinish": true,
+    "sameInstanceResumed": true,
+    "fullMathAndCurrentPngRecovered": true,
+    "partialExports": [],
+    "scope": "Cancel after two accepted uploads permits a pending third numerical frame to settle; no partial saved video claimed."
+  },
+  "originalComparison": {
+    "clockFrames": 36,
+    "clockDifferenceCount": 0,
+    "clockMatched": true,
+    "pngDecodedFullRgbaVerified": 38,
+    "originalHeap": 536870912,
+    "productReferenceHeap": 4294967296,
+    "originalCost": {
+      "elapsedSeconds": 15.082712291041389,
+      "sampledProcessFamilyPeakRssBytes": 991723520,
+      "childUserCpuSecondsIncludingCompileAndMonitor": 10.490362,
+      "childSystemCpuSecondsIncludingCompileAndMonitor": 2.363485
+    },
+    "originalCleanup": {
+      "childReaped": true,
+      "remainingOwnedProcesses": []
+    },
+    "mathHashesMatched": 0,
+    "initialPoints": {
+      "original": 419380,
+      "product": 0
+    },
+    "lastFormulaFullRgbaDifference": {
+      "pixels": 14732,
+      "bytes": 26687,
+      "max": 8,
+      "channels": [
+        8165,
+        6294,
+        6717,
+        5511
+      ],
+      "matched": false
+    },
+    "wholeMoviePixelParity": false,
+    "dynamicShaderInputs": {
+      "frames": 36,
+      "fullActualBeginPacketShaMatched": true,
+      "numericUniformsPerFrame": 13,
+      "numericUniformBitsExact": true,
+      "lutBytesPerFrame": 1024,
+      "lutBytesExact": true,
+      "samplerMapping": {
+        "original": 1,
+        "product": 0
+      },
+      "method": "CPU reconstruction from actual Worker presentation/scene/gradient plus actual native identities/schedule; full packet SHA binds to observed submission. No reference values fed into product inputs."
+    }
+  },
+  "limitations": [
+    "One Mac; no second-device validation.",
+    "Only bounded constructed timeline; original 47.55M workload and actual 3M recent-window/10M ring wrap still unverified.",
+    "Original reference runs Scene render-step candidates with normal policies; original recorder/FFmpeg was not run.",
+    "Independent worker arrival and prior near-zero solver residuals retained; no arbitrary tolerance pass.",
+    "Observers copy/hash payloads and await file receipts, adding scheduling/memory cost. These elapsed times are not normal throughput.",
+    "Desktop CPU/RSS/GPU and agent-token costs were not measured; original sampled CPU/RSS is recorded with observer scope."
+  ],
+  "evidence": [
+    {
+      "path": ".cache/roots-native-workflows-desktop-20261027/run-1/report.json",
+      "sha256": "8aaff6b35d5ea474e08c7efa51d9e6a6b11174d525728e0b684910fdac6650a9",
+      "bytes": 3336285
+    },
+    {
+      "path": ".cache/roots-native-workflows-desktop-20261027/cancel-r2/report.json",
+      "sha256": "78b9e355bc67923aff74af0bddf044ab19c9d316ef81dc6279eb3d91cd53fcb3",
+      "bytes": 1210997
+    },
+    {
+      "path": ".cache/roots-native-workflows-desktop-20261027/executed-verifiers/index.json",
+      "sha256": "14c36bc2f50ec9816778d478d55e6121594f772a7e9dda92cb516fcd16ed52fe",
+      "bytes": 6056
+    },
+    {
+      "path": ".cache/roots-native-workflows-desktop-20261027/run-1/workflows/animated.mp4",
+      "sha256": "edeff260222294c756999f169cbada57bd3495f00e32dc324968c53a52aca4d1",
+      "bytes": 61879
+    },
+    {
+      "path": ".cache/roots-native-workflows-desktop-20261027/run-1/workflows/animated-independent-raw.mp4",
+      "sha256": "edeff260222294c756999f169cbada57bd3495f00e32dc324968c53a52aca4d1",
+      "bytes": 61879
+    },
+    {
+      "path": ".cache/roots-native-workflows-desktop-20261027/prepared/animated-source.json",
+      "sha256": "4aab9d00092e649547ab08468648e2c56394c3c0e705fd6977e81f8bf7c6dfb1",
+      "bytes": 3167
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/reference-r1/report.json",
+      "sha256": "66937f51e1793a5d43402f420265c9796f31350f8b691eee384dd0013c1574fb",
+      "bytes": 50094
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/comparison-product-run1.json",
+      "sha256": "628c0ca163a99b82fa188e4f7bed0bf616d906bd3fa79b16fda89bc032efc417",
+      "bytes": 38972
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/index.json",
+      "sha256": "d7d51c649942bd21fc2e33800b11311ac87061f98f78db5451227c917bb963eb",
+      "bytes": 5785
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/report.zh-CN.md",
+      "sha256": "d3bdbdfd01a3998a547a270d2913eba9c381b585e86e4021d94153b5618c0810",
+      "bytes": 5387
+    },
+    {
+      "path": "scripts/verify-roots-native-desktop.mjs",
+      "sha256": "cc16e679ecb36fdcfbbe8668e5603b8f2e99c995e8f7a6f8ce0fca869ba1237f",
+      "bytes": 31897
+    },
+    {
+      "path": "scripts/lib/verify-roots-desktop-workflows.mjs",
+      "sha256": "c5ec0729937510aa9786c0e96291a0e1543ce48ab0bcf84543eae646d4410479",
+      "bytes": 21209
+    },
+    {
+      "path": "scripts/lib/verify-recording-video.mjs",
+      "sha256": "e469b80c5fa553489657146d9a0a562d09625c205848421088297df9039422a0",
+      "bytes": 4645
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/comparison-inputs-run1.json",
+      "sha256": "8c7ad7f49a3c25e385ca62a5c0d03f268118a0708e885570d3b7a32062ba08c7",
+      "bytes": 33552
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/compare-inputs.mjs",
+      "sha256": "8d8cb87facc86f8ad88f6a052d93df5f97e394a0d6ca64350ace7e61157e15c7",
+      "bytes": 6530
+    },
+    {
+      "path": ".cache/roots-native-animation-next-20261027/input-owners.mjs",
+      "sha256": "26f5dc7f39b4d0594259df2024f70017608f17f6859f7abfa5b6425c827b707a",
+      "bytes": 86400
+    }
+  ]
+}

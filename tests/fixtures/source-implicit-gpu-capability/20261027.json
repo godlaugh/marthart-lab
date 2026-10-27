@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "inputChange": {
+    "settings.mesh_mode": {
+      "from": "CPU",
+      "to": "GPU"
+    }
+  },
+  "sourceInputOtherValuesUnchanged": true,
+  "observed": {
+    "normalFrameCompleted": true,
+    "meshMode": "GPU",
+    "glVersion": "4.1 Metal - 90.5",
+    "gpuOwnerExists": true,
+    "policySource": "REMOTE",
+    "shaderStorageExtension": false,
+    "meshDirty": "false",
+    "materialProgram": 1,
+    "glRenderer": "Apple M2 Max",
+    "authorization": {
+      "DELETE": true,
+      "CREATE": true,
+      "EXPORT": true,
+      "RUN": true,
+      "EDIT": true,
+      "SAVE": true,
+      "VIEW": true
+    },
+    "computeShaderExtension": false,
+    "renderMode": "WIREFRAME",
+    "awtWindows": 0,
+    "meshShapeExists": true,
+    "useCPURender": "false",
+    "computeProgram": 0,
+    "materialShaderExists": true,
+    "glCalls": [
+      {
+        "exception": "com.jogamp.opengl.GLException: Not a GL2 implementation",
+        "method": "getGL2"
+      },
+      {
+        "exception": "com.jogamp.opengl.GLException: GL-Error 0x500 while creating mutable storage for target 0x90D2 -> buffer 1 of size 1024 with data java.nio.DirectIntBufferU[pos=0 lim=256 cap=256]",
+        "method": "glBufferData"
+      },
+      {
+        "exception": "com.jogamp.opengl.GLException: Not a GL2 implementation",
+        "method": "getGL2"
+      },
+      {
+        "args": "[37305]",
+        "result": "0",
+        "method": "glCreateShader"
+      },
+      {
+        "args": "[35633]",
+        "result": "2",
+        "method": "glCreateShader"
+      },
+      {
+        "args": "[35632]",
+        "result": "3",
+        "method": "glCreateShader"
+      },
+      {
+        "args": "[4, 32766, 5123, 0]",
+        "result": "null",
+        "method": "glDrawElements"
+      },
+      {
+        "args": "[4, 32766, 5123, 65532]",
+        "result": "null",
+        "method": "glDrawElements"
+      },
+      {
+        "args": "[4, 24588, 5123, 131064]",
+        "result": "null",
+        "method": "glDrawElements"
+      }
+    ],
+    "meshVertexCount": 90120
+  },
+  "execution": {
+    "exitCode": 0,
+    "seconds": 11.047289291978814,
+    "unchanged": true,
+    "remainingOwned": []
+  },
+  "limitations": [
+    "Same Apple M2 Max Mac only.",
+    "No pixel-parity claim; frame includes normal original branding.",
+    "CPU fallback inferred from bytecode branch plus computeProgram=0 and positive mesh count, corroborated by normal original logs.",
+    "No native compute support claim.",
+    "No material implementation in MathArt Lab established by this reference probe.",
+    "CPU, peak process-family RSS, GPU time and agent tokens unmeasured."
+  ],
+  "evidence": [
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/report.json",
+      "sha256": "90fd12cfbaf75caacd0f7a5d8bf4ccba82687728978e76389aa5c4e755f7167e",
+      "bytes": 123025
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/facts.json",
+      "sha256": "676724ff0b7d4bf79c668e3e3071bc2a54c090ee257c705ffa04649d32641088",
+      "bytes": 1737
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/NativeSceneProbe.java",
+      "sha256": "8ac0b90ab1361c6c382a8364bc0bc39615ee58db1c3e5920b0a5bea2afd21ddf",
+      "bytes": 7276
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/run.py",
+      "sha256": "fe4321405d5f1812891fe4d03513204f9ac61bea1d3c245dfd739011fa4c7779",
+      "bytes": 2354
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/source.json",
+      "sha256": "15d1da222c1b69d4fad40a651e1170c92111e833251f12ce33c24181d940fbae",
+      "bytes": 624
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/source-gpu.json",
+      "sha256": "9e774614618f7a10c02ad737fcf9acac0d80bba9271c6123cc4d45d1a5b0cf40",
+      "bytes": 1539
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/original-gpu-frame.png",
+      "sha256": "1951023ad57a3aa53249ad3addb5bb61aa29c1feff8d8621cbb4b1a2e799aa48",
+      "bytes": 110032
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/stdout.log",
+      "sha256": "76d0eaee5143dc8a5423b83a0dd6e7c2811bc71caf1d7297df4c99ef66d1c2f7",
+      "bytes": 1818
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/stderr.log",
+      "sha256": "21deb550d75418fc393581a46d95cf1c5c6de5af86a7d6532e76ccc4adc8ef98",
+      "bytes": 70
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/compile.json",
+      "sha256": "102e29a4030be6256b1e55ce3b559042fc8775563b0ee38ec97daacbf2cb91dd",
+      "bytes": 591
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/mathart.implicit.ImplicitSurface.javap.txt",
+      "sha256": "c5757e5d6488555b5728ba47b4de47832eb7a05e379253b0ef88f1f0646268ac",
+      "bytes": 426714
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/mathart.implicit.ImplicitGpuMarchingCubes.javap.txt",
+      "sha256": "4dcf69837d6d00086d5e66059c33461a5551f4ea0a030335317c83e51f9236e1",
+      "bytes": 43107
+    },
+    {
+      "path": ".cache/source-implicit-gpu-capability-20261027/mathart.implicit.GenericImplicitScene.javap.txt",
+      "sha256": "54726c834c3a5c070ca692b87024345ea99e0d4de4e3b118d823f63b490a32e9",
+      "bytes": 8189
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/data/Implicit/implicit_sphere.json",
+      "sha256": "debeea3f761a907700aa84b4b0fc4bb11e1bf60793388b579f2142c2755b4ccf",
+      "bytes": 1500
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/implicit_marching_cubes.comp",
+      "sha256": "4eddeb5157f6e95a6f5240c9173ac4280f5518176462dcf76e4a1e570a88571f",
+      "bytes": 5490
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/implicit_mesh_vert.glsl",
+      "sha256": "739452b168f5b67bdb2b3d47db01982631f58c7b75a3c632ab04dc552f666c04",
+      "bytes": 674
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/implicit_mesh_frag.glsl",
+      "sha256": "15bc64378fccba32df8808defc4b4e266f049a0444d75c4dcaa9b953f98f39e8",
+      "bytes": 7919
+    }
+  ]
+}
