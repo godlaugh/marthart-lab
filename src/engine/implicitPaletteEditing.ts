@@ -1,5 +1,5 @@
 import type {SceneDocument} from '../types';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {ImplicitPaletteControlError,validateImplicitPaletteColors} from './sourceImplicitPalette';
 import {sourceManualPalettePackedColor} from './sourceConfigColor';
 import {defaultSourceCosinePalette,type SourceGradientPaletteCommit,type SourceGradientPaletteMode,type SourcePaletteGenerationResult} from './sourceGradientPaletteGeneration';
@@ -27,7 +27,7 @@ export function implicitPaletteEditorMode(state:SourcePaletteGeneratorConfigurat
  * runtime. App owns this metadata transition separately from palette commands.
  * Count is captured before padding; subsequent empty edits stay empty. */
 export function openImplicitPaletteEditor(scene:SceneDocument):SceneDocument {
- if(!usesSourceImplicitCpuMesh(scene)||scene.implicitPaletteEditor?.appearanceOpened)return scene;
+ if(!usesSourceImplicitMesh(scene)||scene.implicitPaletteEditor?.appearanceOpened)return scene;
  const state=implicitPaletteEditorState(scene),raw=implicitEditableColors(scene);
  const colors=raw.length===0?['#3B82F6','#22D3EE']:raw.length===1?[raw[0],'#F97316']:[...raw];
  validateImplicitPaletteColors(colors);
@@ -35,7 +35,7 @@ export function openImplicitPaletteEditor(scene:SceneDocument):SceneDocument {
 }
 function edit(scene:SceneDocument,colors:readonly string[],state:ImplicitPaletteEditorState):SourcePaletteGenerationResult<SceneDocument>{
  try{
-  if(!usesSourceImplicitCpuMesh(scene))throw Error('Implicit source palette editing requires the source CPU mesh profile');
+  if(!usesSourceImplicitMesh(scene))throw Error('Implicit source palette editing requires the source mesh profile');
   validateImplicitPaletteColors(colors);
   return{ok:true,value:{...scene,implicitSourcePalette:{colors:[...colors]},implicitPaletteEditor:state}};
  }catch(error){return{ok:false,error:{kind:error instanceof ImplicitPaletteControlError?error.kind:'input',path:'implicitSourcePalette.colors',reason:error instanceof Error?error.message:String(error)}};}

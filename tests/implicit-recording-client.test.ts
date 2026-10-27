@@ -24,19 +24,31 @@ class Transport{
 }
 beforeEach(async()=>{vi.resetModules();Object.assign(draw,{created:0,disposed:0,fail:false,frames:[],gate:undefined});corrupt=undefined;worker={postMessage:(data,options)=>{const message=structuredClone(data,{transfer:options.transfer});corrupt?.(message);port.onmessage?.({data:message});}};vi.stubGlobal('self',worker);vi.stubGlobal('Worker',Transport);await import('../src/engine/generate.worker');});
 afterEach(()=>vi.unstubAllGlobals());
-async function setup(name='fps4-varying'){
+async function setup(name='fps4-varying',mode:'CPU'|'GPU'='CPU'){
  const ref=native.cases.find(c=>c.name===name)!,raw=structuredClone(ref.input.project);raw.settings.x_segments=raw.settings.y_segments=raw.settings.z_segments=4;
+ Object.assign(raw.settings,{mesh_mode:mode});
  const scene=parseProjectFile(JSON.stringify(raw)).scene,context:GenerationInput={time:0,width:810,height:972,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,405,486,'primary',486)};
  const generator=new Generator(),output=await generator.generate(scene,context);return{generator,output,scene,context,ref,options:{width:128,height:96,simulationFps:ref.input.simulationFps,actualFrameRate:37}};
 }
 describe('Implicit public recording client',()=>{
- for(const name of ['fps4-varying','empty-queue'])it('delivers original ordinals and physical dimensions, then restores and records again: '+name,async()=>{
-  const f=await setup(name),start=await f.generator.beginSourceRecording(f.output,f.options);
+ for(const mode of ['CPU','GPU'] as const)for(const name of ['fps4-varying','empty-queue'])it('delivers original ordinals and physical dimensions, then restores and records again: '+mode+' '+name,async()=>{
+  const f=await setup(name,mode),start=await f.generator.beginSourceRecording(f.output,f.options);
   expect(start.scene).toEqual(sourcePaletteRuntimeScene(f.scene));expect(start.warmup).toMatchObject({width:384,height:288,implicitRecording:{displayFrame:0,warmup:true}});
   if(start.clock.completionReason!=='animation-queue')throw Error('clock');expect(start.clock.updates).toBe(f.ref.frames.length);
-  for(let i=1;i<start.clock.updates;i++){const out=await f.generator.nextSourceRecordingFrame(start.handle,i,f.ref.input.steps[i].actualFrameRate);expect(out.sourceCameraFrame).toMatchObject({sceneTime:f.ref.frames[i].sceneTime,viewport:{logicalWidth:384,logicalHeight:288}});}
+  for(let i=1;i<start.clock.updates;i++){const out=await f.generator.nextSourceRecordingFrame(start.handle,i,f.ref.input.steps[i].actualFrameRate);expect(out.sourceCameraFrame).toMatchObject({sceneTime:f.ref.frames[i].sceneTime,viewport:{logicalWidth:mode==='GPU'?192:384,logicalHeight:mode==='GPU'?144:288}});}
   const stop=await f.generator.finishSourceRecording(start.handle);expect(stop.preview.type).toBe('geometry');expect(stop.context.time).toBe(f.ref.frames.at(-1)!.sceneTime);expect(stop.scene).toEqual(sourcePaletteRuntimeScene(f.scene));expect(draw.created).toBe(1);expect(draw.disposed).toBe(1);
   const again=await f.generator.beginSourceRecording(stop.preview,f.options);expect(again.warmup.implicitRecording?.displayFrame).toBe(0);await f.generator.finishSourceRecording(again.handle);f.generator.dispose();
+ });
+ it.each(['model','palette','material','route'] as const)('rejects malformed GPU %s at the real transferred Worker boundary',async kind=>{
+  corrupt=response=>{
+   if(response.operation!=='generate'||'error' in response||response.output.type!=='geometry')return;
+   const facts=response.output.sourceImplicitPresentation;if(facts?.model!=='mathart-1.7.8-gpu-material-v1')throw Error('Expected actual GPU material');
+   if(kind==='model')Object.assign(facts,{model:'unrecognized'});
+   else if(kind==='palette')Object.assign(facts,{palette:[0xffffffff]});
+   else if(kind==='material')Object.assign(facts,{material:{...facts.material,ambient:NaN}});
+   else Object.assign(facts,{meshMode:'AUTO'});
+  };
+  await expect(setup('fps4-varying','GPU')).rejects.toThrow('隐式');expect(port.terminated).toBe(true);
  });
  it('retries client drawing without another numerical update and rejects changed observation',async()=>{
   const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options);draw.fail=true;
@@ -124,10 +136,10 @@ describe('Implicit queue handoff',()=>{
   expect(stopped?.scene).toBe(f.scene);
   if(!stopped)throw Error('missing stop');
   const context={...stopped.context,implicitLive:{...stopped.context.implicitLive!,clock:{paused:false,timestampMs:2000}}};
-  queue.request(f.scene,context);await vi.waitFor(()=>expect(outputs.at(-1)?.output.implicitLive?.renderKind).toBe('update'));
+  const beforeUpdate=outputs.length;queue.request(f.scene,context);await vi.waitFor(()=>{expect(outputs.length).toBeGreaterThan(beforeUpdate);expect(outputs.at(-1)?.output.implicitLive?.renderKind).toBe('update');});
   const rendered=outputs.at(-1)!;expect(rendered.time).toBe(implicitCameraFrame(rendered.output).sceneTime);expect(rendered.scene).toBe(f.scene);
   await queue.setImplicitPaused(true);
-  queue.request(f.scene,{...context,implicitLive:{...context.implicitLive,clock:{paused:true,timestampMs:9000}}});await vi.waitFor(()=>expect(outputs.at(-1)?.output.implicitLive?.renderKind).toBe('snapshot'));
+  const beforePause=outputs.length;queue.request(f.scene,{...context,implicitLive:{...context.implicitLive,clock:{paused:true,timestampMs:9000}}});await vi.waitFor(()=>{expect(outputs.length).toBeGreaterThan(beforePause);expect(outputs.at(-1)?.output.implicitLive?.renderKind).toBe('snapshot');});
   expect(outputs.at(-1)?.time).toBe(rendered.time);expect(errors).toEqual([]);queue.dispose();
  });
 });

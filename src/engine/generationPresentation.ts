@@ -1,7 +1,7 @@
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {usesSourceDomain} from './sourceDomainTimeline';
 import {usesSourceFractal} from './sourceFractalDocument';
-import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
+import {usesSourceImplicitConfiguration} from './sourceImplicitIdentity';
 import {formulaPresentation} from './formulas';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera,prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import {sourceCameraMode} from './sourceCameraMode';
@@ -12,7 +12,7 @@ import {sceneAtTime,timelineWarnings} from './timeline';
 export function prepareGenerationPresentation(scene:SceneDocument,context:GenerateContext){
     // A fresh source Scene constructs its labels from its input configuration,
     // before any source queue update. Deliver that same text with every pass.
-    const implicitFormulas=usesSourceImplicitPresentation(scene);
+    const implicitFormulas=usesSourceImplicitConfiguration(scene);
     const formulas=usesSourceFractal(scene)||usesSourceDomain(scene)||implicitFormulas?formulaPresentation(scene,usesSourceFractal(scene)?context.fractalViewport:context.sourceViewport):undefined;
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or

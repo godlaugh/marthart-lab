@@ -1,7 +1,7 @@
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import type {FormulaPresentation,SceneDocument,SceneOutput} from '../types';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {usesSourceAttractor,usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import type {SourceDrawingFrame} from './sourceDrawingFrame';
@@ -17,7 +17,7 @@ export function usesNativeSourceViewport(scene:SceneDocument,output?:SceneOutput
  return sourceDrawingPolicy()==='native'&&((usesSourceBouncing(scene)&&!!output?.sourceBouncingFrame)||nativeSourceFramePreviewEnabled(scene)&&!!output?.sourceCameraFrame&&(nativeAttractorRasterPreviewEnabled(scene)?output.type==='raster':output.type!=='raster'));
 }
 export const nativeAttractorRasterPreviewEnabled=(scene:SceneDocument)=>sourceDrawingPolicy()==='native'&&usesSourceAttractor(scene)&&!usesSourceAttractorCpu(scene);
-export const nativeSourceFramePreviewEnabled=(scene:SceneDocument)=>sourceDrawingPolicy()==='native'&&(usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene)||usesSourceAttractor(scene));
+export const nativeSourceFramePreviewEnabled=(scene:SceneDocument)=>sourceDrawingPolicy()==='native'&&(usesSourceSurfaceGeometry(scene)||usesSourceImplicitMesh(scene)||usesSourceAttractor(scene));
 export interface NativeViewportRequest {
  /** Called only when the previous native operation has settled. The caller
   * owns the immutable output and snapshots the matching renderer here. */

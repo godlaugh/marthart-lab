@@ -8,7 +8,7 @@ import {SourceDrawingResources} from './sourceDrawingResources';
  * with its own GL resources. Never reconstruct or update the source scene. */
 export async function renderGeometryCapture(prepared:SourceGeometryCapturePreparation,context:GenerationInput,size:{width:number;height:number},scale:1|3|5,isCancelled:()=>boolean,request?:SourceDrawingRequest):Promise<SourceGeometryPausedCaptureResult> {
  sourceDrawingBackend(request);
- const plan=sourceGeometryCapturePlan(context,size,scale),check=()=>{if(isCancelled()||request?.signal.aborted)throw new DOMException('几何场景截图已取消','AbortError');};
+ const plan=sourceGeometryCapturePlan(context,size,scale,prepared.preview.sourceImplicitPresentation?.model),check=()=>{if(isCancelled()||request?.signal.aborted)throw new DOMException('几何场景截图已取消','AbortError');};
  const geometryBytes=[...new Set([...outputBuffers(prepared.capture),...outputBuffers(prepared.preview)])].reduce((sum,b)=>sum+b.byteLength,0);
  if(geometryBytes+plan.bytes>256*1024*1024)throw Error('几何场景截图几何与图像缓冲超过本地 256 MiB 预算');
  check();const resources=new SourceDrawingResources(),renderer=resources.renderer;let failure:unknown;

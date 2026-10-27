@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {sourceTextureUsesMaximumAnisotropy} from './sourceProcessingTextureSampling';
 import {sourceShaderUniformOwner,sourceShaderDrawContract,type SourceShaderUniform} from './sourceShaderMaterial';
 import {SOURCE_DRAWING_DEFAULT_CHUNK_BYTES,SOURCE_DRAWING_MAX_CHUNK_BYTES,sourceDrawingChunkAvailableBytes,sourceDrawingChunkPeak} from './sourceDrawingBudget';
 
@@ -152,7 +153,7 @@ function result<T>(run:()=>T):SourceDrawingResult<T>{try{return{ok:true,value:ru
 function textureCopies(p:PreparedDrawings):SourceDrawingTexture[]{return p.pendingTextures.map(texture=>{
  p.check();const {width,height,data}=texture.image,pixels=new Uint8Array(data.byteLength);
  for(let i=0;i<pixels.length;i+=65536){p.check();pixels.set((data as Uint8Array).subarray(i,i+65536),i);}
- return{width,height,pixels,anisotropy:texture.anisotropy,magFilter:'linear',minFilter:'linear-mipmap-linear',wrap:'clamp',generateMipmaps:true};
+ return{width,height,pixels,anisotropy:sourceTextureUsesMaximumAnisotropy(texture)?'maximum':texture.anisotropy,magFilter:'linear',minFilter:'linear-mipmap-linear',wrap:'clamp',generateMipmaps:true};
 });}
 function uniformCopies(p:PreparedDrawings,draw:PreparedDraw):SourceDrawingUniform[]{return draw.uniforms.map(u=>{
  if(u.uniform.kind==='sampler2d')return{name:u.name,kind:'sampler2d',texture:p.textures.get(u.uniform.value)!};

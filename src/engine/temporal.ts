@@ -1,7 +1,7 @@
 import {prepareGenerationPresentation} from './generationPresentation';
 import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {replaySourceImplicitTimeline} from './sourceImplicitTimeline';
-import {usesSourceImplicitCpuMesh,usesSourceImplicitPresentation} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
 import {SourceImplicitRecordingSession} from './sourceImplicitRecording';
 import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
@@ -99,7 +99,7 @@ export class TemporalGenerationSession {
   select(scene: SceneDocument, context: GenerateContext) {
     scene=sourcePaletteRuntimeScene(scene);
     this.cleanup.prepare();
-    if(!usesSourceImplicitPresentation(scene))this.sourceImplicit.reset();
+    if(!usesSourceImplicitMesh(scene))this.sourceImplicit.reset();
     if(context.surfaceLive===undefined)this.sourceSurface.reset();
     if(context.domainLive===undefined)this.sourceDomain.reset();
     if(context.fractalLive===undefined)this.sourceFractal.reset();
@@ -418,7 +418,7 @@ function generationSceneInput(scene:SceneDocument,context:GenerateContext):Scene
     if([context.implicitLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.fractalRecording].some(value=>value!==undefined))throw Error('一次生成只能拥有一个 Perlin 实时或录制时钟');
   }
   if(context.implicitControls!==undefined){
-    if(!usesSourceImplicitCpuMesh(scene))throw Error('隐式控制需要源 CPU 网格场景');
+    if(!usesSourceImplicitMesh(scene))throw Error('隐式控制需要源网格场景');
     if([context.rootsLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.perlinLive,context.fractalRecording].some(value=>value!==undefined))throw Error('隐式控制不能共用其它场景的时钟');
   }
   return scene;
@@ -449,7 +449,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
-    if(usesSourceImplicitCpuMesh(scene)){
+    if(usesSourceImplicitMesh(scene)){
       owner.select(scene,context);
       return generateImplicitFrame(scene,context);
     }

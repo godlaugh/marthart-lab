@@ -13,7 +13,8 @@ import {SourceImplicitPaletteEditor} from './components/SourceImplicitPaletteEdi
 import {openImplicitPaletteEditor,retainImplicitPaletteEditorOnSave} from './engine/implicitPaletteEditing';
 import {ImplicitControlGenerationError,DomainLiveGenerationError} from './engine/generationProtocol';
 import {domainPaletteRuntimeScene,retainDomainPaletteEditorOnSave} from './engine/domainPaletteEditing';
-import {usesSourceImplicitCpuMesh} from './engine/sourceImplicitPresentation';
+import {usesSourceImplicitMesh,sourceImplicitMeshRoute} from './engine/sourceImplicitIdentity';
+import {sourceImplicitAuthoringMetadata} from './engine/sourceImplicitAuthoring';
 import {implicitCameraFrame} from './engine/sourceImplicitResponse';
 import type {SourceImplicitLiveContext} from './engine/sourceImplicitLive';
 import {hasFormulaComposition} from './engine/formulaConfig';
@@ -344,17 +345,17 @@ export default function App() {
     const current=sceneRef.current;let next=typeof value==='function'?value(current):value;
     next=syncSourceSamilaPaletteSession(current,next);
     if(next.symmetrySourcePalette||next.samilaSourcePalette)admitPaletteRetention(next);
-    if(implicitContinuation.current&&next!==implicitContinuation.current.scene&&!usesSourceImplicitCpuMesh(next)){
+    if(implicitContinuation.current&&next!==implicitContinuation.current.scene&&!usesSourceImplicitMesh(next)){
       implicitContinuation.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;
       playingRef.current=false;setPlaying(false);playbackClock.current=timeRef.current;
     }
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
-    if(usesSourceImplicitCpuMesh(next)){
+    if(usesSourceImplicitMesh(next)){
       if(!implicitEditor.current&&!implicitNeedsApply.current){
         implicitEditor.current=new ImplicitEditorSession(crypto.randomUUID(),sourcePaletteRuntimeScene(next));setImplicitStaged(false);
       }
-    }else if(usesSourceImplicitCpuMesh(current)){
+    }else if(usesSourceImplicitMesh(current)){
       generationQueue.current?.cancel();implicitEditor.current=undefined;implicitContinuation.current=undefined;
     }
     if(nextLive==='roots'){
@@ -435,7 +436,7 @@ export default function App() {
       if(nextLive==='roots'&&rootsEditor.current){
         // Rebuild the existing applied/hot plan for a new host, not the draft.
         restoreRootsRuntime({owner:rootsEditor.current,checkpoint:rootsEditor.current.checkpoint(),staged:rootsStagedRef.current});
-      }else if(usesSourceImplicitCpuMesh(next)&&implicitEditor.current){
+      }else if(usesSourceImplicitMesh(next)&&implicitEditor.current){
         restoreImplicitRuntime(implicitEditorState()!);
       }else{generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(nextLive==='surface'||nextLive==='fractal'||nextLive==='domain'||nextLive==='perlin'?undefined:0);}
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
@@ -454,6 +455,7 @@ export default function App() {
   const displayHasFormulas=displayFormulas?hasFormulaComposition(displayFormulas):!displayScene.fractalSource&&displayScene.formulas?.layout!=='source-surface-centered-v1'&&!!(displayScene.formulas?.main.visible||displayScene.formulas?.additional.some(label=>label.visible));
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
+  const implicitAuthoring=sourceImplicitAuthoringMetadata(scene);
   const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);
   const samilaSourceProjection=usesSamilaSourceProjection(scene),samilaCameraActive=samilaCameraEnabled(scene),samilaNavigationLocked=samilaCameraActive||!!(output?.type==='raster'&&output.samilaView);
   const equationBasis=useRef({id:scene.id,equations:scene.equations});
@@ -502,7 +504,7 @@ export default function App() {
   const implicitDraftStates=useRef(new Map<string,ImplicitEditorState>());
   const [implicitStaged,setImplicitStagedState]=useState(false),implicitStagedRef=useRef(false);
   function setImplicitStaged(value:boolean){implicitStagedRef.current=value;setImplicitStagedState(value);}
-  if(usesSourceImplicitCpuMesh(scene)&&!implicitEditor.current&&!implicitNeedsApply.current){
+  if(usesSourceImplicitMesh(scene)&&!implicitEditor.current&&!implicitNeedsApply.current){
     try{implicitEditor.current=new ImplicitEditorSession(crypto.randomUUID(),sourcePaletteRuntimeScene(scene));}
     catch(error){implicitNeedsApply.current=true;implicitInitialFailure.current=error instanceof Error?error.message:String(error);}
   }
@@ -520,7 +522,7 @@ export default function App() {
   }
   function editImplicit(next:SceneDocument,intent:ImplicitEditorIntent){return edit(next,false,intent!=='implicit-stage'&&intent!=='implicit-metadata',intent);}
   useEffect(()=>{
-    if(tab!=='appearance'||!usesSourceImplicitCpuMesh(scene)||recording)return;
+    if(tab!=='appearance'||!usesSourceImplicitMesh(scene)||recording)return;
     try{
       const opened=openImplicitPaletteEditor(scene);
       if(opened!==scene){
@@ -544,9 +546,9 @@ export default function App() {
   const perlinPaletteRevision=useRef(0);
   const fractalEdit=useRef<{revision:number;intent:'hot'|'apply';configuration?:SceneDocument}>({revision:0,intent:'apply'}),fractalActualFps=useRef<number|undefined>(undefined);
   const implicitContinuation=useRef<{scene:SceneDocument;controlSessionId?:string;context:SourceImplicitLiveContext}|undefined>(undefined),implicitActualFps=useRef<number|undefined>(undefined),implicitRecordingScene=useRef<SceneDocument|undefined>(undefined);
-  function hasImplicitContinuation(document:SceneDocument){const held=implicitContinuation.current;return !!held&&(usesSourceImplicitCpuMesh(document)&&held.controlSessionId!==undefined?held.controlSessionId===implicitEditor.current?.sessionId:held.scene===document);}
+  function hasImplicitContinuation(document:SceneDocument){const held=implicitContinuation.current;return !!held&&(usesSourceImplicitMesh(document)&&held.controlSessionId!==undefined?held.controlSessionId===implicitEditor.current?.sessionId:held.scene===document);}
   function previewLiveKind(document:SceneDocument){return hasImplicitContinuation(document)?'implicit':sourceLivePreviewKind(document);}
-  function implicitAppliedScene(document:SceneDocument){return usesSourceImplicitCpuMesh(document)?implicitEditor.current?.checkpoint().cold??document:document;}
+  function implicitAppliedScene(document:SceneDocument){return usesSourceImplicitMesh(document)?implicitEditor.current?.checkpoint().cold??document:document;}
   const surfaceEdit=useRef<{revision:number;configuration?:SceneDocument}>({revision:0}),surfaceActualFps=useRef<number|undefined>(undefined);
   const domainEdit=useRef<{revision:number;configuration?:SceneDocument}>({revision:0}),domainActualFps=useRef<number|undefined>(undefined);
   const [fractalStaged,setFractalStaged]=useState(false),[fractalFullApplyPending,setFractalFullApplyPending]=useState(false);
@@ -562,7 +564,7 @@ export default function App() {
   const replayPendingRef=useRef(false);replayPendingRef.current=liveDisplayPending;
   function replaceLiveSession(startAt:number|undefined){perlinPaletteRevision.current=0;implicitContinuation.current=undefined;implicitActualFps.current=undefined;surfaceEdit.current={revision:0};surfaceActualFps.current=undefined;domainEdit.current={revision:0};domainActualFps.current=undefined;fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
-    if(usesSourceImplicitCpuMesh(sceneRef.current)){implicitNeedsApply.current=true;implicitContinuation.current=undefined;playingRef.current=false;setPlaying(false);generationQueue.current?.cancel();setPreviewCancelled(true);return;}
+    if(usesSourceImplicitMesh(sceneRef.current)){implicitNeedsApply.current=true;implicitContinuation.current=undefined;playingRef.current=false;setPlaying(false);generationQueue.current?.cancel();setPreviewCancelled(true);return;}
     if(!previewLiveKind(sceneRef.current))return;
     if(sourceLivePreviewKind(sceneRef.current)==='roots'){
       rootsNeedsApply.current=true;retireRootsGesture();playingRef.current=false;setPlaying(false);generationQueue.current?.cancel();setPreviewCancelled(true);return;
@@ -613,12 +615,12 @@ export default function App() {
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     const currentLive=sourceLivePreviewKind(sceneRef.current),nextLive=sourceLivePreviewKind(next);
     let implicitHistory:ImplicitHistoryEffect|undefined;
-    if(usesSourceImplicitCpuMesh(sceneRef.current)||usesSourceImplicitCpuMesh(next)){
+    if(usesSourceImplicitMesh(sceneRef.current)||usesSourceImplicitMesh(next)){
       const before=implicitEditorState(),implicitIntent=(intent?.startsWith('implicit-')?intent:display?'implicit-stage':'implicit-metadata') as ImplicitEditorIntent;
       try{
-        const runtime=sourcePaletteRuntimeScene(next);admitImplicitRetention({checkpoint:before?.checkpoint,action:usesSourceImplicitCpuMesh(next)?implicitEditorActionFor(runtime,implicitIntent):undefined});
-        if(usesSourceImplicitCpuMesh(next)){
-          if(!implicitEditor.current&&usesSourceImplicitCpuMesh(sceneRef.current)&&implicitIntent!=='implicit-apply'){
+        const runtime=sourcePaletteRuntimeScene(next);admitImplicitRetention({checkpoint:before?.checkpoint,action:usesSourceImplicitMesh(next)?implicitEditorActionFor(runtime,implicitIntent):undefined});
+        if(usesSourceImplicitMesh(next)){
+          if(!implicitEditor.current&&usesSourceImplicitMesh(sceneRef.current)&&implicitIntent!=='implicit-apply'){
             if(implicitIntent!=='implicit-stage'&&implicitIntent!=='implicit-metadata')throw Error(t('请先应用场景以重新建立预览。'));
             if(implicitIntent==='implicit-stage')setImplicitStaged(true);implicitHistory={before,runtimeChanged:false};
           }else if(!implicitEditor.current||implicitNeedsApply.current&&implicitIntent==='implicit-apply'){
@@ -684,7 +686,7 @@ export default function App() {
   }
   async function applyScene(next=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current)){
     const current=sceneRef.current,draft=iteratedDraftRef.current,family=sourceLivePreviewKind(current);
-    if(usesSourceImplicitCpuMesh(current)||usesSourceImplicitCpuMesh(next)){editImplicit(next,'implicit-apply');return;}
+    if(usesSourceImplicitMesh(current)||usesSourceImplicitMesh(next)){editImplicit(next,'implicit-apply');return;}
     if(family==='fractal'){editFractal(next,'apply');return;}
     if(family==='roots'){editRoots(next,'roots-apply');return;}
     if(family!=='map'&&family!=='symmetry'){
@@ -727,7 +729,7 @@ export default function App() {
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
       const next=scene.samilaSourcePalette?writeSourceSamilaSetting(scene,key,value):{...scene,settings};
-      if(scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)!==usesSourceImplicitCpuMesh(next)){void applyScene(next);return;}
+      if(scene.kind==='implicit'&&sourceImplicitMeshRoute(scene)?.requestedMeshMode!==sourceImplicitMeshRoute(next)?.requestedMeshMode){void applyScene(next);return;}
       editInspector(next,usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':(family==='symmetry'||usesSourceSymmetryConfiguration(scene))&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
@@ -754,7 +756,7 @@ export default function App() {
       }
     }catch(error){notify(error instanceof Error?error.message:String(error));return;}
     try{
-      if(usesSourceImplicitCpuMesh(next)){
+      if(usesSourceImplicitMesh(next)){
         admitImplicitRetention(heldImplicit?.checkpoint??sourcePaletteRuntimeScene(next));const sessionId=crypto.randomUUID();
         if(heldImplicit){heldImplicit.owner.restore(heldImplicit.checkpoint,sessionId);preparedImplicit=heldImplicit.owner;}
         else preparedImplicit=new ImplicitEditorSession(sessionId,sourcePaletteRuntimeScene(next));
@@ -765,7 +767,7 @@ export default function App() {
     drafts.current[current.id]=workingDocument(current);
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
     rootsSessionId.current=crypto.randomUUID();replaceLiveSession(next.fractalSource||sourceLivePreviewKind(next)==='perlin'?undefined:0);
-    if(source==='document'||preparedImplicit||usesSourceImplicitCpuMesh(current)||preparedRoots||sourceLivePreviewKind(current)==='roots'){generationQueue.current?.cancel();setPreviewCancelled(false);}
+    if(source==='document'||preparedImplicit||usesSourceImplicitMesh(current)||preparedRoots||sourceLivePreviewKind(current)==='roots'){generationQueue.current?.cancel();setPreviewCancelled(false);}
     setPickingJulia(false);clearTimeout(cameraTimer.current);setIteratedDraft(draft);
     implicitEditor.current=preparedImplicit;implicitNeedsApply.current=false;setImplicitStaged(!!preparedImplicit&&!!heldImplicit?.staged);
     if(source==='document')implicitDraftStates.current.delete(next.id);
@@ -783,7 +785,7 @@ export default function App() {
     const builtin=isBuiltinCreationScene(scene);
     const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
     if(builtin){drafts.current[scene.id]=workingDocument(scene);const implicit=implicitEditorState();if(implicit){admitImplicitRetention(implicit.checkpoint);implicitDraftStates.current.set(scene.id,implicit);}const roots=rootsEditorState();if(roots)rootsDraftStates.current.set(scene.id,roots);}
-    setScene(retainSourceSamilaPaletteOnSave(scene,retainSymmetryPaletteOnSave(scene,retainImplicitPaletteEditorOnSave(scene,retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)))))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':sourceLivePreviewKind(scene)==='roots'?'roots-metadata':usesSourceImplicitCpuMesh(scene)?'implicit-metadata':undefined);camera.current=item.camera;
+    setScene(retainSourceSamilaPaletteOnSave(scene,retainSymmetryPaletteOnSave(scene,retainImplicitPaletteEditorOnSave(scene,retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)))))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':sourceLivePreviewKind(scene)==='roots'?'roots-metadata':usesSourceImplicitMesh(scene)?'implicit-metadata':undefined);camera.current=item.camera;
     setSaved((current) => {
       const others = current.filter((s) => s.id !== item.id);
       return [...others, item];
@@ -837,7 +839,7 @@ export default function App() {
       const implicitTarget=entry.implicit?.[direction==='undo'?'before':'after'];
       if(entry.implicit?.runtimeChanged){
         if(implicitTarget)restoreImplicitRuntime(implicitTarget);
-        else{generationQueue.current?.cancel();implicitEditor.current=undefined;implicitNeedsApply.current=usesSourceImplicitCpuMesh(entry.scene);implicitContinuation.current=undefined;}
+        else{generationQueue.current?.cancel();implicitEditor.current=undefined;implicitNeedsApply.current=usesSourceImplicitMesh(entry.scene);implicitContinuation.current=undefined;}
       }
       if(entry.implicit)setImplicitStaged(implicitTarget?.staged??false);
       if(entry.scene.samilaSourcePalette||entry.scene.symmetrySourcePalette){
@@ -864,7 +866,7 @@ export default function App() {
     setGenerationRevision(value=>value+1);
   }
   function seek(value:number) {
-    if(usesSourceImplicitCpuMesh(sceneRef.current)){
+    if(usesSourceImplicitMesh(sceneRef.current)){
       if(implicitNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}
       if(value!==0){
         if(hasImplicitContinuation(sceneRef.current)){notify(t('后台实时采样请使用返回起点重新开始'));return;}
@@ -911,8 +913,8 @@ export default function App() {
   }
   function play(value:boolean):Promise<void>|undefined {
     if(value&&nativeExportPreview.current.active)return;
-    if(usesSourceImplicitCpuMesh(sceneRef.current)&&implicitNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}
-    if(value&&usesSourceImplicitCpuMesh(sceneRef.current)&&(implicitEditor.current?.pendingCount||generationPending.current)){notify(t('请等待当前预览完成并暂停后再保存画面'));return;}
+    if(usesSourceImplicitMesh(sceneRef.current)&&implicitNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}
+    if(value&&usesSourceImplicitMesh(sceneRef.current)&&(implicitEditor.current?.pendingCount||generationPending.current)){notify(t('请等待当前预览完成并暂停后再保存画面'));return;}
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
     const liveKind=previewLiveKind(sceneRef.current);
@@ -1257,7 +1259,7 @@ export default function App() {
   useEffect(()=>{
     // A provisional size would consume progressive samples before the first
     // measured viewport, whose resize then legitimately clears their ink.
-    if(!viewportSize||implicitRecordingScene.current!==undefined&&usesSourceImplicitCpuMesh(scene)&&generationScene.current===scene&&!implicitEditor.current?.pendingCount||usesSourceImplicitCpuMesh(scene)&&implicitNeedsApply.current||sourceLivePreviewKind(scene)==='roots'&&rootsNeedsApply.current)return;
+    if(!viewportSize||implicitRecordingScene.current!==undefined&&usesSourceImplicitMesh(scene)&&generationScene.current===scene&&!implicitEditor.current?.pendingCount||usesSourceImplicitMesh(scene)&&implicitNeedsApply.current||sourceLivePreviewKind(scene)==='roots'&&rootsNeedsApply.current)return;
     if(nativeExportPreview.current.defer(nativePreviewInput(),nativeFixedPreviewInput()))return;
     setPreviewCancelled(false);
     const changed=generationScene.current!==scene;
@@ -1266,7 +1268,7 @@ export default function App() {
     if(sourceBouncing)bouncingPresented.current=false;
     if(nativeSourceFramePreviewEnabled(scene))nativeSourceFramePresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||nativeAttractorRasterPreviewEnabled(scene)||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,...(usesSourceImplicitCpuMesh(scene)?{implicitControls:{sessionId:implicitEditor.current!.sessionId,...implicitEditor.current!.request()}}:{}),...(hasImplicitContinuation(scene)?{implicitLive:{...implicitContinuation.current!.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,controls:rootsEditor.current!.request(),clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,runtimeRevision:scene.samilaPaletteSession?.runtimeRevision??0,parameterRevisions:scene.samilaPaletteSession?.parameterRevisions,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(implicitAppliedScene(scene),viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    generationQueue.current?.request(scene,{time:timeRef.current,...(usesSourceImplicitMesh(scene)?{implicitControls:{sessionId:implicitEditor.current!.sessionId,...implicitEditor.current!.request()}}:{}),...(hasImplicitContinuation(scene)?{implicitLive:{...implicitContinuation.current!.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,controls:rootsEditor.current!.request(),clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,runtimeRevision:scene.samilaPaletteSession?.runtimeRevision??0,parameterRevisions:scene.samilaPaletteSession?.parameterRevisions,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(implicitAppliedScene(scene),viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:previewLiveKind(scene)?liveTickRevision:nativeAttractorRasterPreviewEnabled(scene)?time:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -1303,7 +1305,7 @@ export default function App() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const implicitOwnerReady=!usesSourceImplicitCpuMesh(scene)||!!implicitEditor.current&&!implicitNeedsApply.current&&!implicitEditor.current.pendingCount&&output?.implicitControls?.sessionId===implicitEditor.current.sessionId&&output.implicitControls.revision===implicitEditor.current.receipt.revision&&output.implicitControls.resetRevision===implicitEditor.current.receipt.resetRevision;
+  const implicitOwnerReady=!usesSourceImplicitMesh(scene)||!!implicitEditor.current&&!implicitNeedsApply.current&&!implicitEditor.current.pendingCount&&output?.implicitControls?.sessionId===implicitEditor.current.sessionId&&output.implicitControls.revision===implicitEditor.current.receipt.revision&&output.implicitControls.resetRevision===implicitEditor.current.receipt.resetRevision;
   const completedFrameAvailable=implicitOwnerReady&&!playing&&!generationActive&&!previewCancelled&&!error&&output!==null&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&renderTime===time&&(!sourceBouncing||output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingCheckpoint.simulationUpdates&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view)&&output.sourceBouncingFrame.pixelDensity===viewportMeasurement?.pixelRatio&&output.sourceBouncingFrame.viewport.logicalWidth===viewportSize?.[0]&&output.sourceBouncingFrame.viewport.logicalHeight===viewportSize?.[1]);
   const completedFrameReady=!recording&&completedFrameAvailable;
   useEffect(()=>{
@@ -1311,7 +1313,7 @@ export default function App() {
     if(!(exporting||recording)||!completedFrameAvailable||generationPending.current||!owner.requiresRelease)return;
     void owner.preparePresented().then(ready=>{if(ready)setNativeExportPaused(true);}).catch(error=>notify(error instanceof Error?error.message:String(error)));
   },[exporting,recording,completedFrameAvailable]);
-  const implicitExportCheckpoint=usesSourceImplicitCpuMesh(scene)?implicitEditor.current?.checkpoint():undefined;
+  const implicitExportCheckpoint=usesSourceImplicitMesh(scene)?implicitEditor.current?.checkpoint():undefined;
   const implicitExport=useMemo(()=>{
     if(!exporting||!implicitExportCheckpoint||hasImplicitContinuation(scene))return undefined;
     try{admitImplicitRetention({checkpoint:implicitExportCheckpoint,temporary:implicitExportCheckpoint});return{scene:implicitEditor.current!.runtimeScene()};}
@@ -1348,7 +1350,7 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":usesSourceImplicitCpuMesh(scene)?'隐式曲面录制':sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':sourceLivePreviewKind(scene)==='perlin'?'Perlin 录制':sourceSamilaRecording?'Samila 录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;pauseForExport();if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":usesSourceImplicitMesh(scene)?'隐式曲面录制':sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':sourceLivePreviewKind(scene)==='perlin'?'Perlin 录制':sourceSamilaRecording?'Samila 录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;pauseForExport();if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
@@ -1638,7 +1640,7 @@ export default function App() {
             {!displayHasFormulas&&<div className="viewport-caption">
               <span className="eyebrow">{def.englishName.toUpperCase()}</span>
               <h1>{scene.name}</h1>
-              <p>{t(def.description)}</p>
+              <p>{t(implicitAuthoring?.description??def.description)}</p>
             </div>}
             {busy && (
               <div className="rendering-badge">
@@ -1646,7 +1648,7 @@ export default function App() {
                 <button onClick={()=>{interruptSourceBouncingInteraction();interruptLivePlayback();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
               </div>
             )}
-            {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>sourceLivePreviewKind(sceneRef.current)==='roots'||usesSourceImplicitCpuMesh(sceneRef.current)?void applyScene(sceneRef.current):setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
+            {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>sourceLivePreviewKind(sceneRef.current)==='roots'||usesSourceImplicitMesh(sceneRef.current)?void applyScene(sceneRef.current):setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
             {error && (
               <div className="error-card" role="alert">
                 <strong>{t("计算未完成")}</strong>
@@ -1733,13 +1735,13 @@ export default function App() {
               {scene.samilaSourcePalette&&<div className="section-body"><button data-testid="samila-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='surface'&&<div className="section-body"><button data-testid="surface-apply" disabled={recording||applying} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='roots'&&<div className="section-body"><button data-testid="roots-apply" disabled={recording} onClick={()=>void applyScene(sceneRef.current)}>{t('应用场景')}</button>{rootsStaged&&<p role="status" data-testid="roots-staged-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p>}<p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
-              {usesSourceImplicitCpuMesh(scene)&&<div className="section-body"><button data-testid="implicit-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><button data-testid="implicit-restart" disabled={recording||implicitNeedsApply.current} onClick={()=>seek(0)}>{t('返回起点')}</button>{implicitStaged&&<p role="status" data-testid="implicit-staged-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p>}<p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
+              {usesSourceImplicitMesh(scene)&&<div className="section-body"><button data-testid="implicit-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><button data-testid="implicit-restart" disabled={recording||implicitNeedsApply.current} onClick={()=>seek(0)}>{t('返回起点')}</button>{implicitStaged&&<p role="status" data-testid="implicit-staged-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p>}<p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='domain'&&<div className="section-body"><button data-testid="domain-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='fractal'&&<div className="section-body"><button data-testid="fractal-apply" disabled={recording||applying} onClick={()=>editFractal(scene,'apply')}>{t('应用场景')}</button>{fractalStaged&&<p role="status" data-testid="fractal-draft-status">{t('有待应用的修改；修改几何参数也会应用当前分形设置。')}</p>}{fractalFullApplyPending&&<p role="status" data-testid="fractal-full-apply-status">{t('时间线或场景外观有修改，需在播放时应用才能替换当前运行场景。')}</p>}<p className="muted">{t('暂停时应用保留当前动画进度；播放时应用会从头运行新的时间线。')}</p></div>}
               <ProjectResolutionControls resolution={scene.projectResolution} onChange={projectResolution=>{
                 const next={...scene};
                 if(projectResolution)next.projectResolution=projectResolution;else delete next.projectResolution;
-                if(sourceLivePreviewKind(scene)==='roots')editRoots(next,'roots-metadata');else if(usesSourceImplicitCpuMesh(scene))editImplicit(next,'implicit-metadata');else edit(next);
+                if(sourceLivePreviewKind(scene)==='roots')editRoots(next,'roots-metadata');else if(usesSourceImplicitMesh(scene))editImplicit(next,'implicit-metadata');else edit(next);
               }}/>
               {scene.provenance && (
                 <details className="inspector-section">
@@ -1845,6 +1847,7 @@ export default function App() {
                       if(scene.kind==='surface'&&['flowV','pingPongV'].includes(control.key)&&String(scene.settings.speedV??'').trim())return false;
                       return true;
                     }).map(control=>{
+                      if(implicitAuthoring&&control.key==='computeBackend')return{...control,...implicitAuthoring.backend};
                       if(!usesSourceSurfaceParticles(scene))return control;
                       if(control.key==='fadeTrails')return{...control,label:t('按记录顺序渐隐'),help:t('最旧记录透明、最新记录使用色板透明度；边界断点也计入渐隐顺序。')};
                       if(control.key==='recordTrails')return{...control,help:t('设置初始录制状态；时间线中的拖尾片段可随后切换。修改后从起点重算当前画面。')};
@@ -1903,7 +1906,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceImplicitCpuMesh(scene)?<SourceImplicitPaletteEditor key={scene.id} scene={scene} onChange={editImplicit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={editRoots}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.symmetrySourcePalette?<SourceSymmetryPaletteEditor key={scene.id} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
+                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceImplicitMesh(scene)?<SourceImplicitPaletteEditor key={scene.id} scene={scene} onChange={editImplicit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={editRoots}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.symmetrySourcePalette?<SourceSymmetryPaletteEditor key={scene.id} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
@@ -2045,9 +2048,9 @@ export default function App() {
           {toast}
         </div>
       )}
-      {(exporting||recording&&(usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'||sourceSamilaRecording)) && (
+      {(exporting||recording&&(usesSourceImplicitMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'||sourceSamilaRecording)) && (
         <ExportDialog
-          mode={recording?(usesSourceImplicitCpuMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':sourceSamilaRecording?'samila-recording':'fractal-recording'):'export'}
+          mode={recording?(usesSourceImplicitMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':sourceSamilaRecording?'samila-recording':'fractal-recording'):'export'}
           scene={{ ...(implicitExport?.scene??scene),id:scene.id,name:scene.name,projectResolution:scene.projectResolution,camera:camera.current }}
           previewReady={implicitExport?.error?false:nativeExportPreview.current.active?nativeExportPaused&&nativeExportPreview.current.ready&&!generationPending.current&&completedFrameAvailable:nativeSourceFramePreviewEnabled(scene)?completedFrameAvailable:undefined}
           time={time}
@@ -2120,12 +2123,12 @@ export default function App() {
               return generationQueue.current.capturePerlinPaused(output,size,scale);
             },
           }:undefined}
-          currentSourceRecording={usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'||sourceSamilaRecording?{
-            ready:usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'||sourceSamilaRecording?completedFrameAvailable:completedFrameReady,
+          currentSourceRecording={usesSourceImplicitMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'||sourceSamilaRecording?{
+            ready:usesSourceImplicitMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'||sourceSamilaRecording?completedFrameAvailable:completedFrameReady,
             record:async(options,consumer,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前录制画面尚未完成或已过期，请等待预览完成后重试');
               const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=(frame.implicitRecording?implicitCameraFrame(frame).sceneTime:undefined)??frame.rootsLive?.sceneTime??frame.surfaceLive?.frame.sceneTime??frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.perlinLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime??frame.samilaLive?.runtime?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
-              const kind=usesSourceImplicitCpuMesh(scene)?'implicit':sourceLivePreviewKind(scene),observedFps=kind==='implicit'||kind==='domain'||kind==='surface',initialFps=(kind==='implicit'?implicitActualFps.current:kind==='surface'?surfaceActualFps.current:domainActualFps.current)??renderPreferences.frameRate;let lastFrameStart=performance.now();
+              const kind=usesSourceImplicitMesh(scene)?'implicit':sourceLivePreviewKind(scene),observedFps=kind==='implicit'||kind==='domain'||kind==='surface',initialFps=(kind==='implicit'?implicitActualFps.current:kind==='surface'?surfaceActualFps.current:domainActualFps.current)??renderPreferences.frameRate;let lastFrameStart=performance.now();
               const actualFrameRate=observedFps?()=>{const now=performance.now(),delta=now-lastFrameStart;lastFrameStart=now;return delta>0?1000/delta:initialFps;}:consumer.actualFrameRate;
               if(kind==='implicit')implicitRecordingScene.current=scene;
               try{return await generationQueue.current.recordSource(output,observedFps?{...options,actualFrameRate:initialFps}:options,{actualFrameRate,shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);}finally{if(implicitRecordingScene.current===scene)implicitRecordingScene.current=undefined;}
@@ -2146,7 +2149,7 @@ export default function App() {
         />
       )}
       {inputDialog&&<TextPrompt request={inputDialog} onClose={()=>setInputDialog(null)}/>}
-      {recording&&!usesSourceImplicitCpuMesh(scene)&&sourceLivePreviewKind(scene)!=='roots'&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&sourceLivePreviewKind(scene)!=='perlin'&&!sourceSamilaRecording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
+      {recording&&!usesSourceImplicitMesh(scene)&&sourceLivePreviewKind(scene)!=='roots'&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&sourceLivePreviewKind(scene)!=='perlin'&&!sourceSamilaRecording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
         onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(sourceLivePreviewKind(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}

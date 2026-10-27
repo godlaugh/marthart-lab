@@ -1,7 +1,7 @@
 import {hasFormulaComposition} from './formulaConfig';
 import {snapshotSourceDrawings,prepareSourceDrawingPlan,type SourceDrawingResult,type SourceDrawingPlan,type SourceDrawingPlanOptions} from './sourceDrawingSnapshot';
 import type {SourceDrawingFrame} from './sourceDrawingFrame';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {createSourceImplicitMesh} from './sourceImplicitRenderer';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
@@ -40,9 +40,9 @@ export type SourceDrawingPlannedFrame=Omit<SourceDrawingFrame,'drawing'|'bouncin
 export type SourceDrawingPlanOwnerOptions=Omit<SourceDrawingPlanOptions,'frameBytes'|'retainedBuffers'|'additionalBytes'>&{retainedBuffers:readonly ArrayBuffer[];additionalBytes:number};
 /** Context attributes are fixed at allocation. MathArt.ensureRenderBuffer(F)
  * calls noSmooth before beginDraw; primary display smoothing is separate.
- * Source Surface, CPU Implicit and CPU Attractor use this offscreen policy. */
+ * Source Surface, Implicit and CPU Attractor use this offscreen policy. */
 export function artExportPurpose(scene:SceneDocument):ArtRendererPurpose {
-  return usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene)||usesSourceAttractorCpu(scene)?'source-offscreen-export':'local-export';
+  return usesSourceSurfaceGeometry(scene)||usesSourceImplicitMesh(scene)||usesSourceAttractorCpu(scene)?'source-offscreen-export':'local-export';
 }
 export class ArtRenderer {
   readonly renderer: THREE.WebGLRenderer;
@@ -195,7 +195,7 @@ export class ArtRenderer {
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
     this.controls.enabled=this.interactiveRequested&&!sourcePlan;
-    const implicitAppearance=!usesSourceImplicitCpuMesh(document)&&document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
+    const implicitAppearance=!usesSourceImplicitMesh(document)&&document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
     this.formulaFrame=output.formulaPresentation;
@@ -241,8 +241,8 @@ export class ArtRenderer {
       this.group.add(plane);
       this.controls.enableRotate = false;
     } else if(output.sourceImplicitPresentation){
-      if(!sourcePlan||!usesSourceImplicitCpuMesh(document))throw Error('源隐式曲面显示需要匹配的文档与相机帧');
-      const {fill,lines}=createSourceImplicitMesh(output,sourcePlan);this.group.add(fill);if(lines)this.group.add(lines);this.controls.enableRotate=false;
+      if(!sourcePlan||!usesSourceImplicitMesh(document))throw Error('源隐式曲面显示需要匹配的文档与相机帧');
+      const {fill,lines}=createSourceImplicitMesh(output,sourcePlan,Math.max(1,this.renderer.capabilities.getMaxAnisotropy()));this.group.add(fill);if(lines)this.group.add(lines);this.controls.enableRotate=false;
     } else if(output.sourceGpuMesh){
       if(!sourcePlan)throw new Error('源 GPU 网格需要对应相机帧');
       const {fill,wire}=createSourceSurfaceGpuMesh(output.sourceGpuMesh,sourcePlan,Number(document.settings.opacity??1));

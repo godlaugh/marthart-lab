@@ -1,6 +1,7 @@
 import {prepareSourceImplicitField} from './sourceImplicitField';
 import {generateSourceImplicitMesh} from './sourceImplicitMesh';
-import {bindSourceImplicitPresentation,usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {bindSourceImplicitPresentation} from './sourceImplicitPresentation';
+import {sourceImplicitMeshRoute,usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {compileReal,compileRealWithFacts,numberSetting,type Scope} from './expression';
 import {geometryColorModel,paletteDomainColor} from './geometryColor';
 import {vertexColors} from './palette';
@@ -41,16 +42,18 @@ export interface ImplicitJob {
 export function prepareImplicitJob(scene:SceneDocument,context:GenerateContext,transform:Transform):ImplicitJob {
  const s=scene.settings;if(!Number.isFinite(context.time))throw Error('时间必须是有限数值');
  for(const [name,value]of Object.entries(scene.parameters))if(!Number.isFinite(value))throw Error(`参数 ${name} 必须为有限数值`);
- const scope={...scene.parameters,t:context.time,time:context.time},n=integer(s,'resolution',36,4,IMPLICIT_MAX_SEGMENTS);
- const dimensions=['X','Y','Z'].map(axis=>{const nAxis=integer(s,`resolution${axis}`,0,0,IMPLICIT_MAX_SEGMENTS);if(nAxis>0&&nAxis<4)throw Error(`resolution${axis} 必须为 0 或至少 4`);return nAxis||n;}) as Vec3;
+ const route=sourceImplicitMeshRoute(scene),sourceMesh=route!==undefined,minimumSegments=sourceMesh?1:4;
+ const scope={...scene.parameters,t:context.time,time:context.time},n=integer(s,'resolution',36,minimumSegments,IMPLICIT_MAX_SEGMENTS);
+ const dimensions=['X','Y','Z'].map(axis=>{const nAxis=integer(s,`resolution${axis}`,0,0,IMPLICIT_MAX_SEGMENTS);if(nAxis>0&&nAxis<minimumSegments)throw Error(`resolution${axis} 必须为 0 或至少 ${minimumSegments}`);return nAxis||n;}) as Vec3;
  const setting=(key:string,fallback:number)=>{const raw=s[key]??fallback,value=typeof raw==='string'?compileReal(raw)(scope):Number(raw);if(!Number.isFinite(value))throw Error(`${key} 必须计算为有限数值`);return value;};
  const min=['X','Y','Z'].map(a=>setting(`min${a}`,-1.5)) as Vec3,max=['X','Y','Z'].map(a=>setting(`max${a}`,1.5)) as Vec3;
  if(max.some((v,i)=>v<=min[i]))throw Error('各坐标域上限必须大于下限');
  const spacing=max.map((v,i)=>(v-min[i])/dimensions[i]) as Vec3;if(!spacing.every(v=>Number.isFinite(v)&&v>0))throw Error('坐标域跨度不可表示');
  for(let axis=0;axis<3;axis++){let previous=min[axis];for(let i=1;i<=dimensions[axis];i++){const value=min[axis]+i*spacing[axis];if(!Number.isFinite(value)||value<=previous)throw Error('请求网格的相邻坐标在双精度中不可区分；请增大坐标跨度或降低分辨率');previous=value;}}
  const planeSize=(dimensions[0]+1)*(dimensions[1]+1),latticeSamples=planeSize*(dimensions[2]+1),cells=dimensions[0]*dimensions[1]*dimensions[2];
- const source=scene.equations.f??'x^2+y^2+z^2-1',compiled=usesSourceImplicitCpuMesh(scene)?undefined:compileRealWithFacts(source),mode=option(s,'renderMode','mesh',['mesh','wireframe','points']) as ImplicitJob['mode'];
- return {scene,transform,dimensions,min,max,spacing,planeSize,latticeSamples,cells,source,scope,iso:numberSetting(s,'isoLevel',0),sign:option(s,'inside','below',['below','above'])==='below'?1:-1,mode,overlay:mode==='mesh'&&!usesSourceImplicitCpuMesh(scene)&&parseMeshAppearance(s).wireframe,requestedBackend:option(s,'computeBackend','cpu',['cpu','webgl2','auto']) as ImplicitJob['requestedBackend'],domainColors:!usesSourceImplicitCpuMesh(scene)&&geometryColorModel(scene).implicit==='z-domain',local:compiled?{evaluate:compiled.evaluate,continuity:compileImplicitContinuity(compiled.facts)}:undefined};
+ const source=scene.equations.f??'x^2+y^2+z^2-1',compiled=sourceMesh?undefined:compileRealWithFacts(source),mode=option(s,'renderMode','mesh',['mesh','wireframe','points']) as ImplicitJob['mode'];
+ const requestedBackend=route?(route.requestedMeshMode==='CPU'?'cpu':route.requestedMeshMode==='GPU'?'webgl2':'auto'):option(s,'computeBackend','cpu',['cpu','webgl2','auto']) as ImplicitJob['requestedBackend'];
+ return {scene,transform,dimensions,min,max,spacing,planeSize,latticeSamples,cells,source,scope,iso:numberSetting(s,'isoLevel',0),sign:option(s,'inside','below',['below','above'])==='below'?1:-1,mode,overlay:mode==='mesh'&&!sourceMesh&&parseMeshAppearance(s).wireframe,requestedBackend,domainColors:!sourceMesh&&geometryColorModel(scene).implicit==='z-domain',local:compiled?{evaluate:compiled.evaluate,continuity:compileImplicitContinuity(compiled.facts)}:undefined};
 }
 /** Checked upper bound for final deliverable arrays and its compaction map.
  * It excludes extraction chunks/frontier (accounted dynamically) and renderer/
@@ -250,7 +253,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
 export function generateImplicitSurface(scene:SceneDocument,context:GenerateContext,transform:Transform):SceneOutput {
  const started=performance.now(),job=prepareImplicitJob(scene,context,transform);
  if(context.isCancelled?.())return{type:'geometry',dimension:3,topology:job.mode==='points'?'points':job.mode==='wireframe'?'segments':'mesh',positions:new Float32Array(0),colors:new Float32Array(0),...(job.mode!=='points'?{indices:new Uint32Array(0)}:{}),...(job.overlay?{meshEdges:new Uint32Array(0)}:{}),backend:'cpu',implicit:emptyFacts(job),stats:{samples:0,generated:0,invalid:0},warnings:['场采样已取消，未进行等值面剖分。']};
- if(usesSourceImplicitCpuMesh(scene)){const field=prepareSourceImplicitField(job),output=generateSourceImplicitMesh(job,field,context);bindSourceImplicitPresentation(output,job,context,field);output.stats.elapsedMs=performance.now()-started;return output;}
+ if(usesSourceImplicitMesh(scene)){const field=prepareSourceImplicitField(job),output=generateSourceImplicitMesh(job,field,context);bindSourceImplicitPresentation(output,job,context,field);output.stats.elapsedMs=performance.now()-started;return output;}
  const gpu=job.requestedBackend==='webgl2'||job.requestedBackend==='auto'&&job.latticeSamples>=4096;
  let output:SceneOutput;try{output=extract(job,context,gpu,gpu?['GPU 格点逐点以 CPU 双精度核验分类，根细化和网格提取使用 CPU；此质量路径不保证加速。']:[]);}catch(error){if(!(error instanceof GpuRetry))throw error;cancelled(context);output=extract(job,context,false,[`GPU 等值面回退 CPU：${error.message}`,`工作统计包括已完成的 GPU 尝试（${error.work.latticeSamples} 个格点、${error.work.latticeValidationSamples} 次 CPU 分类核验、${error.work.rootEvaluations} 次根求值）和 CPU 重放；实际工作可超过请求网格。`],error);}if(output.type==='geometry')bindSourceImplicitPresentation(output,job,context);output.stats.elapsedMs=performance.now()-started;return output;
 }

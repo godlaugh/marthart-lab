@@ -1,0 +1,609 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "scope": "Six steady implicit GPU material states; original CPU MC fallback plus GPU fill and common contour lines. No dirty-rebuild viewport or native Compute success claim.",
+  "sourceJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "parentCommit": "360d35fa5a2abb23f00a798e7c47b57e348648d9",
+  "wholeFamilyVerified": false,
+  "goalComplete": false,
+  "states": [
+    {
+      "name": "default",
+      "report": ".cache/source-implicit-gpu-material-20261027/native-final/report.json",
+      "reportSha256": "03b470697f1cd1c4bfb37278ee56a137bf99ac4bd6a6ed7f35e3597f6dc81ed2",
+      "referenceFacts": {
+        "path": ".cache/source-implicit-gpu-reference-20261027/source-facts.json",
+        "sha256": "6335e10b7f4796a3095bcc07c6cfad176818bc7d9f07f323dc366c278528b68a"
+      },
+      "materialCommand": null,
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "comparisons": [
+        {
+          "scope": "fill-only",
+          "packetSha256": "f61625eb3131074daf9470ecdfa9cb2f5f5ea9c49d5a425828196ebc3b645c53",
+          "sha256": "cd713346fdf5e10b1876bf12a99bb5a8a0792b0ebc4127379bb1ba6ed97cd9e4",
+          "referenceSha256": "cd713346fdf5e10b1876bf12a99bb5a8a0792b0ebc4127379bb1ba6ed97cd9e4",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "3b5ef0b3fbae758c18e731e06c82726383395277c6df723de189da5b8999a98d"
+        },
+        {
+          "scope": "complete-math",
+          "packetSha256": "3a275e1121b7543f67f515e23660b73e35ee056769f2d455175d66ef6ae7440a",
+          "sha256": "cecbd6ce0a324e8bc07abafe94da6c46287d8d6b00cabeafaa84be530792c7d0",
+          "referenceSha256": "cecbd6ce0a324e8bc07abafe94da6c46287d8d6b00cabeafaa84be530792c7d0",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "3b5ef0b3fbae758c18e731e06c82726383395277c6df723de189da5b8999a98d"
+        }
+      ],
+      "elapsedSeconds": 3.8926762910000003,
+      "cleanup": {
+        "closed": {
+          "ok": true
+        },
+        "processCount": 0,
+        "retainedResourceCount": 0
+      }
+    },
+    {
+      "name": "checker",
+      "report": ".cache/source-implicit-gpu-material-20261027/checker-r1/report.json",
+      "reportSha256": "e1a1ca6d7629b311c1388b1e77cb19a009cd27840bcf77f5cf1356e7938334f2",
+      "referenceFacts": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/checker/source-facts.json",
+        "sha256": "ceffd041b1391e002f95922268a74b1163f75cf4b8d6752bf056bbfcc5df3586"
+      },
+      "materialCommand": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/checker/material-command.json",
+        "sha256": "4d71c13e64373289a6815315ca78e9c034c63bd1e3ade257520089bb024bd958",
+        "command": {
+          "shininess": 32,
+          "ambient": "#4d4d4d",
+          "specular": "#ffffff",
+          "proceduralTexture": "checker"
+        },
+        "meaning": "Same authored hot material event as original; applied local document inputs, not measured shader values."
+      },
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "comparisons": [
+        {
+          "scope": "fill-only",
+          "packetSha256": "c6bc54f89f12151ad3893838c1d83cda69fa57ce0c3f25f6b21d97b78354eee4",
+          "sha256": "497a41cea4caa4cca65e8dba98527a7c01cfb05f88f5a5054d0247c6ba14c817",
+          "referenceSha256": "497a41cea4caa4cca65e8dba98527a7c01cfb05f88f5a5054d0247c6ba14c817",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "7e04de60400799a5e5e4e8c8e03e9250fd043d8cd0efa52f57982266298259bb"
+        },
+        {
+          "scope": "complete-math",
+          "packetSha256": "6fc7a8cbab6a12cf5f8d34aea95a1af084b7f64c556f08c4fce65b0cf8a4c0c2",
+          "sha256": "f5f17a59526a1d77447f6e1905ec2c60c87a7e3a71ee2685d3a173e9fd74e59b",
+          "referenceSha256": "f5f17a59526a1d77447f6e1905ec2c60c87a7e3a71ee2685d3a173e9fd74e59b",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "7e04de60400799a5e5e4e8c8e03e9250fd043d8cd0efa52f57982266298259bb"
+        }
+      ],
+      "elapsedSeconds": 3.517298959,
+      "cleanup": {
+        "closed": {
+          "ok": true
+        },
+        "processCount": 0,
+        "retainedResourceCount": 0
+      }
+    },
+    {
+      "name": "metal",
+      "report": ".cache/source-implicit-gpu-material-20261027/metal-r1/report.json",
+      "reportSha256": "550ffd80660c5aa7c8017d4a3b9ee75454a5e226913e9542e4f2e126af6b8e36",
+      "referenceFacts": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/metal/source-facts.json",
+        "sha256": "9fc80113cc1c503950692167a2c25b78b7e792737447422f990da7941b3c0848"
+      },
+      "materialCommand": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/metal/material-command.json",
+        "sha256": "9a3775b46532f7ed5ee48f0c59c400b350151b55758487af366eea63d3b352dd",
+        "command": {
+          "shininess": 32,
+          "ambient": "#4d4d4d",
+          "specular": "#ffffff",
+          "proceduralTexture": "metal"
+        },
+        "meaning": "Same authored hot material event as original; applied local document inputs, not measured shader values."
+      },
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "comparisons": [
+        {
+          "scope": "fill-only",
+          "packetSha256": "123aa37c46e4df54b5bdeb1f1e9deceb6b1ac0ffbf03a86a6692751b5cd035a1",
+          "sha256": "a6f2d78ee557bf416668d340e141c6e325294c532073d8bcb75729b6393fe032",
+          "referenceSha256": "a6f2d78ee557bf416668d340e141c6e325294c532073d8bcb75729b6393fe032",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "8449b95b6e605422d151a109557e47090057a14b9f9a83d5ff33980cc542ffa0"
+        },
+        {
+          "scope": "complete-math",
+          "packetSha256": "1ef1b5ef1fbdb6c01ebfa656ccc5bc9f5c2fc2d9bba15c7c83fc93e0508c58ba",
+          "sha256": "34550ba0d556a20f61fd726bb6388e348693a9248e626b8211132eea62ea091f",
+          "referenceSha256": "34550ba0d556a20f61fd726bb6388e348693a9248e626b8211132eea62ea091f",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "8449b95b6e605422d151a109557e47090057a14b9f9a83d5ff33980cc542ffa0"
+        }
+      ],
+      "elapsedSeconds": 2.950115584,
+      "cleanup": {
+        "closed": {
+          "ok": true
+        },
+        "processCount": 0,
+        "retainedResourceCount": 0
+      }
+    },
+    {
+      "name": "ceramic",
+      "report": ".cache/source-implicit-gpu-material-20261027/ceramic-r1/report.json",
+      "reportSha256": "c26dcea2676af87f736a5d2a3730d05d8076cf1718cc8b6f0c4e6a417c49d2f4",
+      "referenceFacts": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/ceramic/source-facts.json",
+        "sha256": "bba616d4cb3de20c5db871a1f1ea9abcf039dd1d6c951f42c629e4566ab950b7"
+      },
+      "materialCommand": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/ceramic/material-command.json",
+        "sha256": "6a35fa4f6af35c60c04821613371ece0d3c1ffe093a83fe8be46d8838c10ee48",
+        "command": {
+          "shininess": 32,
+          "ambient": "#4d4d4d",
+          "specular": "#ffffff",
+          "proceduralTexture": "ceramic"
+        },
+        "meaning": "Same authored hot material event as original; applied local document inputs, not measured shader values."
+      },
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "comparisons": [
+        {
+          "scope": "fill-only",
+          "packetSha256": "b405e239d47c36c104b5ea13debe9200ef1d9ea62bcd6787b19f81312e0c5eb6",
+          "sha256": "32833094ca89ee7c867dce210b7475ce8c099df0945316492e5b21babe2c0ae1",
+          "referenceSha256": "32833094ca89ee7c867dce210b7475ce8c099df0945316492e5b21babe2c0ae1",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "85c2f0bc3aa645bb3965b6369e9df57f66047e613a27e6abf900f6afb49abb4a"
+        },
+        {
+          "scope": "complete-math",
+          "packetSha256": "d7e61a64e679271e5fefbe23b8ca958dcb3f6653bfc2d9178acb884b7b66c9f3",
+          "sha256": "65afcaec7318049c4c0fa202fbc8c6b14aa5c9e81d22ffde446ec9faed87062d",
+          "referenceSha256": "65afcaec7318049c4c0fa202fbc8c6b14aa5c9e81d22ffde446ec9faed87062d",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "85c2f0bc3aa645bb3965b6369e9df57f66047e613a27e6abf900f6afb49abb4a"
+        }
+      ],
+      "elapsedSeconds": 3.068170209,
+      "cleanup": {
+        "closed": {
+          "ok": true
+        },
+        "processCount": 0,
+        "retainedResourceCount": 0
+      }
+    },
+    {
+      "name": "carbon",
+      "report": ".cache/source-implicit-gpu-material-20261027/carbon-r1/report.json",
+      "reportSha256": "7017245453de744cbbd5f1dd81e102e943ba3b4e46166aecc44f21a563915e90",
+      "referenceFacts": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/carbon/source-facts.json",
+        "sha256": "c7b9571de2663c0919b823cd57468b773cd8171ee81e14b98ac8b22a10f202b8"
+      },
+      "materialCommand": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/carbon/material-command.json",
+        "sha256": "28d01c441e389289a76c4c1a7032ae725890a3558a97d121440cf452a0340d1f",
+        "command": {
+          "shininess": 32,
+          "ambient": "#4d4d4d",
+          "specular": "#ffffff",
+          "proceduralTexture": "carbon"
+        },
+        "meaning": "Same authored hot material event as original; applied local document inputs, not measured shader values."
+      },
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "comparisons": [
+        {
+          "scope": "fill-only",
+          "packetSha256": "a93710f95a2d0e2bddd366583be8efc8e9818e8c91c709cabff2d26e95636668",
+          "sha256": "1604c9669d8938345c7d547d782875bdfbecd143e77b5414321122a0e6e024f9",
+          "referenceSha256": "1604c9669d8938345c7d547d782875bdfbecd143e77b5414321122a0e6e024f9",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "03021472d38cbec6c05c7ad98c879763a0f23a6467b1c6999e7a3ded657057e2"
+        },
+        {
+          "scope": "complete-math",
+          "packetSha256": "31fd842d66a3515ebdd2ee7ef033c8cb27177171371aba8d073083ecb32aa1ec",
+          "sha256": "6cc8c6bd0b97452341d65f5ba47b4ca6a60631dc329a1d155736561dc30b5675",
+          "referenceSha256": "6cc8c6bd0b97452341d65f5ba47b4ca6a60631dc329a1d155736561dc30b5675",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "03021472d38cbec6c05c7ad98c879763a0f23a6467b1c6999e7a3ded657057e2"
+        }
+      ],
+      "elapsedSeconds": 2.962703625,
+      "cleanup": {
+        "closed": {
+          "ok": true
+        },
+        "processCount": 0,
+        "retainedResourceCount": 0
+      }
+    },
+    {
+      "name": "joint-material",
+      "report": ".cache/source-implicit-gpu-material-20261027/joint-material-r1/report.json",
+      "reportSha256": "f7702e7b884a18f1f9090397ee4e1bbf551a87af35273efd07b6d067165e2113",
+      "referenceFacts": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/joint-material/source-facts.json",
+        "sha256": "bfa4b907b6707fa3fb1f269bfaa10818df213ad82e79ddb3ebec69acf5fbc8c4"
+      },
+      "materialCommand": {
+        "path": ".cache/source-implicit-hot-material-20261027/cases/joint-material/material-command.json",
+        "sha256": "1e5404fbd443513211e703cfda2b644e55f5f6afe0d9f920334f08da5254a536",
+        "command": {
+          "shininess": 64,
+          "ambient": "#204060",
+          "specular": "#e0a080",
+          "proceduralTexture": "none"
+        },
+        "meaning": "Same authored hot material event as original; applied local document inputs, not measured shader values."
+      },
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "comparisons": [
+        {
+          "scope": "fill-only",
+          "packetSha256": "1c52500799751a22af71c2b969fe4f360d5a490232b712cf8b5d3a9059b535f6",
+          "sha256": "a1cd242be83909fbeaabe395ddcd73ddb849721681209ee93cbd82156bf39435",
+          "referenceSha256": "a1cd242be83909fbeaabe395ddcd73ddb849721681209ee93cbd82156bf39435",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "1691a80ad3303e8005616a2553a7ee84b1db57c96d4c11b09dcfae77556ffbcd"
+        },
+        {
+          "scope": "complete-math",
+          "packetSha256": "a01a8257d1aefe268b0b83c0f5100def597b9375d584a69274a0aad0aeb718e9",
+          "sha256": "86a8af1ae057f1b13c26a34bf61abdcbd2f88719f1a04a8adfa7ecb2827ce129",
+          "referenceSha256": "86a8af1ae057f1b13c26a34bf61abdcbd2f88719f1a04a8adfa7ecb2827ce129",
+          "comparison": {
+            "differentPixels": 0,
+            "differentChannels": 0,
+            "maxChannelDelta": 0,
+            "bytes": 1200000
+          },
+          "contextSerial": 1,
+          "rendererIdentity": "1691a80ad3303e8005616a2553a7ee84b1db57c96d4c11b09dcfae77556ffbcd"
+        }
+      ],
+      "elapsedSeconds": 3.041280875,
+      "cleanup": {
+        "closed": {
+          "ok": true
+        },
+        "processCount": 0,
+        "retainedResourceCount": 0
+      }
+    }
+  ],
+  "app": {
+    "report": ".cache/source-implicit-gpu-material-20261027/app-r3/report.json",
+    "sha256": "be4b99797a90378899bba3e8c456a46ca52742f178427406f339d01b5b4492b2",
+    "scope": "Actual App record/export controls, original-queue local Worker, native rendering, FFmpeg, stop/continue/pause/resize/resume/edit/seek and cancel/retry. No original GUI or original MP4 claim.",
+    "status": "passed",
+    "elapsedMs": 19049.878665999997,
+    "processFamily": {
+      "rootPid": 93667,
+      "samples": 61,
+      "observedProcesses": 80,
+      "maxConcurrentProcesses": 12,
+      "sampledPeakRssKiB": 2695744,
+      "observedCpuMs": 45530.00000000001,
+      "samplingErrors": []
+    },
+    "cases": [
+      {
+        "name": "natural",
+        "status": "passed",
+        "recordingUpdates": 5,
+        "pngCancelRetained": true,
+        "pauseResizeResume": true,
+        "editRequiresApply": true,
+        "applyRetiresContinuation": true,
+        "jpeg": {
+          "file": ".cache/source-implicit-gpu-material-20261027/app-r3/replay.jpg",
+          "width": 64,
+          "height": 48,
+          "sha256": "0ff66c5e99c2807d45fbe39c324dd9af7788ac713d9b589d5dbf70206dd83e04",
+          "nativeFrameSha256": "3681bb005292ab507b84272e4f51f679008372b019f8786366365baeff04aef5",
+          "scope": "Actual native route, JPEG decoding and dimensions; no lossy-JPEG original pixel parity claim."
+        },
+        "video": {
+          "metadata": {
+            "width": 128,
+            "height": 96,
+            "pix_fmt": "yuvj444p",
+            "color_range": "pc",
+            "color_space": "bt709",
+            "r_frame_rate": "4/1",
+            "duration": "1.000000",
+            "nb_read_frames": "4"
+          },
+          "rows": [
+            {
+              "index": 0,
+              "inputRgbaSha256": "8024e3069a5e19d635c30b41c69631eb4e97f87f542b78b2c75790898c84071b",
+              "decodedSha256": "4ac51df63b07765c387134bb3041045721ea31ff1ed22bd5886f6b986de08210",
+              "referenceSha256": "4ac51df63b07765c387134bb3041045721ea31ff1ed22bd5886f6b986de08210",
+              "differentChannels": 0,
+              "maxAbs": 0
+            },
+            {
+              "index": 1,
+              "inputRgbaSha256": "01e5d461df14739d550b9278377a00877f7110656b36e1ea254d99e441352c34",
+              "decodedSha256": "fd938569ecd9a9ea2cbd3d7f33ff2456f0a31959dbd71e3f87a98ff02c52fb94",
+              "referenceSha256": "fd938569ecd9a9ea2cbd3d7f33ff2456f0a31959dbd71e3f87a98ff02c52fb94",
+              "differentChannels": 0,
+              "maxAbs": 0
+            },
+            {
+              "index": 2,
+              "inputRgbaSha256": "951f404456bec25aab9b8698ed103ab75fa63933c58333f63a7b23e9a685c88b",
+              "decodedSha256": "fa718ddb2a48463146ec0d030bac9ce47fb0f5e914accac431d4ea6964cf1a0e",
+              "referenceSha256": "fa718ddb2a48463146ec0d030bac9ce47fb0f5e914accac431d4ea6964cf1a0e",
+              "differentChannels": 0,
+              "maxAbs": 0
+            },
+            {
+              "index": 3,
+              "inputRgbaSha256": "b0a96f050398651448294e1e1baf17217c190e5d61183530d4138cd3aa78db36",
+              "decodedSha256": "061aab1b3baae714b25e598aa3c1bfec355bea3673ebe38115b3c132ee2b0050",
+              "referenceSha256": "061aab1b3baae714b25e598aa3c1bfec355bea3673ebe38115b3c132ee2b0050",
+              "differentChannels": 0,
+              "maxAbs": 0
+            }
+          ],
+          "distinctFrames": 4,
+          "nonUniform": true,
+          "decodedSha256": "3c4eca0103d1d871de6277fc255ba8ac54e5d33f705267cc38c85c898a475991",
+          "referenceDecodedSha256": "3c4eca0103d1d871de6277fc255ba8ac54e5d33f705267cc38c85c898a475991",
+          "referenceFile": ".cache/source-implicit-gpu-material-20261027/app-r3/natural-raw-reference.mp4",
+          "referenceArguments": [
+            "-v",
+            "error",
+            "-nostdin",
+            "-y",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            "384x288",
+            "-framerate",
+            "4",
+            "-threads",
+            "2",
+            "-i",
+            "pipe:0",
+            "-an",
+            "-filter_threads",
+            "2",
+            "-filter_complex_threads",
+            "2",
+            "-vf",
+            "scale=128:96:flags=lanczos",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv444p",
+            "-color_range",
+            "pc",
+            "-colorspace",
+            "bt709",
+            "-color_primaries",
+            "bt709",
+            "-color_trc",
+            "iec61966-2-1",
+            "-movflags",
+            "+faststart+write_colr",
+            "-preset",
+            "slow",
+            "-crf",
+            "18",
+            "-tune",
+            "animation",
+            "-threads",
+            "0",
+            ".cache/source-implicit-gpu-material-20261027/app-r3/natural-raw-reference.mp4"
+          ],
+          "sequenceSensitivity": {
+            "swappedDistinctPairRejected": [
+              0,
+              1
+            ],
+            "repeatedFirstFrameRejectedAt": 1
+          },
+          "colorMetadataLimit": "Missing transfer or primaries fields remain unknown.",
+          "scope": "Every decoded RGB channel equals independent raw-input FFmpeg encoding; lossy H.264 is not expected to equal uncompressed input RGB."
+        }
+      },
+      {
+        "name": "cancel",
+        "status": "passed",
+        "recordingUpdates": 2,
+        "pauseResizeResume": true,
+        "retryCompleted": true
+      }
+    ],
+    "cleanupErrors": [],
+    "remainingProcesses": 0
+  },
+  "checks": {
+    "modifiedSourceTests": {
+      "files": 17,
+      "passed": 195,
+      "log": ".cache/source-implicit-gpu-material-20261027/focused-tests.log",
+      "sha256": "73ea9972bff86a0149f477ce23a77b0c2dc08aa1d0a4f4fc17f848fa721daf6a"
+    },
+    "typecheck": "Passed in final desktop build",
+    "build": "Apple Silicon 2.0.0-preview.16"
+  },
+  "limitations": [
+    "Original first/dirty GPU fallback restores primary viewport during offscreen rendering; not yet implemented.",
+    "Original PREVIEW particle algorithm remains distinct from the mesh path.",
+    "No original MP4/JPEG pixel-equivalence assertion; App movie delivery compared against independent raw-input FFmpeg encoding.",
+    "Only this Mac; no successful native Compute execution or cross-device verification."
+  ],
+  "desktop": {
+    "bundle": "/Users/hoo/AIStudio/mathartstudio-rea/studio/dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app",
+    "version": "2.0.0-preview.16",
+    "asarSha256": "b970b819fa8284c7632fde5089aeede179cec7c67f6027a5a9c8e8bcc2b763dc",
+    "nativeManifest": {
+      "schemaVersion": 1,
+      "platform": "darwin",
+      "arch": "arm64",
+      "executable": "source-cgl-renderer",
+      "sha256": "e7babe842bd5364eff19d4e621cad54af15be3b1dbd8ad085a7b459a099c5fb9"
+    },
+    "buildLog": ".cache/source-implicit-gpu-material-20261027/desktop-build.log",
+    "buildLogSha256": "e60eb6de9b9fc4f65b2cc8dd12e149cf6e0b032edc1c0bde2894dfd503e7a77d",
+    "smoke": {
+      "report": ".cache/desktop-smoke-SRboUf/report.json",
+      "sha256": "1967c986b425031651f8a80b74a0200a9306f645850ada789a3515761d8e1cb7",
+      "phases": [
+        {
+          "phase": "initial",
+          "status": "passed",
+          "closedPortsVerified": true,
+          "shutdown": {
+            "ownedProcessCount": 0,
+            "servicesClosed": true
+          },
+          "elapsedMs": 6828
+        },
+        {
+          "phase": "restore",
+          "status": "passed",
+          "closedPortsVerified": true,
+          "shutdown": {
+            "ownedProcessCount": 0,
+            "servicesClosed": true
+          },
+          "elapsedMs": 2809
+        }
+      ]
+    },
+    "implicitSmoke": {
+      "report": ".cache/implicit-native-desktop-20261027/run-2/report.json",
+      "sha256": "3a8fec0c3270f83937e5f6bf18e0367b405531c2c22837195bfd0bceed6e38c5",
+      "status": "passed",
+      "seconds": 7.089187541,
+      "runtime": {
+        "name": "MathArt Lab 2 Preview",
+        "version": "2.0.0-preview.16",
+        "userData": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/implicit-native-desktop-20261027/run-2/profile",
+        "visibleWindows": 0
+      },
+      "positions": 270360,
+      "png": {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/implicit-native-desktop-20261027/run-2/implicit-500x600.png",
+        "sha256": "8943ecd2354038dfbf02fda932e4ca62f6e5aa21d4208339b34cfb3c6f2ac2e7",
+        "rgbaSha256": "5ae65b683e4e30bbdb9a8fa077266f3bc00800b83cca5c0cb9993eb2a2ff0afd"
+      },
+      "hiddenBefore": {
+        "visibleWindows": 0,
+        "showEvents": []
+      },
+      "hiddenAfter": {
+        "visibleWindows": 0,
+        "showEvents": []
+      },
+      "exitCode": 0,
+      "remainingOwnedProcesses": [],
+      "portsClosed": true,
+      "asarUnchanged": true,
+      "helperUnchanged": true,
+      "manifestUnchanged": true,
+      "sourceUnchanged": true,
+      "verifierStable": true
+    }
+  }
+}

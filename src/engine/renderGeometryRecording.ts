@@ -1,4 +1,4 @@
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {prepareSourceImplicitOffscreenTarget} from './sourceImplicitViewport';
 import type {SceneDocument,SceneOutput} from '../types';
 import {SourceDrawingResources} from './sourceDrawingResources';
 import {readSourceDrawingPixels,sourceDrawingBackend,type SourceDrawingRequest} from './sourceDrawingPixels';
@@ -25,7 +25,8 @@ export class GeometryRecordingRenderer {
   const gl=renderer.renderer.getContext(),limits=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
   if(gl.isContextLost())throw Error('曲面录制绘图上下文已丢失');
   if(width>limits[0]||height>limits[1]||Math.max(width,height)>gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))throw Error('曲面录制尺寸超过当前 GPU 限制');
-  if(usesSourceImplicitCpuMesh(this.scene))renderer.setSize(width,height,1);else renderer.setSize(logicalWidth,logicalHeight,density);
+  const target=output.sourceImplicitPresentation?prepareSourceImplicitOffscreenTarget(output.sourceImplicitPresentation.model,this.size,density,output.sourceCameraFrame!.viewport.referenceLogicalHeight):undefined;
+  if(target)renderer.setSize(target.drawing.width,target.drawing.height,target.drawing.pixelRatio);else renderer.setSize(logicalWidth,logicalHeight,density);
   renderer.setOutput(output,{...this.scene,evaluatedSourceCamera:output.sourceCameraFrame},false);check();
   const {pixels,sourcePixelRenderer}=await readSourceDrawingPixels(renderer,width,height,bytes,isCancelled,request?{...request,signal:controller.signal}:undefined);
   check();

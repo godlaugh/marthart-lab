@@ -14,13 +14,14 @@ export function validateImplicitSourcePalette(raw:unknown):{colors:string[]} {
  if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).some(key=>key!=='colors'))throw new ImplicitPaletteControlError('Implicit source palette must contain only colors');
  const colors=(raw as {colors?:unknown}).colors;validateImplicitPaletteColors(colors);return raw as {colors:string[]};
 }
-/** Empty hot input is empty here; only the retained runtime owner can decide
- * that it means keep-current. Empty cold input is the source white mesh. */
+/** Preserve the actual source palette cardinality. The retained runtime owner
+ * owns hot-empty keep-current; CPU color consumers own the cold white fallback.
+ * GPU presentation must still observe an empty array as paletteSize zero. */
 export function prepareImplicitPalette(raw:unknown,mode:'cold'|'hot'):ImplicitPaletteFacts {
  validateImplicitPaletteColors(raw);if(mode!=='cold'&&mode!=='hot')throw new ImplicitPaletteControlError('Unknown Implicit palette parser mode');
  const diagnostics:string[]=[],values=raw.map((text,index)=>{
   if(mode==='hot')return sourceHotPalettePackedColor(text);
   try{return sourceConfigPackedColor(text);}catch(error){if(!(error instanceof SourceConfigColorError))throw error;diagnostics.push(`Implicit palette color ${index+1} is invalid; source white is used and raw text is retained.`);return 0xffffffff;}
  });
- return Object.freeze({packed:Object.freeze(values.length||mode==='hot'?values:[0xffffffff]),diagnostics:Object.freeze(diagnostics)});
+ return Object.freeze({packed:Object.freeze(values),diagnostics:Object.freeze(diagnostics)});
 }

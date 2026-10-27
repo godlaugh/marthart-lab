@@ -47,7 +47,8 @@ describe('Implicit source palette controlled UI',()=>{
   const empty={...s,implicitSourcePalette:{colors:[]}};hooks.values=[];const view=render(empty,changed);expect(view.some(n=>n.props['aria-label']==='源颜色原文')).toBe(false);expect(changed).toHaveBeenCalledTimes(1);
   button(view,'添加颜色').onClick();expect(changed.mock.calls[1][0].implicitSourcePalette.colors).toEqual(['#FFFFFF']);
  });
- it('does not expose this source-only editor for legacy or GPU profiles',()=>{
-  const s=scene();s.settings.computeBackend='webgl2';expect(render(s,vi.fn())).toEqual([]);
+ it('shares the source palette editor with GPU material but does not infer source identity for a local document',()=>{
+  const s=scene();s.settings.computeBackend='webgl2';expect(render(s,vi.fn()).some(n=>n.props['data-testid']==='source-implicit-palette')).toBe(true);
+  delete s.settings.implicitSourceVersion;delete s.settings.implicitPresentationVersion;expect(render(s,vi.fn())).toEqual([]);
  });
 });

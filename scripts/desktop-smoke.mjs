@@ -9,7 +9,7 @@ import {createWorkspaceStore} from '../desktop/storage.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),require=createRequire(import.meta.url);
 const packaged=process.argv.find(a=>a.startsWith('--packaged='))?.slice('--packaged='.length);
 const executable=packaged?path.resolve(packaged):require('electron');
-const baseArgs=packaged?[]:[path.join(root,'desktop/main.mjs')];
+const baseArgs=[...(packaged?[]:[path.join(root,'desktop/main.mjs')]),'--mathart-hidden'];
 await mkdir(path.join(root,'.cache'),{recursive:true});const directory=await mkdtemp(path.join(root,'.cache','desktop-smoke-')),userData=path.join(directory,'data');
 const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
 async function closed(port){await new Promise((resolve,reject)=>{const socket=net.createConnection({port,host:'127.0.0.1'});socket.setTimeout(1500,()=>{socket.destroy();reject(new Error(`Port ${port} timed out`));});socket.once('connect',()=>{socket.destroy();reject(new Error(`Port ${port} still listening`));});socket.once('error',error=>error.code==='ECONNREFUSED'?resolve():reject(error));});}

@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import type {SceneDocument} from '../src/types';
-import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitPresentation';
+import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitIdentity';
 import {ImplicitPaletteControlOwner,prepareImplicitPalette,implicitPaletteControlReceiptMatches,validateImplicitPaletteControls,implicitPaletteControlRepresentationBytes,type ImplicitPaletteControls} from '../src/engine/implicitPaletteControl';
 function scene(colors?:string[]):SceneDocument {
  const value=createScene(definition('implicit'));Object.assign(value.settings,{implicitPresentationVersion:SOURCE_IMPLICIT_PRESENTATION,renderMode:'mesh',computeBackend:'cpu'});
@@ -18,12 +18,21 @@ describe('Implicit palette control cold/current worker authority',()=>{
   expect(owner.coldScene.implicitSourcePalette!.colors).toEqual(raw);expect(author.implicitSourcePalette!.colors).toBe(raw);
   raw[0]='#000000';expect(owner.coldScene.implicitSourcePalette!.colors[0]).toBe('#80112233');
  });
- it('exposes format-specific preparation without pretending empty hot is cold white',()=>{
-  expect(prepareImplicitPalette([],'cold').packed).toEqual([0xffffffff]);expect(prepareImplicitPalette([],'hot').packed).toEqual([]);expect(prepareImplicitPalette(['#80112233'],'cold').packed).toEqual([0x80112233]);expect(prepareImplicitPalette(['#80112233'],'hot').packed).toEqual([0xff112233]);expect(()=>prepareImplicitPalette([1],'cold')).toThrow('strings');
+ it('exposes format-specific preparation while preserving empty source cardinality',()=>{
+  expect(prepareImplicitPalette([],'cold').packed).toEqual([]);expect(prepareImplicitPalette([],'hot').packed).toEqual([]);expect(prepareImplicitPalette(['#80112233'],'cold').packed).toEqual([0x80112233]);expect(prepareImplicitPalette(['#80112233'],'hot').packed).toEqual([0xff112233]);expect(()=>prepareImplicitPalette([1],'cold')).toThrow('strings');
  });
- it('keeps cold empty and singleton authored cardinality, with white/constant runtime facts',()=>{
-  const empty=setup([]).owner;expect(empty.coldScene.implicitSourcePalette!.colors).toEqual([]);expect(empty.currentPalette.packed).toEqual([0xffffffff]);
+ it('keeps cold empty and singleton cardinality without inserting a display fallback',()=>{
+  const empty=setup([]).owner;expect(empty.coldScene.implicitSourcePalette!.colors).toEqual([]);expect(empty.currentPalette.packed).toEqual([]);
   const single=setup(['#00224466']).owner;expect(single.coldScene.implicitSourcePalette!.colors).toEqual(['#00224466']);expect(single.currentPalette.packed).toEqual([0x00224466]);
+ });
+ it('retains an empty cold palette through hot no-op, restart and recording reset',()=>{
+  const {owner}=setup([]),cold=owner.currentScene,palette=owner.currentPalette;
+  hot(owner,[]);expect(owner.currentScene).toBe(cold);expect(owner.currentPalette).toBe(palette);
+  hot(owner,['#80abcdef']);expect(owner.currentPalette.packed).toEqual([0xffabcdef]);
+  owner.commit(owner.prepare({acknowledgedRevision:3,commands:[{kind:'restart',revision:4}]}));
+  expect(owner.currentPalette).toBe(palette);expect(owner.currentPalette.packed).toEqual([]);
+  hot(owner,['#123456']);owner.commit(owner.prepareRecordingReset());
+  expect(owner.currentScene).toBe(cold);expect(owner.currentPalette).toBe(palette);expect(Object.isFrozen(palette.packed)).toBe(true);
  });
  it('acknowledges empty hot commands without replacing current or resetting cold',()=>{
   const {owner}=setup();hot(owner,['#abcdef']);const current=owner.currentScene,palette=owner.currentPalette;
@@ -72,7 +81,8 @@ describe('Implicit palette control cold/current worker authority',()=>{
   const cyclic:{self?:unknown}={};cyclic.self=cyclic;expect(()=>implicitPaletteControlRepresentationBytes(cyclic)).toThrow();expect(owner.currentScene).toBe(before);expect(owner.receipt).toEqual(receipt);
  });
  it('rejects unrelated scene profiles and unknown control keys',()=>{
-  const author=scene();author.settings.computeBackend='webgl2';expect(()=>validateImplicitPaletteControls({acknowledgedRevision:0,commands:[{kind:'apply',revision:1,scene:author}]})).toThrow('CPU mesh');
+  const author=scene();author.settings.computeBackend='webgl2';delete author.settings.implicitPresentationVersion;expect(()=>validateImplicitPaletteControls({acknowledgedRevision:0,commands:[{kind:'apply',revision:1,scene:author}]})).toThrow('source mesh');
+  const malformed=scene();malformed.settings.implicitPresentationVersion='future';expect(()=>validateImplicitPaletteControls({acknowledgedRevision:0,commands:[{kind:'apply',revision:1,scene:malformed}]})).toThrowError(expect.objectContaining({name:'ImplicitPaletteControlError',kind:'input'}));
   expect(()=>validateImplicitPaletteControls({acknowledgedRevision:0,commands:[],extra:true})).toThrow('Unknown');expect(()=>new ImplicitPaletteControlOwner('')).toThrow('identity');
  });
  it('matches receipt Apply/reset facts against actual commands and explicitly allows record resets',()=>{

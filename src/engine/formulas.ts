@@ -1,6 +1,6 @@
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
-import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
+import {usesSourceImplicitConfiguration} from './sourceImplicitIdentity';
 import {sourceImplicitFormulaLatex} from './sourceImplicitFormulaLatex';
 import {parse} from 'mathjs';
 import type {FormulaViewport} from './formulaConfig';
@@ -19,7 +19,7 @@ export {validateFormulas,validateFormulaPresentation} from './formulaConfig';
 import {validateFormulas,validateFormulaPresentation,sourceFormulaPrimaryHeight} from './formulaConfig';
 export function mainEquation(scene:SceneDocument):string {
   if(usesSourceSurfaceGeometry(scene))return sourceSurfaceFormulaLatex(scene);
-  if(usesSourceImplicitPresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return sourceImplicitFormulaLatex(scene);
+  if(usesSourceImplicitConfiguration(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return sourceImplicitFormulaLatex(scene);
   if(usesSourceAttractor(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return sourceAttractorFormulaLatex(scene);
   if(scene.kind==='fractal')return scene.fractalSource?sourceFractalFormulaLatex(scene.fractalSource.formula):fractalEquationLatex(scene.settings);
   if(scene.kind==='symmetry')return hasSymmetryCustom(scene)?'z_{k+1}=\\operatorname{calculate\\_next}(z_k)':symmetryEquationLatex(scene.settings);

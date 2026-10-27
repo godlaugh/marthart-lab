@@ -1,4 +1,4 @@
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {sourceImplicitMeshRoute} from './sourceImplicitIdentity';
 import type {ControlSpec,SceneDocument,Settings} from '../types';
 import {numberSetting} from './expression';
 export interface SurfaceWireOptions {decoupled:boolean;uLines:number;vLines:number;curveSamples:number;}
@@ -42,7 +42,12 @@ export const meshMaterialControls:ControlSpec[]=[
 const materialKeys=new Set(meshMaterialControls.map(c=>c.key));
 export function isMeshMaterialControlVisible(scene:SceneDocument,key:string):boolean {
  if(!materialKeys.has(key))return true;
- if(usesSourceImplicitCpuMesh(scene))return key==='meshFill'||key==='meshWireframe'||key==='meshWireframeWidth'&&scene.settings.meshWireframe===true;
+ const implicit=sourceImplicitMeshRoute(scene);
+ if(implicit){
+  if(key==='meshFill'||key==='meshWireframe')return true;
+  if(key==='meshWireframeWidth')return scene.settings.meshWireframe===true;
+  return implicit.presentation==='gpu-material'&&scene.settings.meshFill!==false&&['shininess','ambient','specular','proceduralTexture'].includes(key);
+ }
  const surface=scene.kind==='surface',wireOnly=surface&&scene.settings.renderMode==='wireframe';
  if(!['surface','implicit'].includes(scene.kind)||!wireOnly&&scene.settings.renderMode!=='mesh')return false;
  const wire=wireOnly||scene.settings.meshWireframe===true;

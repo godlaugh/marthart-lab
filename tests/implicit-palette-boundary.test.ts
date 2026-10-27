@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {createScene,parseScene,serializeScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import {snapshotGenerationInput} from '../src/engine/generationInput';
-import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitPresentation';
+import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitIdentity';
 import {prepareImplicitPalette} from '../src/engine/sourceImplicitPalette';
 import {implicitPaletteEditorState} from '../src/engine/implicitPaletteEditing';
 import {ImplicitPaletteControlOwner} from '../src/engine/implicitPaletteControl';

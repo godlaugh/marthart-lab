@@ -5,7 +5,7 @@ import native from './fixtures/source-implicit-presentation/recording-clock.json
 import {describe,it,expect,vi} from 'vitest';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
-import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitPresentation';
+import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitIdentity';
 import {ImplicitControlJournal} from '../src/engine/implicitControlJournal';
 import {ImplicitEditorSession,assertImplicitEditorRetention} from '../src/engine/implicitEditorSession';
 import {implicitEditorActionFor} from '../src/engine/implicitEditIntent';

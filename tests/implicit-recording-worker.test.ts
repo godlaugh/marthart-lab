@@ -24,9 +24,10 @@ async function send(data:Record<string,unknown>){await worker.onmessage!({data:s
 function result<O extends GenerationResponse['operation']>(response:GenerationResponse,operation:O):Extract<GenerationResponse,{operation:O}>{
  if(response.operation!==operation||'error' in response)throw Error('error' in response?response.error:'operation mismatch');return response as Extract<GenerationResponse,{operation:O}>;
 }
-async function setup(name='fps4-varying',full=false,unsupported=false){
+async function setup(name='fps4-varying',full=false,unsupported=false,mode:'CPU'|'GPU'|'AUTO'='CPU'){
  const row=native.cases.find(c=>c.name===name)!,project=structuredClone(row.input.project);
  if(!full)project.settings.x_segments=project.settings.y_segments=project.settings.z_segments=4;
+ Object.assign(project.settings,{mesh_mode:mode});
  const scene=parseProjectFile(JSON.stringify(project)).scene;
  if(unsupported){scene.parameters.a=0;scene.timeline.tracks.push({...scene.timeline.tracks[1],id:'unsupported-parameter',actions:[{id:'parameter-action',method:'paramStart',parameters:[{target:'parameters.a',step:.1,min:0,max:1,enabled:true}]}]});}
  const context:GenerationInput={time:0,width:810,height:972,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,405,486,'primary',486)};
@@ -52,6 +53,22 @@ describe('Implicit recording production Worker transport',()=>{
   const again=result(await send({operation:'source-recording-begin',sourceId:stop.id,options:f.options}),'source-recording-begin');expect(again.result.warmup).toMatchObject({implicitRecording:{displayFrame:0}});
   result(await send({operation:'source-recording-finish',recordingId:again.recordingId}),'source-recording-finish');
  },15000);
+ it.each(['GPU','AUTO'] as const)('shares the original numerical queue, formulas and transfer ownership with %s material',async mode=>{
+  const f=await setup('fps4-varying',false,false,mode),start=await begin(f);
+  // This exercises the production numerical Worker and real ArrayBuffer
+  // transfers. Shader/pixel equivalence is deliberately outside this CPU test.
+  for(const [i,expected] of f.row.frames.entries()){
+   const out=i===0?start.result.warmup:result(await send({operation:'source-recording-frame',recordingId:start.recordingId,displayFrame:i,actualFrameRate:f.row.input.steps[i].actualFrameRate}),'source-recording-frame').output;
+   if(out.type!=='geometry')throw Error('geometry');
+   expect(out.sourceImplicitPresentation).toMatchObject({model:'mathart-1.7.8-gpu-material-v1',meshMode:mode,meshComputation:'source-cpu-fallback'});
+   const facts=out.sourceImplicitPresentation!;if(facts.model!=='mathart-1.7.8-gpu-material-v1')throw Error('GPU material');
+   expect(facts.palette).toBeInstanceOf(Uint32Array);expect(facts.palette.byteLength).toBeGreaterThan(0);expect(facts.fillColors.byteLength).toBe(out.positions.length/3*16);
+   expect(out.sourceCameraFrame).toMatchObject({frameIndex:i,sceneTime:expected.sceneTime,rawDt:expected.rawDt,queueComplete:expected.complete});
+   expect(out.formulaPresentation).toEqual(start.result.warmup.formulaPresentation);
+  }
+  const stop=result(await send({operation:'source-recording-finish',recordingId:start.recordingId}),'source-recording-finish');
+  expect(stop.result.preview.implicitLive?.renderKind).toBe('snapshot');expect(stop.result.preview.sourceCameraFrame?.frameIndex).toBe(f.row.frames.length-1);
+ });
  it.each([false,true])('stops an undelivered warmup without another update (detached=%s)',async detached=>{
   const f=await setup();fail={operation:'source-recording-begin',detached};const error=await send({operation:'source-recording-begin',sourceId:f.sourceId,options:f.options});
   if(!('error' in error))throw Error('failure');expect(error.retainedRecordingId).toBe(sequence);

@@ -4,13 +4,13 @@ import {useI18n} from '../i18n';
 import {SourceGradientPaletteEditor,type SourceGradientPaletteController} from './SourceGradientPaletteEditor';
 import {implicitEditableColors,implicitPaletteEditorState,implicitPaletteEditorMode,openImplicitPaletteEditor,commitImplicitSourcePalette,restoreImplicitSourceManualPalette,changeImplicitSourcePalette,implicitManualColorRgb,implicitManualRgbText,SOURCE_IMPLICIT_DEFAULT_COLORS} from '../engine/implicitPaletteEditing';
 import {insertSourceBouncingColor} from '../engine/sourceBouncingPaletteEditing';
-import {usesSourceImplicitCpuMesh} from '../engine/sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from '../engine/sourceImplicitIdentity';
 import type {SourcePaletteGenerationResult} from '../engine/sourceGradientPaletteGeneration';
 
 type Props={scene:SceneDocument;onChange:(next:SceneDocument,intent:'implicit-palette')=>void};
 export function SourceImplicitPaletteEditor({scene,onChange}:Props){
  const {t}=useI18n(),[selected,setSelected]=useState(0),[error,setError]=useState('');
- if(!usesSourceImplicitCpuMesh(scene))return null;
+ if(!usesSourceImplicitMesh(scene))return null;
  // App commits this initializer as metadata. This pure fallback also makes the
  // first paint correct without a mount effect issuing an unintended hot edit.
  const editable=openImplicitPaletteEditor(scene),colors=implicitEditableColors(editable),state=implicitPaletteEditorState(editable),index=Math.min(selected,Math.max(0,colors.length-1)),current=colors[index];

@@ -8,7 +8,7 @@ import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import type {GenerationWorkerRequest,PerlinNativeDrawRequest,PerlinNativeDrawResponse} from './generationProtocol';
 import type {SourceNativePixels} from './sourceNativeClient';
 import type {GenerateContext} from '../types';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {planFractalFreshRecording} from './sourceFractalRecording';
 import {planPerlinFreshRecording} from './sourcePerlinRecording';
 import { definition } from "../scenes";
@@ -93,7 +93,7 @@ async function generateNativeRoots(scene:SceneDocument,context:GenerateContext){
 
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)?temporalSession.sourceImplicit:scene.kind==='roots'?rootsOwner():scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?perlinOwner():scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='implicit'&&usesSourceImplicitMesh(scene)?temporalSession.sourceImplicit:scene.kind==='roots'?rootsOwner():scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?perlinOwner():scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingOutput=RuntimeStart['warmup'];
@@ -368,7 +368,7 @@ self.onmessage = async (
     const output = rootsNative?await generateNativeRoots(scene,executionContext):native?await generateNativePerlin(scene,executionContext):await generateSceneAsync(scene, executionContext, temporalSession);
     output.dimension ??= definition(scene.kind).dimension;
     output.stats.elapsedMs = performance.now() - start;
-    if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive&&!context.implicitControls)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
+    if(usesSourceImplicitMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive&&!context.implicitControls)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
     completed={id,scene,context:context.implicitLive||context.implicitControls?executionContext:context};
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {

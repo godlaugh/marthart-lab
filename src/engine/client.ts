@@ -43,8 +43,8 @@ import {SourceNativeError} from './sourceNativeError';
 import {enhanceSourcePausedImage,sourcePausedImageBytes} from './sourcePausedImage';
 import {prepareSourcePausedUpscale,upscaleSourcePausedImage} from './sourcePausedUpscale';
 const nativePageOrigin=Date.now();
-import {validImplicitControlOutput,validSourceImplicitOutput} from './sourceImplicitResponse';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {validSourceImplicitGenerationOutput,validSourceImplicitOutput} from './sourceImplicitResponse';
+import {usesSourceImplicitMesh,usesSourceImplicitConfiguration} from './sourceImplicitIdentity';
 import {SourceRootsRecordingLease} from './sourceRootsRecordingLease';
 import {validRootsLiveOutput} from './rootsLive';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
@@ -79,27 +79,24 @@ import type {RootsFreshRecordingPlan} from './rootsRecording';
 import {validateFrameFormulas,type FormulaViewport} from './formulaConfig';
 import {usesSourceFractal} from './sourceFractalDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
-import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 type FormulaOutputContract =
  |{kind:'optional'}
  |{kind:'raster'}
  |{kind:'fractal-runtime-raster';viewport:FormulaViewport|undefined}
  |{kind:'roots-runtime-raster';viewport:SourceCameraViewport}
  |{kind:'source-raster';layout:'source-surface-centered-v1'|undefined;viewport:FormulaViewport|undefined}
- |{kind:'implicit-runtime-geometry'}
  |{kind:'source-camera-raster';layout:'source-surface-centered-v1'|undefined;pixelDensity:number|undefined}
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
- if(context.implicitControls)return{kind:'implicit-runtime-geometry'};
  if(context.rootsLive?.controls)return{kind:'roots-runtime-raster',viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
- if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene)||usesSourceAttractorCpu(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
+ if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitConfiguration(scene)||usesSourceAttractorCpu(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
  if(usesSourceAttractor(scene))return{kind:'source-camera-raster',layout:scene.formulas?.layout,pixelDensity:context.sourcePointPixelDensity};
  return usesSourceFractal(scene)?{kind:'source-raster',layout:scene.formulas?.layout,viewport:context.fractalViewport}:{kind:'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
-  if(!output||(contract.kind==='raster'||contract.kind==='fractal-runtime-raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'||contract.kind==='source-camera-raster')&&output.type!=='raster'||(contract.kind==='source-geometry'||contract.kind==='implicit-runtime-geometry')&&output.type!=='geometry')return false;
+  if(!output||(contract.kind==='raster'||contract.kind==='fractal-runtime-raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'||contract.kind==='source-camera-raster')&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
   if(contract.kind==='source-camera-raster'&&!validSourceAttractorRasterDensity(output,contract.pixelDensity))return false;
   output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'||contract.kind==='fractal-runtime-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
@@ -249,7 +246,7 @@ function validGeometryCapture(result:import('./sourceGeometryCapture').SourceGeo
   if(!sameSourceRecordingValue(result.scene,sourcePaletteRuntimeScene(source.scene)))return false;
   const {viewport:beforeViewport,...before}=implicitCameraFrame(source.output);void beforeViewport;
   for(const [output,input] of [[result.capture,target],[result.preview,source.context]] as const){
-   if(!validSourceImplicitOutput(output,input)||output.implicitLive?.renderKind!=='snapshot'||!output.implicitLive.paused)return false;
+   if(!validSourceImplicitOutput(output,input)||source.output.type!=='geometry'||output.sourceImplicitPresentation?.model!==source.output.sourceImplicitPresentation?.model||output.implicitLive?.renderKind!=='snapshot'||!output.implicitLive.paused)return false;
    const {viewport,...frame}=implicitCameraFrame(output);void viewport;
    if(!sameSourceRecordingValue(output.implicitControls,source.output.implicitControls)||!sameSourceRecordingValue(output.sourceImplicitParameters,source.output.sourceImplicitParameters)||!sameSourceRecordingValue(frame,before))return false;
   }
@@ -438,7 +435,7 @@ export class Generator {
         }
         const result=data.result;
         try{
-          const plan=sourceGeometryCapturePlan(p.source.context,p.size,p.scale);
+          const plan=sourceGeometryCapturePlan(p.source.context,p.size,p.scale,p.source.output.type==='geometry'?p.source.output.sourceImplicitPresentation?.model:undefined);
           if(data.sourceId!==p.source.id||!validGeometryCapture(result,p.source,plan.captureContext,p.operation))throw Error('几何截图响应状态不匹配');
         }catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));return;}
         // Keep the operation pending across module loading and readback. A
@@ -446,7 +443,7 @@ export class Generator {
         const cancelled=()=>this.pending.get(data.id)!==p||this.worker!==worker;
         p.rendering=true;
         void import('./renderGeometryCapture').then(({renderGeometryCapture})=>renderGeometryCapture(result,p.source.context,p.size,p.scale,cancelled,{signal:p.controller.signal,generation:this.sessionId,sequence:data.id})).then(value=>{
-          if(cancelled())return;const plan=sourceGeometryCapturePlan(p.source.context,p.size,p.scale);if(!validCurrentImage(value.capture,p.size,p.scale,plan.base)||!validOutputFormulas(value.capture,{kind:'raster'}))throw Error('曲面截图基础图像或公式无效');this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
+          if(cancelled())return;const plan=sourceGeometryCapturePlan(p.source.context,p.size,p.scale,p.source.output.type==='geometry'?p.source.output.sourceImplicitPresentation?.model:undefined);if(!validCurrentImage(value.capture,p.size,p.scale,plan.base)||!validOutputFormulas(value.capture,{kind:'raster'}))throw Error('曲面截图基础图像或公式无效');this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
         }).catch(error=>{if(cancelled())return;this.pending.delete(data.id);this.completed=p.source;p.reject(new contract.Error(error instanceof Error?error.message:String(error),true));});
         return;
       }
@@ -605,7 +602,8 @@ export class Generator {
         return;
       }
       if (data.operation === 'generate-progress') {
-        if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
+        if(p.operation==='generate'&&!p.fractal&&!usesSourceImplicitMesh(p.scene)&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
+        if(p.operation==='generate'&&usesSourceImplicitMesh(p.scene)&&!validSourceImplicitGenerationOutput(data.output,p.context,p.scene,p.source?.output)){this.invalidate(new Error('隐式进度响应身份、材质或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context,p.source?.output.type==='raster'?p.source.output.rootsLive:undefined)){this.invalidate(new Error('复根实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){this.invalidate(new Error('Perlin 实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){this.invalidate(new Error('曲面实时进度响应身份或状态不匹配'));return;}
@@ -644,11 +642,10 @@ export class Generator {
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
       else if (p.operation === 'generate' && data.operation === 'generate') {
-        if(!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
+        if(!p.fractal&&!usesSourceImplicitMesh(p.scene)&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
         if(p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context,p.source?.output.type==='raster'?p.source.output.rootsLive:undefined)){const error=new Error('复根实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){const error=new Error('Perlin 实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
-        if(p.context.implicitControls&&!validImplicitControlOutput(data.output,p.context,p.source?.output)){const error=new Error('隐式控制回执身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
-        if(p.context.implicitLive&&!validSourceImplicitOutput(data.output,p.context)){const error=new Error('隐式实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
+        if(usesSourceImplicitMesh(p.scene)&&!validSourceImplicitGenerationOutput(data.output,p.context,p.scene,p.source?.output)){const error=new Error('隐式控制回执、材质或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.domain&&!validDomainOutput(data.output,p.domain,p.context)){const error=new Error('域着色实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.fractal&&!validFractalOutput(data.output,p.fractal,p.context.fractalViewport)){p.reject(new Error('分形实时响应身份或状态不匹配'));this.invalidate(new Error('分形实时响应身份或状态不匹配'));return;}
@@ -876,7 +873,7 @@ export class Generator {
     if(signal?.aborted)return Promise.reject(new DOMException('截图已取消','AbortError'));
     const source=this.completed,contract=pausedCaptureContracts[operation];
     if(this.recording||this.pending.size||!this.worker||!source||source.output!==output||output.type!=='geometry'||!(operation==='implicit-paused-capture'?output.implicitLive:output.surfaceLive))return Promise.reject(new contract.Error('截图需要当前已完成的暂停预览',false));
-    try{sourceGeometryCapturePlan(source.context,size,scale);}catch(error){return Promise.reject(new contract.Error(error instanceof Error?error.message:String(error),true));}
+    try{sourceGeometryCapturePlan(source.context,size,scale,output.sourceImplicitPresentation?.model);}catch(error){return Promise.reject(new contract.Error(error instanceof Error?error.message:String(error),true));}
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;const copied={...size};
     return new Promise((resolve,reject)=>{
       const controller=new AbortController(),cancel=()=>controller.abort();signal?.addEventListener('abort',cancel,{once:true});
@@ -1325,7 +1322,7 @@ export class Generator {
     if(this.nativeIterated)return this.beginNativeIteratedRecording(output,options);
     const source=this.completed;
     if(this.recording)return Promise.reject(this.recordingError('源场景录制已开始'));
-    const eligible=source&&(source.scene.kind==='surface'||usesSourceImplicitCpuMesh(source.scene)?output.type==='geometry'&&(source.scene.kind==='surface'?!!output.surfaceLive:!!output.sourceImplicitPresentation)&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
+    const eligible=source&&(source.scene.kind==='surface'||usesSourceImplicitMesh(source.scene)?output.type==='geometry'&&(source.scene.kind==='surface'?!!output.surfaceLive:!!output.sourceImplicitPresentation)&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
       return Promise.reject(new SourceRecordingOperationError('源场景录制需要当前已完成的主预览',false,false));
     let roots:SourceRootsRecordingLease|undefined;
@@ -1334,7 +1331,7 @@ export class Generator {
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     let fractal:RetainedRecordingLease|undefined,domain:DomainRecordingLease|undefined,geometry:SourceGeometryRecordingLease|undefined,perlin:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}|undefined;
     if(source.scene.kind==='perlin'&&source.context.perlinLive)try{perlin={sceneId:source.scene.id,primary:snapshotGenerationInput(source.context),size:prepareSourcePausedCaptureSize(options,source.context.sourcePerlinViewport?.pixelDensity??NaN)};}catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
-    if(source.scene.kind==='surface'||usesSourceImplicitCpuMesh(source.scene))try{
+    if(source.scene.kind==='surface'||usesSourceImplicitMesh(source.scene))try{
       if(output.type!=='geometry')throw Error('曲面录制需要几何预览');geometry=new SourceGeometryRecordingLease(source.scene,source.context,output,options,signal);
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='fractal')try{

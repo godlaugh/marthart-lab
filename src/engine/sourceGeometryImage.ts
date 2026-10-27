@@ -1,7 +1,7 @@
 import type {ArtRenderer} from './renderer';
 import type {SceneDocument,SceneOutput} from '../types';
 import {usesSourceAttractorCpu} from './sourceAttractorDocument';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {outputBuffers} from './outputBuffers';
 import {readSourceDrawingPixels,sourceDrawingPolicy} from './sourceDrawingPixels';
 import {ensureSourceNativeLease} from './sourceNativeLease';
@@ -11,7 +11,7 @@ import {encodeFormulaRaster,type FormulaCompositeOptions} from './formulaCanvas'
 import {validateFormulaPresentation} from './formulaConfig';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 
-export const usesSourceGeometryImage=(scene:SceneDocument)=>usesSourceImplicitCpuMesh(scene)||usesSourceAttractorCpu(scene);
+export const usesSourceGeometryImage=(scene:SceneDocument)=>usesSourceImplicitMesh(scene)||usesSourceAttractorCpu(scene);
 
 let generation=0;
 const pendingPlans=new Set<SourceDrawingPlan>();
@@ -29,7 +29,7 @@ export async function encodeSourceGeometryImage(
  if(options.purpose!=='static-image'&&options.purpose!=='video-frame')throw Error('未知源几何图像用途');
  if(format!=='image/png'&&format!=='image/jpeg'||options.purpose==='video-frame'&&format!=='image/png')throw Error('源几何视频帧需要 PNG 编码');
  if(!usesSourceGeometryImage(scene)||output.type!=='geometry'||!output.sourceCameraFrame||
-    (usesSourceImplicitCpuMesh(scene)?!output.sourceImplicitPresentation:output.backend!=='cpu'||!output.sourcePointAppearance||!!output.sourceGpuPoints))
+    (usesSourceImplicitMesh(scene)?!output.sourceImplicitPresentation:output.backend!=='cpu'||!output.sourcePointAppearance||!!output.sourceGpuPoints))
   throw Error('源几何图像需要对应的 CPU 几何及相机帧');
  const formulas=validateFormulaPresentation(output.formulaPresentation),gl=renderer.renderer.getContext();
  const width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;

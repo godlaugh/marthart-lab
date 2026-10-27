@@ -3,7 +3,7 @@ import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {rootsControlRepresentationBytes,ROOTS_CONTROL_MAX_BYTES} from './rootsControl';
 import {prepareImplicitPalette,validateImplicitPaletteColors,validateImplicitSourcePalette,ImplicitPaletteControlError,type ImplicitPaletteFacts} from './sourceImplicitPalette';
 export {prepareImplicitPalette,ImplicitPaletteControlError,type ImplicitPaletteFacts} from './sourceImplicitPalette';
-import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 
 export const IMPLICIT_PALETTE_CONTROL_MAX_BYTES=ROOTS_CONTROL_MAX_BYTES;
 export type ImplicitPaletteControlPayload={kind:'apply';scene:SceneDocument}|{kind:'palette';colors:string[]}|{kind:'restart'};
@@ -26,7 +26,9 @@ function sceneColors(scene:SceneDocument):string[] {
  if(!object(scene.palette))return fail('Implicit Apply requires a palette');validateImplicitPaletteColors(scene.palette.stops);return scene.palette.stops;
 }
 function validateScene(raw:unknown):asserts raw is SceneDocument {
- if(!object(raw)||!object(raw.settings)||!usesSourceImplicitCpuMesh(raw as unknown as SceneDocument))return fail('Implicit Apply requires the source CPU mesh profile');
+ if(!object(raw)||!object(raw.settings))return fail('Implicit Apply requires the source mesh profile');
+ let supported:boolean;try{supported=usesSourceImplicitMesh(raw as unknown as SceneDocument);}catch(error){return fail(error instanceof Error?error.message:String(error));}
+ if(!supported)return fail('Implicit Apply requires the source mesh profile');
  if(!object(raw.equations)||!object(raw.parameters)||!object(raw.timeline)||!object(raw.palette))fail('Implicit Apply requires a complete scene snapshot');
  sceneColors(raw as unknown as SceneDocument);
 }

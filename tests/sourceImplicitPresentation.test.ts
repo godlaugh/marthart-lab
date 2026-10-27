@@ -4,7 +4,8 @@ import fixture from './fixtures/source-implicit-presentation/native.json';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 import {prepareImplicitJob} from '../src/engine/implicitSurface';
 import {generateImplicit,transformFor} from '../src/scenes/geometry';
-import {sourceImplicitSliceLines,usesSourceImplicitCpuMesh,sourceImplicitHeightColor} from '../src/engine/sourceImplicitPresentation';
+import {sourceImplicitSliceLines,sourceImplicitHeightColor} from '../src/engine/sourceImplicitPresentation';
+import {usesSourceImplicitCpuMesh} from '../src/engine/sourceImplicitIdentity';
 import {outputBuffers,outputTransferState} from '../src/engine/outputBuffers';
 import {createSourceImplicitMesh} from '../src/engine/sourceImplicitRenderer';
 import {prepareSourceCamera} from '../src/engine/sourceCamera';
@@ -55,9 +56,9 @@ describe('native implicit CPU display producer',()=>{
   rendered.fill.geometry.dispose();rendered.fill.material.dispose();rendered.lines?.geometry.dispose();rendered.lines?.material.dispose();
   expect(()=>createSourceImplicitMesh({...output,indices:new Uint32Array([0,1,output.positions.length/3])},plan)).toThrow('索引');
  });
- it('leaves ordinary, points and selected GPU routing outside the source CPU path',()=>{
+ it('keeps ordinary and points local, while source GPU shares the numerical mesh owner',()=>{
   const scene=parsed(1);scene.settings.renderMode='points';expect(usesSourceImplicitCpuMesh(scene)).toBe(false);expect((generateImplicit(scene,context) as GeometryOutput).sourceImplicitPresentation).toBeUndefined();
-  scene.settings.renderMode='mesh';scene.settings.computeBackend='webgl2';expect(usesSourceImplicitCpuMesh(scene)).toBe(false);expect(prepareImplicitJob(scene,context,transformFor(scene.settings)).overlay).toBe(true);
-  scene.settings.computeBackend='cpu';delete scene.settings.implicitPresentationVersion;expect(usesSourceImplicitCpuMesh(scene)).toBe(false);expect((generateImplicit(scene,context) as GeometryOutput).meshEdges?.length).toBeGreaterThan(0);
+  scene.settings.renderMode='mesh';scene.settings.computeBackend='webgl2';expect(usesSourceImplicitCpuMesh(scene)).toBe(false);expect(prepareImplicitJob(scene,context,transformFor(scene.settings)).overlay).toBe(false);
+  scene.settings.computeBackend='cpu';delete scene.settings.implicitSourceVersion;expect(usesSourceImplicitCpuMesh(scene)).toBe(false);expect((generateImplicit(scene,context) as GeometryOutput).meshEdges?.length).toBeGreaterThan(0);
  });
 });

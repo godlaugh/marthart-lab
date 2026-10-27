@@ -1,6 +1,6 @@
 # 隐式曲面 GPU：本机原版路径与剩余缺口（2026-10-27）
 
-原版 MathArt 1.7.8 在这台 Apple M2 Max 上可以完成隐式曲面的 GPU 模式绘制，但实际采用 **CPU 生成网格、GPU 绘制材质**。这不是 OpenGL Compute Shader 成功运行的证据。MathArt Lab 当前的 WebGL 标量采样及本地网格路径仍未对齐该原版材质显示，MAS-IMP-023 不能整体标为完成。
+原版 MathArt 1.7.8 在这台 Apple M2 Max 上可以完成隐式曲面的 GPU 模式绘制，但实际采用 **CPU 生成网格、GPU 绘制材质**。这不是 OpenGL Compute Shader 成功运行的证据。后续产品接入已完成六种稳定材质状态的整图零差异对照，见[GPU 材质验收](source-implicit-gpu-material.zh-CN.md)；首次及 dirty 网格重建的视口恢复仍待处理，MAS-IMP-023 不能整体标为完成。
 
 ## 实际验证
 
@@ -25,9 +25,9 @@
 
 只读 `javap -p -c` 显示，原版 `buildMesh()` 先尝试 `buildMeshGpu()`；失败返回 false 时继续 CPU Marching Cubes。`ImplicitGpuMarchingCubes.build()` 内部的失败返回 null，`program = 0` 时也返回 null。实际日志中的 CPU 网格生成记录与这些分支相符。
 
-网格回退不修改 `meshMode`。只要 `meshShape` 存在且目标为 OpenGL，`useGpuMesh()` 仍选择 `renderMeshFillShape()` 和原版材质 shader。本轮实际 draw 证明该显示路径确实执行。因此下一项产品工作应复用已有源网格、调色板、相机与录制归属，补齐 GPU 材质及纹理显示；不能因本机缺少 Compute 能力而删掉显示要求，也不能把 WebGL 标量采样写成原版 Compute 实现。
+网格回退不修改 `meshMode`。只要 `meshShape` 存在且目标为 OpenGL，`useGpuMesh()` 仍选择 `renderMeshFillShape()` 和原版材质 shader。本轮实际 draw 证明该显示路径确实执行。后续产品据此复用源网格、调色板、相机与录制归属接入 GPU 材质；不能因本机缺少 Compute 能力而删掉显示要求，也不能把 WebGL 标量采样写成原版 Compute 实现。
 
-计算能力和材质显示需要分别记账：本机原版 Compute 不可用是已观察到的边界，GPU 材质显示对齐则是具体的未完成工作。其他设备、驱动和原生 Compute 成功运行仍未验证；用户目前只有这一台 Mac。
+计算能力和材质显示分别记账：本机原版 Compute 不可用是已观察到的边界，GPU 稳定材质对齐已有独立证据，网格重建造成的显示副作用仍未闭合。其他设备、驱动和原生 Compute 成功运行仍未验证；用户目前只有这一台 Mac。
 
 ## 证据与成本
 

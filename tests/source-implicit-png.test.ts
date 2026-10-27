@@ -10,8 +10,9 @@ import type {FormulaCompositeOptions} from '../src/engine/formulaCanvas';
 const encode=vi.hoisted(()=>vi.fn(async()=>new Blob(['png'],{type:'image/png'})));
 vi.mock('../src/engine/sourceNativeLease',()=>({ensureSourceNativeLease:vi.fn(async()=>{}),sourceNativeLeaseToken:()=>undefined}));
 vi.mock('../src/engine/formulaCanvas',()=>({encodeFormulaRaster:encode}));
-function setup(){
+function setup(mode:'CPU'|'GPU'='CPU'){
  const raw=structuredClone(fixture.cases[0].input);raw.settings.x_segments=raw.settings.y_segments=raw.settings.z_segments=4;
+ Object.assign(raw.settings,{mesh_mode:mode});
  const scene=parseProjectFile(JSON.stringify(raw)).scene;
  const output=generateScene(scene,{time:0,width:2,height:2,quality:'export',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,2,2,'offscreen',486)});
  const gl={drawingBufferWidth:2,drawingBufferHeight:2,readPixels:vi.fn(()=>{throw Error('Unexpected WebGL fallback');})};
@@ -24,8 +25,8 @@ function setup(){
 beforeEach(()=>{vi.stubEnv('VITE_SOURCE_RENDERER','native');encode.mockClear();});
 afterEach(()=>{vi.unstubAllGlobals();vi.unstubAllEnvs();});
 describe('CPU implicit PNG uses shared source drawing and encoding owners',()=>{
- it('delivers native top-down bytes, resolved formula frame and enhancement without claiming a retained capture',async()=>{
-  const f=setup();vi.stubGlobal('fetch',vi.fn(async()=>f.response()));await f.run();
+ it.each(['CPU','GPU'] as const)('delivers %s material native top-down bytes, formulas and enhancement without claiming a retained capture',async mode=>{
+  const f=setup(mode);vi.stubGlobal('fetch',vi.fn(async()=>f.response()));await f.run();
   expect(encode).toHaveBeenCalledOnce();const [image,type,options]=encode.mock.calls[0] as unknown as [RasterOutput,string,FormulaCompositeOptions];
   expect(image.pixels).toEqual(new Uint8ClampedArray([...Array(8).fill(29),...Array(8).fill(11)]));expect(image.formulaPresentation).toEqual(f.output.formulaPresentation);expect(image.sourcePixelRenderer?.backend).toBe('native');expect(image).not.toHaveProperty('sourceCurrentImage');expect(type).toBe('image/png');expect(options.sourceImageProcessing).toBe('paused-png');expect(f.gl.readPixels).not.toHaveBeenCalled();
  });

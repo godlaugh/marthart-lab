@@ -14,6 +14,12 @@ import {SourceSurfaceControls} from '../src/components/SourceSurfaceControls';
 import {SourceSurfacePaletteEditor} from '../src/components/SourceSurfacePaletteEditor';
 import {FractalSourcePaletteEditor} from '../src/components/FractalSourceColorControls';
 import {SOURCE_BOUNCING_POSITION_MODES} from '../src/engine/sourceBouncingConfig';
+import {definition} from '../src/scenes';
+import {createScene} from '../src/engine/document';
+import {sourceImplicitAuthoringMetadata} from '../src/engine/sourceImplicitAuthoring';
+import {SOURCE_IMPLICIT_PRESENTATION} from '../src/engine/sourceImplicitIdentity';
+import {Control} from '../src/components/Fields';
+import {Timeline} from '../src/components/Timeline';
 const noop=()=>{};
 const parse=(type:string,extra:Record<string,unknown>={})=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type,name:'Author title',...extra})).scene;
 function english(node:ReactNode){
@@ -23,6 +29,22 @@ function english(node:ReactNode){
  return out;
 }
 describe('source controls use their real translation owners',()=>{
+ it.each(['CPU','GPU','AUTO'])('describes source Implicit %s drawing separately from CPU mesh computation',mesh_mode=>{
+  const scene=parse('IMPLICIT',{equation:{f:'x^2+y^2+z^2-1'},settings:{render_mode:'SOLID',mesh_mode,x_segments:4,y_segments:4,z_segments:4},timeline:[{type:'wait',duration:1}]}),before=JSON.stringify(scene);
+  const original=definition('implicit').controls.find(c=>c.key==='computeBackend')!,saved=JSON.stringify(original),metadata=sourceImplicitAuthoringMetadata(scene)!;
+  const out=english(<><Control spec={{...original,...metadata.backend}} value={scene.settings.computeBackend} onChange={noop}/><Timeline scene={scene} time={0} playing={false} implicitContinuation onTime={noop} onPlay={noop} onRestart={noop} onChange={noop}/></>);
+  expect(out).toContain('aria-label="Mesh drawing"');expect(out).toContain('Both drawing modes compute the mesh on the CPU');expect(out).toContain('CPU · original drawing');expect(out).toContain('GPU · original material');
+  expect(out).toContain(`value="${mesh_mode==='CPU'?'cpu':mesh_mode==='GPU'?'webgl2':'auto'}" selected=""`);
+  expect(out).not.toContain('double precision');expect(out).not.toContain('WebGL2 for large batches');expect(out).toContain('Staged scene and timeline edits take effect with Apply scene');expect(out).toContain('restarts the applied configuration');expect(out).not.toContain('editing the scene or seeking');
+  expect(metadata.description).toContain('Marching Cubes');expect(metadata.description).not.toContain('Tetrahedra');expect(JSON.stringify(scene)).toBe(before);expect(JSON.stringify(original)).toBe(saved);
+ });
+ it('keeps generic and PREVIEW metadata unchanged while retaining the old source CPU marker',()=>{
+  const generic=createScene(definition('implicit')),original=definition('implicit').controls.find(c=>c.key==='computeBackend')!;
+  expect(sourceImplicitAuthoringMetadata(generic)).toBeUndefined();expect(definition('implicit').description).toContain('Marching Tetrahedra');
+  const out=english(<Control spec={original} value="webgl2" onChange={noop}/>);expect(out).toContain('Formula evaluation');expect(out).toContain('WebGL2 · single precision');expect(out).toContain('WebGL2 for large batches');
+  Object.assign(generic.settings,{implicitPresentationVersion:SOURCE_IMPLICIT_PRESENTATION,renderMode:'mesh',computeBackend:'cpu'});
+  expect(sourceImplicitAuthoringMetadata(generic)?.backend.label).toBe('网格绘制');generic.settings.renderMode='points';expect(sourceImplicitAuthoringMetadata(generic)).toBeUndefined();
+ });
  it('renders Fractal generator persistence and independent imported flags in English without a commit',()=>{
   const scene=parse('FRACTAL',{fractal:{formula_id:'newton'},color:{use_cosine_palette:true,use_curve_palette:true}}),before=JSON.stringify(scene);let calls=0;
   const out=english(<FractalSourcePaletteEditor scene={scene} onChange={()=>{calls++;}}/>);

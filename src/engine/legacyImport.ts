@@ -6,7 +6,7 @@ import {validateImplicitSourcePalette} from './sourceImplicitPalette';
 import {importSourcePaletteGenerator} from './sourcePaletteGeneratorImport';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {prepareSourceProjectPalette,type SourceProjectPalette} from './sourceProjectPalette';
-import {usesSourceImplicitPresentation,SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
+import {usesSourceImplicitConfiguration,SOURCE_IMPLICIT_CONFIG} from './sourceImplicitIdentity';
 import type {FormulaConfig} from '../types';
 import {DOMAIN_SCENE_SEQUENCE} from './sourceDomainTimeline';
 import {importSourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
@@ -376,7 +376,7 @@ function formulaAnnotations(r:Reader,s:SceneDocument){
  if(usesSourceAttractor(s)){sourceAttractorFormulaAnnotations(r,s);return;}
  if(!r.has('main_equation')&&!r.has('formulas'))return;
  if(usesSourceFractal(s)){sourceFractalFormulaAnnotations(r,s);return;}
- const sourceImplicit=usesSourceImplicitPresentation(s),sourceCentered=usesSourceCenteredFormulaLayout(s),config:FormulaConfig=sourceCentered?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();
+ const sourceImplicit=usesSourceImplicitConfiguration(s),sourceCentered=usesSourceCenteredFormulaLayout(s),config:FormulaConfig=sourceCentered?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();
  const latex=(path:string)=>{const value=r.str(path,sourceImplicit)??'';if(value.length>8192)fail(`${path} 超过 8192 字符`);if(sourceImplicit)return value;const trimmed=value.trim();return trimmed.startsWith('\\(')&&trimmed.endsWith('\\)')||trimmed.startsWith('\\[')&&trimmed.endsWith('\\]')?trimmed.slice(2,-2).trim():value;};
  // JSONObject/JSONArray.getFloat use Double parsing followed by float32,
  // never the expression parser used by local authoring fields.
@@ -537,18 +537,38 @@ function mapAttractor(r:Reader,s:SceneDocument){
 }
 
 function implicit(r:Reader,s:SceneDocument){
- equation(r,s,'equation.f','f');for(const axis of ['x','y','z'])for(const edge of ['min','max'])numberTo(r,s,`settings.${axis}_${edge}`,edge+axis.toUpperCase());
- for(const axis of ['x','y','z'])count(r,s,`settings.${axis}_segments`,'resolution'+axis.toUpperCase(),200,4);
- numberTo(r,s,'settings.iso_threshold','isoLevel');const mode=r.str('settings.render_mode');
- if(mode){const map:Record<string,string>={SOLID:'mesh',WIREFRAME:'mesh',POINTS:'points',WIREFRAME_FILL:'mesh',PREVIEW:'points'};s.settings.renderMode=map[mode]??mode;if(mode==='WIREFRAME'||mode==='WIREFRAME_FILL')s.settings.meshWireframe=true;}
- booleanTo(r,s,'settings.mesh_fill','meshFill');numberTo(r,s,'settings.mesh_fill_opacity','opacity',{min:0,max:1});geometryMaterial(r,s);
- const backend=r.str('settings.mesh_mode');if(backend!==undefined){const names:Record<string,string>={CPU:'cpu',GPU:'webgl2',AUTO:'auto'};if(!names[backend])fail(`未知隐式曲面后端 ${backend}`);s.settings.computeBackend=names[backend];r.warnings.push('标量场后端已映射；独立 Marching Tetrahedra 与原版 Marching Cubes 的网格拓扑未保证相同。');}
- if(s.settings.renderMode==='mesh'&&(s.settings.computeBackend??'cpu')==='cpu'){
-  s.settings.implicitPresentationVersion=SOURCE_IMPLICIT_PRESENTATION;
+ const mode=r.str('settings.render_mode'),normalizedMode=mode===undefined?'PREVIEW':javaTrim(mode).toUpperCase();
+ const mesh=['WIREFRAME','SOLID','WIREFRAME_FILL','WIREFRAME+FILL'].includes(normalizedMode);
+ s.settings.renderMode=mesh?'mesh':'points';
+ if(mode!==undefined&&!mesh&&!['PREVIEW','POINTS'].includes(normalizedMode))r.warnings.push(`settings.render_mode=${mode}：原版使用 PREVIEW；原文保留在 source。`);
+ equation(r,s,'equation.f','f');
+ for(const axis of ['x','y','z']){
+  for(const edge of ['min','max']){const path=`settings.${axis}_${edge}`,key=edge+axis.toUpperCase();if(mesh)s.settings[key]=Math.fround(edge==='min'?-Math.PI:Math.PI);numberTo(r,s,path,key);}
+  const path=`settings.${axis}_segments`,key='resolution'+axis.toUpperCase();
+  if(mesh){const segments=Math.max(1,r.sourceInt(path,60));if(segments>200)fail(`${path} 超出本地 200 段网格容量`);s.settings[key]=segments;}
+  else count(r,s,path,key,200,4);
+  if(mesh&&!r.has(`settings.scale_${axis}`))s.settings['scale'+axis.toUpperCase()]=50;
+ }
+ numberTo(r,s,'settings.iso_threshold','isoLevel');
+ const backend=r.str('settings.mesh_mode'),normalizedBackend=backend===undefined?'GPU':javaTrim(backend).toUpperCase();
+ if(mesh||backend!==undefined)s.settings.computeBackend=normalizedBackend==='CPU'?'cpu':normalizedBackend==='GPU'?'webgl2':'auto';
+ if(backend!==undefined&&!['CPU','GPU','AUTO'].includes(normalizedBackend))r.warnings.push(`settings.mesh_mode=${backend}：原版使用 AUTO；原文保留在 source。`);
+ if(mesh){
+  s.settings.implicitSourceVersion=SOURCE_IMPLICIT_CONFIG;
   // iso_threshold selects particles near zero; native mesh extraction uses
   // isoLevel=0. Threshold also owns the MC nonfinite-field replacement.
   s.settings.sourceImplicitIsoThreshold=r.has('settings.iso_threshold')?Math.max(Math.fround(1e-5),Math.fround(Number(s.settings.isoLevel))):Math.fround(.06);s.settings.isoLevel=0;
-  s.settings.meshFill=s.settings.meshFill??true;s.settings.meshWireframe=s.settings.meshWireframe??false;
+  // Source aliases force fill only for the untrimmed case-insensitive spelling.
+  // All source mesh modes share slice lines, gated by fill and opacity at draw.
+  s.settings.meshFill=['SOLID','WIREFRAME_FILL','WIREFRAME+FILL'].includes(mode?.toUpperCase()??'')?true:r.domainBoolean('settings.mesh_fill',true,'default');
+  if(r.has('settings.mesh_fill'))r.use('settings.mesh_fill');
+  s.settings.meshWireframe=true;s.settings.opacity=r.domainScalar('settings.mesh_fill_opacity',.85,'float32');
+  if(Number(s.settings.opacity)<0||Number(s.settings.opacity)>1)fail('settings.mesh_fill_opacity 超出本地 0..1 透明度范围');
+  // Cold JsonImplicitSurfaceConfig never consumes these generic material
+  // fields. Only an explicit local edit may replace the constructor defaults.
+  Object.assign(s.settings,{shininess:32,ambient:'#4d4d4d',specular:'#ffffff',proceduralTexture:'none'});
+  for(const key of ['shininess','ambient','specular','procedural_texture','mesh_wireframe_color','mesh_wireframe','material'])r.acknowledge(['settings',key],'原版隐式配置不读取此字段，使用构造材质及切片线规则');
+  if(r.has('material')){r.object('material');r.acknowledge('material','原版读取 material 对象但不消费其成员，使用构造材质默认值');}
   numberTo(r,s,'settings.line_weight','meshWireframeWidth',{min:.1,max:32});
   // The CPU source path owns the exact root array. Do not route ARGB, invalid
   // strings, empty/single lists or tails through the local RGB Palette schema.
@@ -561,7 +581,10 @@ function implicit(r:Reader,s:SceneDocument){
    s.implicitPaletteEditor={...implicitPaletteEditorState(s),...generator.value.configuration,useCosine:false,useCurve:false};
    for(const path of generator.value.consumedPaths)r.use(path);
   }else if(r.has('color'))r.acknowledge('color','源 Implicit 运行配置不读取通用 color；颜色来自根 palette，原对象保留');
- }else commonLocalPalette(r,s);
+ }else{
+  booleanTo(r,s,'settings.mesh_fill','meshFill');numberTo(r,s,'settings.mesh_fill_opacity','opacity',{min:0,max:1});geometryMaterial(r,s);commonLocalPalette(r,s);
+  r.warnings.push('原版 PREVIEW 粒子采样仍使用现有本地路径，未声明源网格或原版粒子数值一致性。');
+ }
 
 }
 function symmetry(r:Reader,s:SceneDocument){

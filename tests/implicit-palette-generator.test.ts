@@ -26,12 +26,12 @@ describe('Implicit source CPU opened-project palette owner',()=>{
   expect(s.implicitPaletteEditor!.curves).not.toHaveProperty('blue');expect(s.implicitPaletteEditor).not.toHaveProperty('appearanceOpened');expect(s.provenance!.original).toEqual(raw);
   expect(prepareImplicitPalette(s.implicitSourcePalette!.colors,'cold').packed[0]).toBe(0x80abcdef);expect(prepareImplicitPalette(s.implicitSourcePalette!.colors,'hot').packed[0]).toBe(0xffabcdef);
  });
- it('distinguishes project literals from runtime-config ignored generator data and preserves legacy non-CPU policy',()=>{
+ it('distinguishes project literals from runtime-config ignored generator data across both source mesh modes',()=>{
   for(const color of [{cosine_a:['1/2',.2,.3]},{use_curve_palette:1},{curve_red:null},{curve_blue:[{x:'1/2',y:0}]},{cosine_a:[null,0,1]}]){
    expect(()=>scene(color)).toThrow();const runtime=parseLegacyScene(JSON.stringify(source(color))).scene;expect(runtime).not.toHaveProperty('implicitPaletteEditor');expect(runtime.implicitSourcePalette?.colors).toEqual(rawColors);
   }
-  const gpu=source({use_cosine_palette:true,use_curve_palette:true},['#ff0000','#0000ff']);gpu.settings.mesh_mode='GPU';expect(()=>parseProjectFile(JSON.stringify(gpu))).toThrow();
-  const valid={...gpu,color:{use_cosine_palette:true,cosine_a:[.5,.5,.5],cosine_b:[.5,.5,.5],cosine_c:[1,1,1],cosine_d:[0,.33,.67]}};const legacy=parseProjectFile(JSON.stringify(valid)).scene;expect(legacy).not.toHaveProperty('implicitSourcePalette');expect(legacy).not.toHaveProperty('implicitPaletteEditor');expect(legacy.palette.mode).toBe('cosine');expect(openImplicitPaletteEditor(legacy)).toBe(legacy);
+  const gpu=source({use_cosine_palette:true,use_curve_palette:true},['#ff0000','#0000ff']);gpu.settings.mesh_mode='GPU';expect(parseProjectFile(JSON.stringify(gpu)).scene.implicitSourcePalette?.colors).toEqual(gpu.palette);
+  const valid={...gpu,color:{use_cosine_palette:true,cosine_a:[.5,.5,.5],cosine_b:[.5,.5,.5],cosine_c:[1,1,1],cosine_d:[0,.33,.67]}};const sourceGpu=parseProjectFile(JSON.stringify(valid)).scene;expect(sourceGpu.implicitSourcePalette?.colors).toEqual(valid.palette);expect(sourceGpu.implicitPaletteEditor).toMatchObject({useCosine:false,useCurve:false});expect(openImplicitPaletteEditor(sourceGpu).implicitPaletteEditor?.appearanceOpened).toBe(true);
  });
  it('preserves entrypoint defaults, explicit empty/single, invalid text and strict array shape',()=>{
   const omitted={...source()};delete (omitted as {palette?:unknown}).palette;
