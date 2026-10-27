@@ -1,5 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {RootsNativePointCloudGpu, ROOTS_NATIVE_POINT_CLOUD_CHUNK, rootsNativePointCloudGpuBytes, prepareRootsPointCloudBackground} from '../src/engine/rootsNativePointCloudGpu';
+import {RootsNativePointCloudGpu, rootsNativePointCloudGpuBytes} from '../src/engine/rootsNativePointCloudGpu';
+import {ROOTS_NATIVE_POINT_CLOUD_CHUNK, ROOTS_POINT_FRAME_BINDING_BYTES} from '../src/engine/rootsPointCloudDrawing';
 import {RootsPointCloudRing} from '../src/engine/rootsPointCloudRing';
 import {prepareRootsProjection} from '../src/engine/rootsProjection';
 import {defaultRootsPresentationConfiguration} from '../src/engine/rootsPresentationConfig';
@@ -40,24 +41,10 @@ function error(run: () => unknown) { try { run(); } catch (e) { expect(e).toBeIn
 function messages(e: unknown): string[] { return e instanceof Error ? [e.message, ...(e.cause ? messages(e.cause) : []), ...(e instanceof AggregateError ? e.errors.flatMap(messages) : [])] : [String(e)]; }
 afterEach(() => vi.unstubAllGlobals());
 
-describe('source point-cloud background producer', () => {
- it('keeps packed source background separate from shader RGB, including gray/alpha', () => {
-  const c = color('1'); expect(c.backgroundPacked).toBe(1); expect(c.backgroundRGB).toEqual([0, 0, Math.fround(1 / 255)]);
-  expect(prepareRootsPointCloudBackground(c.backgroundPacked)).toEqual([Math.fround(1 / 255), Math.fround(1 / 255), Math.fround(1 / 255), 1]);
-  expect(prepareRootsPointCloudBackground(0)).toEqual([0, 0, 0, 1]);
-  expect(prepareRootsPointCloudBackground(0x00112233)).toEqual([Math.fround(17 / 255), Math.fround(34 / 255), Math.fround(51 / 255), 0]);
-  expect(prepareRootsPointCloudBackground(0x80112233, 6.9)[3]).toBe(Math.fround(3 / 255));
-  expect(prepareRootsPointCloudBackground(0xff010203, 6.9)[3]).toBe(Math.fround(6 / 255));
-  expect(prepareRootsPointCloudBackground(0x80112233, 255)[3]).toBe(Math.fround(128 / 255));
-  expect(prepareRootsPointCloudBackground(0xffffffff, -1)[3]).toBe(0);
-  for (const bad of [-1, 0x100000000, NaN, .5]) expect(error(() => prepareRootsPointCloudBackground(bad)).failureKind).toBe('input');
- });
-});
-
 describe('source point-cloud GPU protocol and ownership', () => {
  it('preflights target representations before creating a device', () => {
   const getContext = vi.fn(); vi.stubGlobal('OffscreenCanvas', class {getContext = getContext;});
-  expect(rootsNativePointCloudGpuBytes(10, 20)).toBe(10 * 20 * 12 + ROOTS_NATIVE_POINT_CLOUD_CHUNK * 32 + 3072 + 40);
+  expect(rootsNativePointCloudGpuBytes(10, 20)).toBe(10 * 20 * 12 + ROOTS_NATIVE_POINT_CLOUD_CHUNK * 32 + 3072 + ROOTS_POINT_FRAME_BINDING_BYTES + 40);
   const gpu = new RootsNativePointCloudGpu(); expect(error(() => gpu.initialize(16384, 16384)).failureKind).toBe('capacity'); expect(getContext).not.toHaveBeenCalled();
  });
  it('requires a complete positive point probe; empty/short reads do not become a shape fallback', () => {

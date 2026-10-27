@@ -52,13 +52,18 @@ static void samilaFloatBlock(NSData *data,NSUInteger length){INPUT(data.length==
 #include "SourceCglFractalProtocol.h"
 #include "SourceCglDrawingProtocol.h"
 #include "SourceCglAttractorProtocol.h"
+#include "SourceCglRootsPointProtocol.h"
 static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=14,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=15,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
  NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version>=2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");uint32_t completion=version>=3?[r word]:0;INPUT(completion<=1&&(!completion||[clear[3]floatValue]==1),@"Invalid completion alpha policy");
+ if(version==15){
+  INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Roots point envelope cannot contain generic draws");for(NSUInteger i=7;i<15;i++)INPUT(indexAt(packet,i,4)==0,@"Roots point reserved envelope words must be zero");
+  NSDictionary *operation=parseRootsPoint(r,width,height,retainedBytes);return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"rootsPoint":operation,@"packetBytes":@(packet.length)};
+ }
  if(version==14){
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Attractor envelope cannot contain generic draws");for(NSUInteger i=7;i<15;i++)INPUT(indexAt(packet,i,4)==0,@"Attractor reserved envelope words must be zero");
   NSDictionary *operation=parseAttractor(r,width,height,retainedBytes);return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"attractor":operation,@"packetBytes":@(packet.length)};
@@ -240,6 +245,7 @@ static NSData *renderFrame(NSDictionary *frame,NSString *out){return renderFrame
 #include "SourceCglSamilaState.h"
 #include "SourceCglFractalState.h"
 #include "SourceCglAttractorState.h"
+#include "SourceCglRootsPointState.h"
 #include "SourceCglIteratedState.h"
 #include "SourceCglSymmetryState.h"
 #include "SourceCglIteratedInk.h"
@@ -253,14 +259,14 @@ static NSData *iteratedReply(NSDictionary *operation,id<SourceCglIteratedStateOw
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){
- uint32_t version=indexAt(request,1,4),format=status?0:version==14?8:version==13?7:version==11?6:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
+ uint32_t version=indexAt(request,1,4),format=status?0:version==15?9:version==14?8:version==13?7:version==11?6:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
  uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,format,(uint32_t)payload.length,contextSerial};
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");
 }
 static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:[kind isEqual:@"state-lost"]?5:[kind isEqual:@"ownership"]?6:[kind isEqual:@"gpu-compile"]?7:[kind isEqual:@"gpu-link"]?8:[kind isEqual:@"gpu-context"]?9:[kind isEqual:@"gpu-allocation"]?10:[kind isEqual:@"gpu-render"]?11:[kind isEqual:@"gpu-readback"]?12:4;}
 int main(int argc,const char **argv){@autoreleasepool{
- SourceCglDrawingState *drawingOwner=nil;NSData *drawingResource=nil;
+ SourceCglDrawingState *drawingOwner=nil;NSData *drawingResource=nil;NSMutableDictionary<NSData*,SourceCglRootsPointState*> *rootsPoints=[NSMutableDictionary new];
  CGLContextObj ctx=NULL;SourceCglBouncingState *bouncing=nil;NSData *bouncingResource=nil;NSMutableDictionary<NSData*,SourceCglSamilaState*> *samila=[NSMutableDictionary new];NSMutableDictionary<NSData*,id<SourceCglIteratedStateOwner>> *iterated=[NSMutableDictionary new];NSMutableDictionary<NSData*,NSDictionary*> *inks=[NSMutableDictionary new];NSMutableDictionary<NSData*,SourceCglFractalState*> *fractals=[NSMutableDictionary new];NSMutableDictionary<NSData*,SourceCglAttractorState*> *attractors=[NSMutableDictionary new];FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
  @try{
   INPUT(stream||argc==3,@"Usage: renderer --stdio | frame.bin output-directory");input=stream?stdin:fopen(argv[1],"rb");INPUT(input!=NULL,@"Cannot open frame packet");
@@ -269,9 +275,15 @@ int main(int argc,const char **argv){@autoreleasepool{
    NSData *packet=readPacket(input,stream);if(!packet)break;
    @try{
     ensure(!drawingOwner||indexAt(packet,1,4)==13,@"ownership",@"A retained generic drawing transaction owns the renderer");
-    uint64_t retained=(bouncing?bouncing.retainedBytes:0)+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals)+attractorRetained(attractors)+(drawingOwner?drawingOwner.retainedBytes:0);NSDictionary *frame=parseWithRetained(packet,!stream,retained),*operation=frame[@"bouncing"],*samilaOperation=frame[@"samila"],*iteratedOperation=frame[@"iterated"],*renderOperation=frame[@"iteratedRender"],*fractalOperation=frame[@"fractal"],*drawingOperation=frame[@"drawing"],*attractorOperation=frame[@"attractor"];uint32_t kind=[operation[@"kind"]unsignedIntValue],renderKind=[renderOperation[@"kind"]unsignedIntValue],drawingKind=[drawingOperation[@"kind"]unsignedIntValue];
-    if(drawingKind==1)ensure(!drawingOwner&&!bouncing&&!samila.count&&!iterated.count&&!inks.count&&!fractals.count&&!attractors.count,@"ownership",@"Drawing begin requires an unowned renderer");
+    NSData *rootsTransaction=rootsPointTransaction(rootsPoints);if(rootsTransaction)ensure(packet.length>=88&&indexAt(packet,1,4)==15&&indexAt(packet,16,4)>=3&&indexAt(packet,16,4)<=5&&memcmp((const uint8_t*)packet.bytes+72,rootsTransaction.bytes,16)==0,@"ownership",@"An active Roots point frame owns the renderer");
+    // Existing identity is known before create capacity/allocation validation;
+    // a duplicate must never become an uncertain create eligible for cleanup.
+    if(packet.length>=88&&indexAt(packet,1,4)==15&&indexAt(packet,15,4)==7&&indexAt(packet,16,4)==1){NSData *key=[packet subdataWithRange:NSMakeRange(72,16)];ensure(rootsPoints[key]==nil,@"ownership",@"Roots point resource token already owned");if(packet.length>=116&&indexAt(packet,22,4)==16){NSData *session=[packet subdataWithRange:NSMakeRange(92,16)];uint32_t role=indexAt(packet,27,4);for(SourceCglRootsPointState *owner in rootsPoints.allValues)ensure(!([owner.session isEqual:session]&&owner.target==role),@"ownership",@"Roots point session target is already owned");}}
+    uint64_t retained=(bouncing?bouncing.retainedBytes:0)+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals)+attractorRetained(attractors)+rootsPointRetained(rootsPoints)+(drawingOwner?drawingOwner.retainedBytes:0);NSDictionary *frame=parseWithRetained(packet,!stream,retained),*operation=frame[@"bouncing"],*samilaOperation=frame[@"samila"],*iteratedOperation=frame[@"iterated"],*renderOperation=frame[@"iteratedRender"],*fractalOperation=frame[@"fractal"],*drawingOperation=frame[@"drawing"],*attractorOperation=frame[@"attractor"],*rootsPointOperation=frame[@"rootsPoint"];uint32_t kind=[operation[@"kind"]unsignedIntValue],renderKind=[renderOperation[@"kind"]unsignedIntValue],drawingKind=[drawingOperation[@"kind"]unsignedIntValue];
+    if(drawingKind==1)ensure(!drawingOwner&&!bouncing&&!samila.count&&!iterated.count&&!inks.count&&!fractals.count&&!attractors.count&&!rootsPoints.count,@"ownership",@"Drawing begin requires an unowned renderer");
     else if(drawingKind){if(drawingOwner)ensure([drawingResource isEqual:drawingOperation[@"resource"]],@"ownership",@"Drawing resource belongs to another caller");else if(drawingKind!=4)ensure(NO,@"state-lost",@"Drawing resource is absent");}
+    uint32_t rootsPointKind=[rootsPointOperation[@"kind"]unsignedIntValue];NSData *rootsPointResource=rootsPointOperation[@"resource"];SourceCglRootsPointState *rootsPointOwner=rootsPointResource?rootsPoints[rootsPointResource]:nil;
+    if(rootsPointKind==1)rootsPointCreateOwnership(rootsPoints,rootsPointOperation);else if(rootsPointKind>=2&&rootsPointKind<=4)ensure(rootsPointOwner!=nil,@"state-lost",@"Roots point target is absent after release or context loss");
     uint32_t attractorKind=[attractorOperation[@"kind"]unsignedIntValue];NSData *attractorResource=attractorOperation[@"resource"];SourceCglAttractorState *attractorOwner=attractorResource?attractors[attractorResource]:nil;
     if(attractorKind==1)attractorCreateOwnership(attractors,attractorResource);else if(attractorKind>=2&&attractorKind<=5)ensure(attractorOwner!=nil,@"state-lost",@"Attractor resource is absent after release or context loss");
     uint32_t fractalKind=[fractalOperation[@"kind"]unsignedIntValue];NSData *fractalResource=fractalOperation[@"resource"];SourceCglFractalState *fractalOwner=fractalResource?fractals[fractalResource]:nil;
@@ -285,7 +297,11 @@ int main(int argc,const char **argv){@autoreleasepool{
     if(kind==1)ensure(bouncing==nil,@"capacity",@"A Bouncing resource is already owned");
     else if(kind){if(bouncing)ensure([bouncingResource isEqual:operation[@"resource"]],@"ownership",@"Bouncing resource belongs to another caller");else if(kind!=4)ensure(NO,@"state-lost",@"Bouncing resource is absent after release or context loss");if(bouncing&&kind!=4)INPUT(bouncing.particleCount==[operation[@"count"]unsignedIntValue]&&(bouncing.pointVertex.length+bouncing.pointFragment.length)*3==[operation[@"programBytes"]unsignedIntValue],@"Bouncing particle count differs from owned state");}
     if(!ctx){createContext(&ctx);serial++;}NSData *rgba;
-    if(drawingKind){
+    if(rootsPointKind){
+     if(rootsPointKind==1){rootsPointOwner=[[SourceCglRootsPointState alloc]initWithFrame:frame];rootsPoints[rootsPointResource]=rootsPointOwner;[rootsPointOwner prepare:rootsPointOperation];rgba=rootsPointReply(rootsPointOperation,rootsPointOwner,0,nil);}
+     else if(rootsPointKind==5){uint32_t disposition=rootsPointOwner?1:2;[rootsPointOwner dispose];rgba=rootsPointReply(rootsPointOperation,rootsPointOwner,disposition,nil);[rootsPoints removeObjectForKey:rootsPointResource];}
+     else{NSData *pixels=nil;if(rootsPointKind==2)[rootsPointOwner begin:frame retained:retained packetBytes:packet.length];else if(rootsPointKind==3)[rootsPointOwner append:frame retained:retained packetBytes:packet.length];else pixels=[rootsPointOwner finish:frame retained:retained packetBytes:packet.length];rgba=rootsPointReply(rootsPointOperation,rootsPointOwner,0,pixels);}
+    }else if(drawingKind){
      if(drawingKind==1){drawingResource=drawingOperation[@"resource"];drawingOwner=[[SourceCglDrawingState alloc]initWithFrame:frame];[drawingOwner prepare];rgba=drawingReply(drawingOperation,drawingOwner,0,[frame[@"width"]unsignedIntValue],[frame[@"height"]unsignedIntValue],nil);}
      else if(drawingKind==2){[drawingOwner append:frame];rgba=drawingReply(drawingOperation,drawingOwner,0,drawingOwner.width,drawingOwner.height,nil);}
      else if(drawingKind==3){NSData *pixels=[drawingOwner finish:frame];rgba=drawingReply(drawingOperation,drawingOwner,0,drawingOwner.width,drawingOwner.height,pixels);}
@@ -319,12 +335,12 @@ int main(int argc,const char **argv){@autoreleasepool{
     if(kind==3){
      NSDictionary *point=frame[@"draws"][0];INPUT([point[@"vertex"]isEqual:bouncing.pointVertex]&&[point[@"fragment"]isEqual:bouncing.pointFragment],@"Bouncing draw shaders differ from the owned programs");[bouncing validateDrawUniforms:point[@"uniforms"]];
      SourceBouncingUpdate update;memcpy(&update,[operation[@"update"]bytes],sizeof(update));[bouncing advanceFrom:[operation[@"from"]unsignedIntValue] to:[operation[@"to"]unsignedIntValue] update:update];
-     rgba=renderFrameWithDraw(frame,out,bouncing.retainedBytes+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals)+attractorRetained(attractors),^(NSDictionary *command,NSArray *textures){if([command[@"flags"]unsignedIntValue]&32)[bouncing drawUniforms:command[@"uniforms"]];else draw(command,textures);});
+     rgba=renderFrameWithDraw(frame,out,bouncing.retainedBytes+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals)+attractorRetained(attractors)+rootsPointRetained(rootsPoints),^(NSDictionary *command,NSArray *textures){if([command[@"flags"]unsignedIntValue]&32)[bouncing drawUniforms:command[@"uniforms"]];else draw(command,textures);});
     }else if(kind){uint32_t uploaded=CFSwapInt32HostToLittle(bouncing?bouncing.uploaded:0);rgba=[NSData dataWithBytes:&uploaded length:4];}
     else rgba=retained?renderFrameWithDraw(frame,out,retained,^(NSDictionary *command,NSArray *textures){draw(command,textures);}):renderFrame(frame,out);
     }
     if(stream)reply(packet,0,serial,rgba);
-    else{writeFile(out,attractorKind?@"attractor.bin":fractalKind?@"fractal.bin":renderKind?@"render.bin":iteratedKind?@"state.bin":@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"samples":frame[@"samples"],@"draws":@([(NSArray*)frame[@"draws"]count]),@"rowOrder":attractorKind?((attractorKind==4||attractorKind==5)?@"bottom-up":@"none"):fractalKind?@"sample-order":renderKind?(renderKind==3?@"bottom-up":@"none"):iteratedKind?@"none":@"bottom-up",@"format":attractorKind?@"attractor-v1":fractalKind?@"fractal-v1":renderKind?@"iterated-render-v1":iteratedKind?@"iterated-v1":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
+    else{writeFile(out,rootsPointKind?@"roots-point.bin":attractorKind?@"attractor.bin":fractalKind?@"fractal.bin":renderKind?@"render.bin":iteratedKind?@"state.bin":@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"samples":frame[@"samples"],@"draws":@([(NSArray*)frame[@"draws"]count]),@"rowOrder":rootsPointKind?(rootsPointKind==4?@"bottom-up":@"none"):attractorKind?((attractorKind==4||attractorKind==5)?@"bottom-up":@"none"):fractalKind?@"sample-order":renderKind?(renderKind==3?@"bottom-up":@"none"):iteratedKind?@"none":@"bottom-up",@"format":rootsPointKind?@"roots-point-v1":attractorKind?@"attractor-v1":fractalKind?@"fractal-v1":renderKind?@"iterated-render-v1":iteratedKind?@"iterated-v1":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
    }@catch(NSException *e){
     if(!stream)@throw;
     // A failed GL operation can poison context state. Recreate it before the
@@ -333,7 +349,8 @@ int main(int argc,const char **argv){@autoreleasepool{
     // preserving custody until explicit release.
     // A transport may retire this whole process after receiving that failure.
     uint32_t status=errorCode(e.name);if(indexAt(packet,1,4)==13&&drawingOwner&&packet.length>=88&&memcmp((const uint8_t*)packet.bytes+72,drawingResource.bytes,16)==0)[drawingOwner fail];
-    if((status==4||status>=7)&&indexAt(packet,1,4)!=11&&indexAt(packet,1,4)!=13&&indexAt(packet,1,4)!=14){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}for(NSData *key in [attractors.allKeys copy]){[attractors[key]dispose];[attractors removeObjectForKey:key];}destroyContext(&ctx);}
+    if(indexAt(packet,1,4)==15&&packet.length>=88&&status!=6){NSData *key=[packet subdataWithRange:NSMakeRange(72,16)];[rootsPoints[key]fail];}
+    if((status==4||status>=7)&&indexAt(packet,1,4)!=11&&indexAt(packet,1,4)!=13&&indexAt(packet,1,4)!=14&&indexAt(packet,1,4)!=15){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}for(NSData *key in [attractors.allKeys copy]){[attractors[key]dispose];[attractors removeObjectForKey:key];}for(NSData *key in [rootsPoints.allKeys copy]){[rootsPoints[key]dispose];[rootsPoints removeObjectForKey:key];}destroyContext(&ctx);}
     NSData *message=[(e.reason?:@"Native frame failed") dataUsingEncoding:NSUTF8StringEncoding];if(!message||message.length>8192)message=[@"Native frame failed; diagnostic exceeded response budget" dataUsingEncoding:NSUTF8StringEncoding];
     reply(packet,status,serial,message);
    }
@@ -345,6 +362,7 @@ int main(int argc,const char **argv){@autoreleasepool{
   for(NSData *key in iterated.allKeys)@try{ensure(iteratedInkDependents(inks,key)==0,@"ownership",@"Failed ink cleanup retains its compute dependency");[iterated[key]dispose];}@catch(NSException *e){fprintf(stderr,"Iterated cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   for(SourceCglFractalState *owner in fractals.allValues)@try{[owner dispose];}@catch(NSException *e){fprintf(stderr,"Fractal cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   for(SourceCglAttractorState *owner in attractors.allValues)@try{[owner dispose];}@catch(NSException *e){fprintf(stderr,"Attractor cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
+  for(NSData *key in [rootsPoints.allKeys copy])@try{[rootsPoints[key]dispose];[rootsPoints removeObjectForKey:key];}@catch(NSException *e){fprintf(stderr,"Roots point cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   if(clean)@try{destroyContext(&ctx);}@catch(NSException *e){fprintf(stderr,"Context cleanup failed: %s\n",e.reason.UTF8String);result=1;}if(input&&!stream)fclose(input);}
  return result;
 }}

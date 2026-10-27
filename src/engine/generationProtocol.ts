@@ -1,3 +1,4 @@
+import type {RootsNativeCommandRequest,RootsNativeCommandResponse} from './rootsPointCloudBrokerProtocol';
 import type {FractalFreshRecordingPlan} from './sourceFractalRecording';
 import type {SourceRecordingClock} from './sourceRecordingClock';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
@@ -165,5 +166,5 @@ export interface PerlinNativeDrawRequest {
 }
 export type PerlinNativeDrawResponse={operation:'perlin-native-result';sessionId:number;id:number;drawId:number}&(
  {result:import('./sourceNativeClient').SourceNativePixels}|{error:string});
-export type GenerationWorkerRequest=GenerationRequest|PerlinNativeDrawResponse;
-export type GenerationWorkerResponse=GenerationResponse|PerlinNativeDrawRequest;
+export type GenerationWorkerRequest=GenerationRequest|PerlinNativeDrawResponse|RootsNativeCommandResponse;
+export type GenerationWorkerResponse=GenerationResponse|PerlinNativeDrawRequest|RootsNativeCommandRequest;

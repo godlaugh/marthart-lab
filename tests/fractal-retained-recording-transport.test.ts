@@ -6,7 +6,7 @@ import type {GenerationInput,SceneDocument} from '../src/types';
 import {FRACTAL_SOURCE_NUMERIC_PROFILE} from '../src/engine/fractalSourcePrecision';
 
 const owners=vi.hoisted(()=>({active:false,primary:false,generate:vi.fn(),reset:vi.fn(),fractal:{beginRecording:vi.fn(),nextRecordingFrame:vi.fn(),finishRecording:vi.fn(),ownsRecording:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()}}));
-vi.mock('../src/engine/temporal',()=>({generateScene:owners.generate,TemporalGenerationSession:class{sourceFractal=owners.fractal;reset=owners.reset;}}));
+vi.mock('../src/engine/temporal',()=>({generateScene:owners.generate,generateSceneAsync:async(...args:unknown[])=>owners.generate(...args),TemporalGenerationSession:class{sourceFractal=owners.fractal;reset=owners.reset;}}));
 vi.mock('../src/scenes',()=>({definition:()=>({dimension:2})}));
 const author={id:'fractal',kind:'fractal',name:'staged author'} as SceneDocument,anchor={...author,name:'last full load'};
 const context:GenerationInput={time:2,width:4,height:4,quality:'preview',fractalPixelDensity:1,fractalViewport:{logicalWidth:4,logicalHeight:4,target:'primary'},fractalLive:{sessionId:'retained',revision:3,intent:'hot',startAt:.2,actualFrameRate:59,clock:{paused:true,timestampMs:1000}}};
@@ -122,9 +122,9 @@ describe('retained Fractal recording client',()=>{
 });
 
 describe('retained Fractal recording Worker lease',()=>{
- let runtimeHandle:object,worker:{onmessage?:(event:MessageEvent<GenerationRequest>)=>void;postMessage:ReturnType<typeof vi.fn>};
- const send=(request:GenerationRequest)=>{worker.onmessage!({data:request} as MessageEvent<GenerationRequest>);return worker.postMessage.mock.calls.at(-1)![0] as GenerationResponse;};
- const begin=()=>{send({operation:'generate',id:1,sessionId:7,scene:author,context});return send({operation:'source-recording-begin',id:2,sessionId:7,sourceId:1,options});};
+ let runtimeHandle:object,worker:{onmessage?:(event:MessageEvent<GenerationRequest>)=>Promise<void>;postMessage:ReturnType<typeof vi.fn>};
+ const send=async (request:GenerationRequest)=>{await worker.onmessage!({data:request} as MessageEvent<GenerationRequest>);return worker.postMessage.mock.calls.at(-1)![0] as GenerationResponse;};
+ const begin=async ()=>{await send({operation:'generate',id:1,sessionId:7,scene:author,context});return await send({operation:'source-recording-begin',id:2,sessionId:7,sourceId:1,options});};
  beforeEach(async()=>{
   vi.resetModules();vi.resetAllMocks();owners.active=false;owners.primary=false;runtimeHandle=Object.freeze({});
   owners.reset.mockImplementation(()=>{owners.active=false;owners.primary=false;});
@@ -135,39 +135,39 @@ describe('retained Fractal recording Worker lease',()=>{
   owners.fractal.finishRecording.mockImplementation(()=>{owners.active=false;owners.primary=true;return stopResult();});
   worker={postMessage:vi.fn()};vi.stubGlobal('self',worker);await import('../src/engine/generate.worker');
  });
- it('uses the retained owner and its final primary snapshot without generating an extra live frame',()=>{
-  expect(begin()).toMatchObject({operation:'source-recording-begin',recordingId:2,result:{scene:anchor,clock}});
+ it('uses the retained owner and its final primary snapshot without generating an extra live frame',async ()=>{
+  expect(await begin()).toMatchObject({operation:'source-recording-begin',recordingId:2,result:{scene:anchor,clock}});
   expect(owners.fractal.beginRecording).toHaveBeenCalledWith(author,context,options);
-  const frame=send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1});expect(frame).toMatchObject({operation:'source-recording-frame',displayFrame:1});expect(owners.fractal.nextRecordingFrame).toHaveBeenCalledWith(runtimeHandle,1);
-  const stopped=send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2});expect(stopped).toMatchObject({operation:'source-recording-finish',result:{scene:author,context:{time:.3},preview:{fractalLive:{renderKind:'snapshot',paused:false,sceneTime:.3}}}});
+  const frame=await send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1});expect(frame).toMatchObject({operation:'source-recording-frame',displayFrame:1});expect(owners.fractal.nextRecordingFrame).toHaveBeenCalledWith(runtimeHandle,1);
+  const stopped=await send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2});expect(stopped).toMatchObject({operation:'source-recording-finish',result:{scene:author,context:{time:.3},preview:{fractalLive:{renderKind:'snapshot',paused:false,sceneTime:.3}}}});
   expect(owners.generate).toHaveBeenCalledOnce();expect(owners.fractal.finishRecording).toHaveBeenCalledExactlyOnceWith(runtimeHandle);
-  expect(send({operation:'fractal-playback',id:5,sessionId:7,sourceId:4,paused:true})).toMatchObject({operation:'fractal-playback',sourceId:4,paused:true});
+  expect(await send({operation:'fractal-playback',id:5,sessionId:7,sourceId:4,paused:true})).toMatchObject({operation:'fractal-playback',sourceId:4,paused:true});
  });
- it('keeps an undelivered frame for exact retry and retains finish after publication failure',()=>{
-  begin();worker.postMessage.mockImplementationOnce(()=>{throw Error('frame publication');});
-  expect(send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1})).toMatchObject({retainedRecordingId:2});
-  expect(send({operation:'source-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:2})).toHaveProperty('error');
-  expect(send({operation:'source-recording-frame',id:5,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('error');expect(owners.fractal.nextRecordingFrame).toHaveBeenCalledOnce();
-  worker.postMessage.mockImplementationOnce(()=>{throw Error('finish publication');});expect(send({operation:'source-recording-finish',id:6,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2});
-  expect(send({operation:'source-recording-finish',id:7,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.fractal.finishRecording).toHaveBeenCalledOnce();expect(owners.generate).toHaveBeenCalledOnce();
+ it('keeps an undelivered frame for exact retry and retains finish after publication failure',async ()=>{
+  await begin();worker.postMessage.mockImplementationOnce(()=>{throw Error('frame publication');});
+  expect(await send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1})).toMatchObject({retainedRecordingId:2});
+  expect(await send({operation:'source-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:2})).toHaveProperty('error');
+  expect(await send({operation:'source-recording-frame',id:5,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('error');expect(owners.fractal.nextRecordingFrame).toHaveBeenCalledOnce();
+  worker.postMessage.mockImplementationOnce(()=>{throw Error('finish publication');});expect(await send({operation:'source-recording-finish',id:6,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2});
+  expect(await send({operation:'source-recording-finish',id:7,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.fractal.finishRecording).toHaveBeenCalledOnce();expect(owners.generate).toHaveBeenCalledOnce();
  });
- it('retains a failed snapshot redraw for finish retry and never substitutes generic generation',()=>{
-  begin();owners.fractal.finishRecording.mockImplementationOnce(()=>{throw Error('snapshot readback');});
-  expect(send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({error:'snapshot readback',retainedRecordingId:2});
-  expect(send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.generate).toHaveBeenCalledOnce();
+ it('retains a failed snapshot redraw for finish retry and never substitutes generic generation',async ()=>{
+  await begin();owners.fractal.finishRecording.mockImplementationOnce(()=>{throw Error('snapshot readback');});
+  expect(await send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({error:'snapshot readback',retainedRecordingId:2});
+  expect(await send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.generate).toHaveBeenCalledOnce();
  });
- it('reacquires detached stop pixels through the same owner handoff without a live update',()=>{
-  begin();worker.postMessage.mockImplementationOnce(message=>{structuredClone(message.result.preview.pixels,{transfer:[message.result.preview.pixels.buffer]});throw Error('detached stop publication');});
-  expect(send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({error:'detached stop publication',retainedRecordingId:2});
-  const response=send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2});expect(response).not.toHaveProperty('error');
+ it('reacquires detached stop pixels through the same owner handoff without a live update',async ()=>{
+  await begin();worker.postMessage.mockImplementationOnce(message=>{structuredClone(message.result.preview.pixels,{transfer:[message.result.preview.pixels.buffer]});throw Error('detached stop publication');});
+  expect(await send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({error:'detached stop publication',retainedRecordingId:2});
+  const response=await send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2});expect(response).not.toHaveProperty('error');
   expect(owners.fractal.finishRecording.mock.calls).toEqual([[runtimeHandle],[runtimeHandle]]);expect(owners.generate).toHaveBeenCalledOnce();
  });
- it('rejects foreign requests and revokes a failed runtime using owner proof',()=>{
-  begin();const resets=owners.reset.mock.calls.length;
-  expect(send({operation:'generate',id:3,sessionId:7,scene:author,context})).toMatchObject({retainedRecordingId:2});
-  expect(send({operation:'source-recording-frame',id:4,sessionId:8,recordingId:2,displayFrame:1})).not.toHaveProperty('retainedRecordingId');expect(owners.reset).toHaveBeenCalledTimes(resets);
+ it('rejects foreign requests and revokes a failed runtime using owner proof',async ()=>{
+  await begin();const resets=owners.reset.mock.calls.length;
+  expect(await send({operation:'generate',id:3,sessionId:7,scene:author,context})).toMatchObject({retainedRecordingId:2});
+  expect(await send({operation:'source-recording-frame',id:4,sessionId:8,recordingId:2,displayFrame:1})).not.toHaveProperty('retainedRecordingId');expect(owners.reset).toHaveBeenCalledTimes(resets);
   owners.fractal.nextRecordingFrame.mockImplementationOnce(()=>{owners.active=false;throw Error('render failed');});
-  expect(send({operation:'source-recording-frame',id:5,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('retainedRecordingId');expect(send({operation:'source-recording-finish',id:6,sessionId:7,recordingId:2})).toHaveProperty('error');
+  expect(await send({operation:'source-recording-frame',id:5,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('retainedRecordingId');expect(await send({operation:'source-recording-finish',id:6,sessionId:7,recordingId:2})).toHaveProperty('error');
  });
 });
 

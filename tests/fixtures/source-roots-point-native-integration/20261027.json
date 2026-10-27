@@ -1,0 +1,805 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "status": "bounded-native-generator-and-packaged-current-png-verified-full-family-pending",
+  "baselineCommit": "c94bc0ed34b9e03bd9df7f06da390d258f3762a0",
+  "scope": "Roots source point-cloud v15 implementation; same-order renderer proof and two independent actual Generator solver/Worker/broker/native terminal captures. Natural-arrival images differ. Public UI and new package validation pending.",
+  "desktop": {
+    "version": "2.0.0-preview.15",
+    "platform": "darwin",
+    "arch": "arm64",
+    "v15ProtocolModuleStaged": true,
+    "buildPassed": true,
+    "deepStrictSignaturePassed": true,
+    "desktopTestsPassed": 39,
+    "basicSmokePassed": true,
+    "rootsNativeUiVerified": true,
+    "appAsarSha256": "3a4e3e63ac3e6c28ef278edc237cd3af700c877251cd43ad26cce3ea8ec78f62",
+    "signedHelperSha256": "e7babe842bd5364eff19d4e621cad54af15be3b1dbd8ad085a7b459a099c5fb9",
+    "manifestMatchesHelper": true,
+    "basicSmoke": [
+      {
+        "phase": "initial",
+        "elapsedMs": 7894,
+        "exitCode": 0,
+        "ownedProcesses": 0,
+        "servicesClosed": true,
+        "portsClosedVerified": true
+      },
+      {
+        "phase": "restore",
+        "elapsedMs": 2831,
+        "exitCode": 0,
+        "ownedProcesses": 0,
+        "servicesClosed": true,
+        "portsClosedVerified": true
+      }
+    ],
+    "scope": "Final preview15 hidden public import, terminal current PNG, save, complete exit/reopen; not all recording/resize/failure/cross-family workflows.",
+    "earlierBuildAttempts": [
+      {
+        "attempt": "r1",
+        "result": "test fixture type error; corrected",
+        "log": ".cache/roots-point-native-v15-20261027/desktop-build-preview15.log"
+      },
+      {
+        "attempt": "r2",
+        "result": "sandbox GitHub DNS failure; no successful package",
+        "log": ".cache/roots-point-native-v15-20261027/desktop-build-preview15-r2.log"
+      }
+    ],
+    "basicSmokeAppAsarSha256": "8e8238302e8920e1d2c39e0401777e3e57f4590ba2b380c97ff182070b1f4037",
+    "rootsUi": {
+      "seconds": 85.587954666,
+      "nativeFinishFrames": 16,
+      "runs": [
+        {
+          "phase": "initial",
+          "samples": 131072,
+          "rootPoints": 1310720,
+          "workers": 4,
+          "png": [
+            {
+              "pngSha256": "6a5d2d6176beaafdd4cbeeb83570506d3637d1d3d425c4e87fc8c4aca23aaa02",
+              "rgbaSha256": "64f061e27c8b722216fc3e56d6bded8904bc88b0b210374ea6427220faf5443e",
+              "alpha": {
+                "min": 42,
+                "max": 255,
+                "nonOpaque": 103026
+              }
+            }
+          ],
+          "hidden": {
+            "visibleWindows": 0,
+            "showEvents": []
+          },
+          "exitCode": 0,
+          "processGroupAfter": [],
+          "portClosed": true
+        },
+        {
+          "phase": "reopen",
+          "samples": 131072,
+          "rootPoints": 1310720,
+          "workers": 4,
+          "png": [
+            {
+              "pngSha256": "5ca49a0df9e17792e6c0944a27a0c917262c86051a3108873f778ca54c2bd0f9",
+              "rgbaSha256": "025335b044459734bc0bd3633a18d3b756419f2a44abf83809928043cf5404a0",
+              "alpha": {
+                "min": 42,
+                "max": 255,
+                "nonOpaque": 103026
+              }
+            }
+          ],
+          "hidden": {
+            "visibleWindows": 0,
+            "showEvents": []
+          },
+          "exitCode": 0,
+          "processGroupAfter": [],
+          "portClosed": true
+        }
+      ],
+      "independentReopenImageComparison": {
+        "changedPixels": 9294,
+        "changedChannels": 14218,
+        "maxAbs": 5,
+        "strictEqual": false,
+        "scope": "Observed independent Worker arrivals; not a pass condition for byte-identical solver arrival"
+      },
+      "unchanged": {
+        "asarUnchanged": true,
+        "nativeUnchanged": true,
+        "manifestUnchanged": true,
+        "sourceUnchanged": true,
+        "glyphUnchanged": true,
+        "verifierStable": true
+      },
+      "limits": [
+        "Only this Mac and finite 131072 samples; default47.55M, ring wrap, video and JPEG are not covered.",
+        "Worker/fetch observers copy and hash actual payloads, adding scheduling and memory costs; this is not a performance measurement.",
+        "Four-worker arrival order can differ across launches. Cross-launch image differences are recorded, not silently accepted as original pixel parity or forced to zero.",
+        "The actual formula composition output is observed at the enhancement Worker input; label/glyph identity and complete byte delivery are checked. This does not substitute an independently implemented formula placement oracle.",
+        "Primary preview uses opaque RGB display, while exported mathematical/formula/PNG stages retain their actual alpha. No historical uninitialized-primary PNG is used as a reference."
+      ]
+    }
+  },
+  "completion": {
+    "rootsFamilyComplete": false,
+    "m3Complete": false,
+    "allElevenFamiliesComplete": false,
+    "devicesVerified": 1,
+    "secondDeviceVerified": false
+  },
+  "protocol": {
+    "version": 15,
+    "family": 7,
+    "outerFormat": 9,
+    "requestHeaderBytes": 88,
+    "ackBytes": 96,
+    "operations": [
+      "create",
+      "begin",
+      "append",
+      "finish",
+      "release"
+    ],
+    "targetRoles": [
+      "primary",
+      "offscreen"
+    ],
+    "chunkMaxPoints": 65536,
+    "windowMaxPoints": 3000000,
+    "ringCapacityPoints": 10000000,
+    "nativeBudgetBytes": 268435456,
+    "nativeVboBytes": 1048576,
+    "controlReservePerTargetBytes": 1048576,
+    "packetCopies": 8,
+    "responseCopies": 4,
+    "beginAdmission": "maximum of current begin, maximum actual scheduled append, future complete finish; rechecked at finish",
+    "workerRingNotChargedAsNativeResident": true,
+    "releaseAfterUnknownOrPartialCommit": true
+  },
+  "rendererDiagnostic": {
+    "referenceInputOnly": true,
+    "independentSolverProof": false,
+    "pointCount": 1310720,
+    "width": 500,
+    "height": 600,
+    "frames": [
+      {
+        "name": "same-order-20chunks",
+        "rangeCounts": [
+          1310720
+        ],
+        "chunkPoints": 65536,
+        "actualPointDraws": 20,
+        "differentRgbaBytes": 0
+      },
+      {
+        "name": "same-order-40chunks",
+        "rangeCounts": [
+          1310720
+        ],
+        "chunkPoints": 32768,
+        "actualPointDraws": 40,
+        "differentRgbaBytes": 0
+      },
+      {
+        "name": "two-range-window",
+        "rangeCounts": [
+          400003,
+          910717
+        ],
+        "chunkPoints": 65536,
+        "actualPointDraws": 21,
+        "differentRgbaBytes": 0
+      },
+      {
+        "name": "same-target-repeat-clear",
+        "rangeCounts": [
+          1310720
+        ],
+        "chunkPoints": 65536,
+        "actualPointDraws": 20,
+        "differentRgbaBytes": 0
+      }
+    ],
+    "rgbaSha256": "a21c4f0b3e6faaa9e956932f1fe2b826c39733577518e4c8082d6861d5a3a1e0",
+    "nonOpaquePixelsPerFrame": 146692,
+    "numericUniformsBitExact": 13,
+    "samplerMapping": {
+      "name": "paletteTex",
+      "originalUnit": 1,
+      "nativeOwnedUnit": 0,
+      "sameLut": true
+    },
+    "lutSampling": {
+      "min": "linear",
+      "mag": "linear",
+      "wrap": "clamp",
+      "mipmaps": false
+    },
+    "sourceStable": true,
+    "inputsStable": true,
+    "remainingOwnedProcesses": 0,
+    "helperSha256": "77f5076ccb50a6d57a876836769f0597b018aa2a7418b826d5adb10656299daf"
+  },
+  "validation": {
+    "nativeParserChecks": 68,
+    "actualNativeServiceTests": 8,
+    "cpuTests": [
+      {
+        "path": "tests/source-roots-point-native-protocol.test.ts",
+        "tests": 61
+      },
+      {
+        "path": "tests/roots-point-cloud-native-backend.test.ts",
+        "tests": 18
+      },
+      {
+        "path": "tests/roots-point-cloud-page-broker.test.ts",
+        "tests": 12
+      },
+      {
+        "path": "tests/roots-point-cloud-worker-backend.test.ts",
+        "tests": 9
+      },
+      {
+        "path": "tests/source-roots-point-native-client.test.ts",
+        "tests": 14
+      }
+    ],
+    "uniqueCpuTestsInTheseGroups": 114,
+    "cpuGroupsNote": "79 codec/backend plus 53 delivery/backend/client/worker tests; the 18 backend tests overlap, so union is 114. These are selected recorded groups, not the final whole integration total.",
+    "typecheck": {
+      "codecBackendStage": {
+        "exitCode": 0,
+        "log": ".cache/roots-point-native-v15-20261027/architecture-cpu/tsc-final.log"
+      },
+      "finalCombined": {
+        "exitCode": 0,
+        "log": ".cache/roots-point-cloud-producer-20261027/worker-export-final-tsc.log",
+        "executionConfirmation": "clock_review confirmed completed exec session 22534 exit0; empty log means no diagnostics, not an inferred exit status."
+      }
+    },
+    "pageDelivery": "real codec 96-byte-offset receipt -> independent RGBA -> structuredClone transfer; async transport/native handles simulated",
+    "laterCombinedChecks": [
+      {
+        "source": "root execution output in collaboration thread",
+        "files": 9,
+        "tests": 180,
+        "passed": true,
+        "log": null,
+        "logSha256": null
+      },
+      {
+        "source": "worker/export compatibility",
+        "files": 19,
+        "tests": 294,
+        "passed": true,
+        "testFiles": [
+          {
+            "path": "tests/source-attractor-worker.test.ts",
+            "tests": 1
+          },
+          {
+            "path": "tests/perlin-native-recording-worker.test.ts",
+            "tests": 1
+          },
+          {
+            "path": "tests/fractal-live-transport.test.ts",
+            "tests": 46
+          },
+          {
+            "path": "tests/domain-native-live-transport.test.ts",
+            "tests": 13
+          },
+          {
+            "path": "tests/roots-point-cloud-worker-backend.test.ts",
+            "tests": 9
+          },
+          {
+            "path": "tests/fractal-retained-recording-transport.test.ts",
+            "tests": 32
+          },
+          {
+            "path": "tests/source-fractal-centered-transport.test.ts",
+            "tests": 11
+          },
+          {
+            "path": "tests/roots-native-worker.test.ts",
+            "tests": 5
+          },
+          {
+            "path": "tests/source-attractor-export-target.test.tsx",
+            "tests": 13
+          },
+          {
+            "path": "tests/source-roots-export-target.test.tsx",
+            "tests": 11
+          },
+          {
+            "path": "tests/source-native-export-preview.test.ts",
+            "tests": 14
+          },
+          {
+            "path": "tests/perlin-recording-worker.test.ts",
+            "tests": 10
+          },
+          {
+            "path": "tests/source-attractor-formula-transport.test.ts",
+            "tests": 15
+          },
+          {
+            "path": "tests/formula-raster-export.test.ts",
+            "tests": 6
+          },
+          {
+            "path": "tests/roots-raster-export-renderer.test.ts",
+            "tests": 4
+          },
+          {
+            "path": "tests/surface-recording-worker.test.ts",
+            "tests": 15
+          },
+          {
+            "path": "tests/domain-recording-transport.test.ts",
+            "tests": 23
+          },
+          {
+            "path": "tests/generation-worker-capture.test.ts",
+            "tests": 42
+          },
+          {
+            "path": "tests/implicit-recording-worker.test.ts",
+            "tests": 23
+          }
+        ],
+        "log": ".cache/roots-point-cloud-producer-20261027/worker-export-final.log"
+      }
+    ],
+    "combinedCountsNote": "Groups overlap with each other and with the earlier 114 selected unique tests; no summed all-suite count is asserted."
+  },
+  "performance": {
+    "oldEncodedMsInvalidAsPureCodec": true,
+    "reason": "Eager success assert JSON.stringify serialized full typed array inside measured interval; previous total/RSS also affected.",
+    "ssrWarmEncodeMs": [
+      4.33,
+      3.834
+    ],
+    "ssrWarmJsonStringifyMs": [
+      1363.869,
+      1367.101
+    ],
+    "inputBytes": 20971520,
+    "completePacketSha256": "fb927a2da9ca082b952db2b0e7ea9cb634f6f31cfac3d3d7ff6ff82822b3b200",
+    "nodeOwnerMicrobenchmark": {
+      "coldWallMsBeforeAfter": [
+        165.0606250000001,
+        16.102790999999982
+      ],
+      "warmMedianWallMsBeforeAfter": [
+        142.23158499999965,
+        6.349372999999957
+      ],
+      "warmMedianSelfCpuMsBeforeAfter": [
+        146.504,
+        6.466
+      ],
+      "peakSelfRssBytesBeforeAfter": [
+        193069056,
+        171491328
+      ],
+      "warmRepetitions": 5
+    },
+    "integratedBrowserPerformanceVerified": false,
+    "bigEndianFallbackExecuted": false
+  },
+  "pending": [
+    "Desktop recording, dynamic resize, UI cancellation/failure recovery and cross-family real workflows",
+    "Uninstrumented same-tree browser task cost and process-family memory",
+    "Default 47.55M preset terminal workload, full ring/window combined load, arbitrary cameras/animation and cross-device verification",
+    "Independent natural arrival and raw near-zero solver bit differences remain; current same-order view equality is not universal."
+  ],
+  "evidence": {
+    "nativeIndex": {
+      "path": ".cache/roots-point-native-v15-20261027/index.json",
+      "sha256": "88a13bbbcccdf365345b5655a8100024963a9b849ae359178b8e16f60a8c99f0"
+    },
+    "nativeBuild": {
+      "path": ".cache/roots-point-native-v15-20261027/build-r4/build.json",
+      "sha256": "6b02409eee07e15e42fc7659defba3e31fd633f77762797befb0a499aba91f82"
+    },
+    "nativeComparison": {
+      "path": ".cache/roots-point-native-v15-20261027/r5-compare-final/report.json",
+      "sha256": "e578d2e8c3e1490674a6adc7e368149078348fcd3a21d183e0137d50fc117104"
+    },
+    "nativeComparisonPlan": {
+      "path": ".cache/roots-point-native-v15-20261027/r5-compare-final/plan.json",
+      "sha256": "0ecf86cf84386c12a020ecbde1336137804e5e16fe315e6bbab3e9d3860095ee"
+    },
+    "nativeParser": {
+      "path": ".cache/roots-point-native-v15-20261027/parser-final-r2/report.json",
+      "sha256": "df3cf9ce3af225d465298b4f3568b29c7718aea5dd79324f410411767c21fb4b"
+    },
+    "nativeLifecycleLog": {
+      "path": ".cache/roots-point-native-v15-20261027/service-final.log",
+      "sha256": "b4080dce098077b0b1eb033a3b29284e156a15aea244ed2b7912bd9a9c03a034"
+    },
+    "cpuOwnerIndex": {
+      "path": ".cache/roots-point-native-v15-20261027/architecture-cpu/index.json",
+      "sha256": "ab2db3ff9f456ebe6843064a2713e359e00a87c6a65e136ba2cbed0e61f7eb80"
+    },
+    "cpuDeliveryLog": {
+      "path": ".cache/roots-point-native-v15-20261027/architecture-cpu/page-broker-final.log",
+      "sha256": "6cd58057a374b97ffec315e0ce5e3c43434ab77fcfb46c674c4c8c27267b7abe"
+    },
+    "ssrPerformanceDiagnosis": {
+      "path": ".cache/roots-point-native-v15-20261027/architecture-cpu/ssr-profile-r1.json",
+      "sha256": "dc1756c3b7145bf39c25bb247fe9af1b67e07c025aef539672bfed6df54054a6"
+    },
+    "measurementErratum": {
+      "path": ".cache/roots-point-native-v15-20261027/performance-erratum.json",
+      "sha256": "e399b42ae7d61edf44a056df75cf489bbd0f814bff479aca378944d6dc05604c"
+    },
+    "originalReference": {
+      "path": ".cache/roots-point-cloud-20261027/default-fbo-host/reference-r5/report.json",
+      "sha256": "2f817f03e44ffd01221c00366acc4a4316933bda0805f81ed968686b3d8fb255"
+    },
+    "productCapture": {
+      "path": ".cache/roots-point-native-product-20261027/capture-r1/report.json",
+      "sha256": "e6733cc314143ce6ced526b0742f43921cbf4a08f61fd599c71bfd56d17862ba"
+    },
+    "workerExportCpuLog": {
+      "path": ".cache/roots-point-cloud-producer-20261027/worker-export-final.log",
+      "sha256": "fa5a9e8907eb23f526bfbe52e81f0e6dd4fc80c55a814d4059d60001a8b19b9a"
+    },
+    "finalTypecheckLog": {
+      "path": ".cache/roots-point-cloud-producer-20261027/worker-export-final-tsc.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "desktopBuild": {
+      "path": ".cache/roots-point-native-v15-20261027/desktop-build-preview15-r3.log",
+      "sha256": "e1da7d9321404417a9f338342588f86d01414bbdc5d6bf505cb86ddad43eb489"
+    },
+    "desktopTests": {
+      "path": ".cache/roots-point-native-v15-20261027/desktop-tests-r2.log",
+      "sha256": "6a2f8e5f304bdde2182c0dcfc4e857f44874e71f4e366386468eb5a29f99cad4"
+    },
+    "desktopSignature": {
+      "path": ".cache/roots-point-native-v15-20261027/desktop-signature.log",
+      "sha256": "ef020b89994cbf5b8835cf9b8ff8329a371f057f174d49eab9fdf9861ea6dd06"
+    },
+    "desktopBasicSmoke": {
+      "path": ".cache/desktop-smoke-oXndNh/report.json",
+      "sha256": "081b9360203b2faee9866b88987553f35469bf78c2f6d54dc3a5a150bf986536"
+    },
+    "desktopBuildMetadata": {
+      "path": ".cache/roots-point-native-v15-20261027/desktop-build-final.json",
+      "sha256": "070ca13a6b7a5b29da6efdce02068c441db5e0b77b923975cfb2b650df890be8"
+    },
+    "desktopNativeManifest": {
+      "path": "dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app/Contents/Resources/source-renderer/manifest.json",
+      "sha256": "dca3ce50f977d142dc0472a53e73d59318e7380edfb228e71e6e048e9dcca35f"
+    },
+    "rawMultiset": {
+      "path": ".cache/roots-point-native-product-20261027/raw-comparison-r1.json",
+      "sha256": "135a9eb847e5f1de00b266507dea1c972fdb50ac090656ccd5ca7051cc1faaec"
+    },
+    "rawFields": {
+      "path": ".cache/roots-point-native-product-20261027/raw-field-comparison-r1.json",
+      "sha256": "119af6e30eec0b100cbeb5f038f2dd537a514f3914940ebbbc50a805df45a957"
+    },
+    "productOriginalOrderRenderer": {
+      "path": ".cache/roots-point-native-product-20261027/reordered-r1/report.json",
+      "sha256": "b0690eae8a0afe51545b07c5fc909b94ac6c1777cb7c504eff3d4ff2f55f0846"
+    },
+    "realCancellation": {
+      "path": ".cache/roots-point-native-product-20261027/cancel-r2/report.json",
+      "sha256": "b231267ecf65e290ba97987b1ce674a97ede54ae9b2b93e75b9fb6fa6bedd7f7"
+    },
+    "productIndex": {
+      "path": ".cache/roots-point-native-product-20261027/index.json",
+      "sha256": "b9d4bc1343e3ec2f449c4ab3cdaa2a5edf278b220037cd5da6b550b19dee3054"
+    },
+    "maintainedVerifier": {
+      "path": "scripts/verify-roots-point-native.mjs",
+      "sha256": "3e7128381adf5c9a2f9f40e61001de7af7f822328143919d8fbaeae32d3867dd"
+    },
+    "maintainedVerifierCpuCheck": {
+      "path": ".cache/roots-point-native-product-20261027/maintained-cpu-check.log",
+      "sha256": "af40b217b91078539d50de7fcc45bb75d85a87f204611782ff0b4d450d82b058"
+    },
+    "desktopRootsUi": {
+      "path": ".cache/roots-point-cloud-native-desktop-20261027/run-3/report.json",
+      "sha256": "f232024601f17d604588bcf90753ef3e82991ce6bdc4aa8af07b4ee33e455d7a"
+    },
+    "desktopRootsUiPrior": {
+      "path": ".cache/roots-point-cloud-native-desktop-20261027/run-2/report.json",
+      "sha256": "e2a75d4d6dc653c683c8759822cc9174f189f6772531d3788cdb90c065883040"
+    },
+    "desktopRootsVerifier": {
+      "path": "scripts/verify-roots-native-desktop.mjs",
+      "sha256": "7a17ff11f61f543ea318b6e636c099abaad036e60e83e8169b5b286313c8bbb3"
+    },
+    "desktopFinalBuild": {
+      "path": ".cache/roots-point-native-v15-20261027/desktop-build-preview15-r4.log",
+      "sha256": "4ee334381995c771cfb6723f07008048082d44427ea8c6dcba92ada8b89de7bd"
+    },
+    "desktopFinalSignature": {
+      "path": ".cache/roots-point-native-v15-20261027/desktop-signature-r4.log",
+      "sha256": "1a2e91b5ed9d08d729b167a939009f21506ba8f820e44f3445548a703afed90e"
+    },
+    "alphaCopyFocusedTests": {
+      "path": ".cache/roots-point-native-v15-20261027/alpha-copy-tests.log",
+      "sha256": "c5692ea804ad9e9636bb5c13c679506f780c573b626c0ac15a5fa28022aa5fa8"
+    }
+  },
+  "relatedReports": [
+    "docs/source-roots-point-cloud-reference.zh-CN.md",
+    "docs/source-roots-dense-terminal.zh-CN.md"
+  ],
+  "productCapture": {
+    "actualPublicGenerator": true,
+    "originalPointsInjected": false,
+    "inputSha256": "1b2a2d9d26486916ad3cec87bc7e3bea230791a8db06ff6912532e93470494c6",
+    "referenceHeapBytes": 536870912,
+    "target": "offscreen",
+    "width": 500,
+    "height": 600,
+    "ringAllocatedBytes": 160000000,
+    "ringWrapObserved": false,
+    "runs": [
+      {
+        "run": 0,
+        "samples": 131072,
+        "accepted": 131072,
+        "points": 1310720,
+        "workers": 4,
+        "workerTerminals": 4,
+        "arrivalBatches": 44,
+        "firstCompletedRequestIndex": 15,
+        "finishAcks": 18,
+        "nativeAppends": 91,
+        "secondsWithObserver": 16.45409999990463,
+        "pausedRedraws": 2,
+        "pausedMathStable": true,
+        "pausedFormulaStable": true,
+        "mathSha256": "851eefe5b8e930059b6478a7e6a092f53785731d445159163912ed2672b33cab",
+        "formulaSha256": "00eae4120521603bf589aaf69702331d0542c984e506a73d10120806dc13d503",
+        "alpha": {
+          "min": 25,
+          "max": 255,
+          "nonopaque": 146692
+        },
+        "foreground": 145675,
+        "remainingNativeResources": 0,
+        "remainingBrokerWorkers": 0
+      },
+      {
+        "run": 1,
+        "samples": 131072,
+        "accepted": 131072,
+        "points": 1310720,
+        "workers": 4,
+        "workerTerminals": 4,
+        "arrivalBatches": 44,
+        "firstCompletedRequestIndex": 21,
+        "finishAcks": 24,
+        "nativeAppends": 106,
+        "secondsWithObserver": 13.592199999928475,
+        "pausedRedraws": 2,
+        "pausedMathStable": true,
+        "pausedFormulaStable": true,
+        "mathSha256": "c4e0511109321483aba04de8e3d8f65acc5732884d2a8e450ab45db7bfd0ca63",
+        "formulaSha256": "a33350ce9c12168cfafb5844152892cacd96e8584255cc09b72bdbeea945f57a",
+        "alpha": {
+          "min": 25,
+          "max": 255,
+          "nonopaque": 146692
+        },
+        "foreground": 145675,
+        "remainingNativeResources": 0,
+        "remainingBrokerWorkers": 0
+      }
+    ],
+    "finishAcksTotal": 42,
+    "completeRgbaBoundarySnapshots": 6,
+    "rgbaBoundaries": [
+      "native-wire bottom-up -> one row flip",
+      "page broker independent RGBA",
+      "Worker/Session output",
+      "Generator output"
+    ],
+    "rawPngEqualsProductFormulaRgba": true,
+    "sourceFormulaLabels": 3,
+    "rendererIdentity": "dc9818f041a6505c3e39e0b0d8136677cd1be11dc4c34c6eb6a4339ed2dab90e",
+    "glyphIdentity": "692e1c24c8504892fbf5c3dfb0d673317ed559d070625a66cd659cc039c407d0",
+    "independentRepeat": {
+      "math": {
+        "equal": false,
+        "differentPixels": 18867,
+        "differentBytes": 25898,
+        "maximumByChannel": [
+          3,
+          3,
+          4,
+          3
+        ]
+      },
+      "formula": {
+        "equal": false,
+        "differentPixels": 18789,
+        "differentBytes": 25769,
+        "maximumByChannel": [
+          3,
+          3,
+          4,
+          3
+        ]
+      },
+      "scope": "实际独立arrival差异如实记录；重复是否equal不是接受独立求解完整性的条件。"
+    },
+    "sourceStable": true,
+    "pageErrors": [],
+    "cleanup": [
+      {
+        "name": "browser",
+        "status": "fulfilled"
+      },
+      {
+        "name": "vite",
+        "status": "fulfilled"
+      },
+      {
+        "name": "service",
+        "status": "fulfilled"
+      }
+    ],
+    "remainingOwnedProcesses": 0,
+    "runtime": {
+      "nodeExecutable": "/opt/homebrew/Cellar/node/26.7.0/bin/node",
+      "browser": "156.0.8078.48"
+    },
+    "cost": {
+      "harnessSeconds": 33.325689583,
+      "perRunSeconds": [
+        16.45409999990463,
+        13.592199999928475
+      ],
+      "includesObserverCopyHashAndResponseClone": true,
+      "coldWarmComparable": false,
+      "cpuTimeMeasured": false,
+      "processFamilyPeakMemoryMeasured": false
+    },
+    "acceptance": "Computation coverage, exact within-run delivery and cleanup passed. Independent repeated image equality did not pass; no tolerance or sorting used."
+  },
+  "rawComparison": {
+    "productRunsBitMultisetEqual": true,
+    "productVsOriginalBitEqual": false,
+    "matchedBy": "worker and sequence, preserving roots within each batch",
+    "differentTuplesPerRun": [
+      73792,
+      73792
+    ],
+    "fields": [
+      {
+        "field": "x",
+        "differentWords": 46852,
+        "maximumAbsolute": 3.101927297073854e-25,
+        "maximumULP": 746586113,
+        "nonfiniteComparisons": 0
+      },
+      {
+        "field": "y",
+        "differentWords": 54932,
+        "maximumAbsolute": 4.1359030627651384e-25,
+        "maximumULP": 750780417,
+        "nonfiniteComparisons": 0
+      },
+      {
+        "field": "z",
+        "differentWords": 0,
+        "maximumAbsolute": 0,
+        "maximumULP": 0,
+        "nonfiniteComparisons": 0
+      },
+      {
+        "field": "metric",
+        "differentWords": 0,
+        "maximumAbsolute": 0,
+        "maximumULP": 0,
+        "nonfiniteComparisons": 0
+      }
+    ],
+    "originalOrderDiagnostic": {
+      "source": "all raw tuples from independent product run 0; reordered by original r5 batch arrival only",
+      "frame": {
+        "name": "product-raw-original-arrival",
+        "elapsedMs": 188.2371250000001,
+        "codecMs": 9.516373999999814,
+        "serviceMs": 74.74049699999841,
+        "chunkPoints": 65536,
+        "rangeCounts": [
+          1310720
+        ],
+        "pointDraws": 20,
+        "effectivePointSha256": "50610ad451aa173792ce6c5af109ca968b136897988ccb17fc5aac4a639deb74",
+        "foreground": 145675,
+        "nonopaque": 146692,
+        "comparison": {
+          "equal": true,
+          "pixelsCompared": 300000,
+          "differentPixels": 0,
+          "differentBytes": 0,
+          "channels": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "maximum": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "actualSha256": "a21c4f0b3e6faaa9e956932f1fe2b826c39733577518e4c8082d6861d5a3a1e0",
+          "referenceSha256": "a21c4f0b3e6faaa9e956932f1fe2b826c39733577518e4c8082d6861d5a3a1e0"
+        }
+      },
+      "inputStable": true,
+      "sourceStable": true,
+      "remainingOwnedProcesses": 0
+    },
+    "limits": [
+      "No numeric tolerance or zero normalization.",
+      "Same-order pixel equality is limited to this input and view; independent arrival images remain different."
+    ]
+  },
+  "realCancellation": {
+    "passed": true,
+    "seconds": 3.02009975,
+    "node": {
+      "executable": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/local-toolchain/node_modules/node/bin/node",
+      "argv": [
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/scripts/verify-roots-point-native.mjs",
+        "--cancel",
+        ".cache/roots-point-native-product-20261027/cancel-r2",
+        ".cache/roots-point-cloud-20261027/source.json",
+        ".cache/roots-point-native-v15-20261027/build-r4/backend.json",
+        ".cache/source-glyph-service-20261022/build-final/backend.json"
+      ]
+    },
+    "selectedAck": {
+      "operation": 3,
+      "generation": 1,
+      "sequence": 27,
+      "resource": "d640ac52744641aba1a90e0a9b6694e9",
+      "bytes": 1048688,
+      "displayIndex": 12,
+      "disposition": 0,
+      "phase": 1,
+      "receivedPoints": 65536,
+      "nextChunk": 1
+    },
+    "generationResult": {
+      "resolved": false,
+      "name": "AbortError",
+      "message": "已取消"
+    },
+    "cleanupFacts": {
+      "brokerOwnedWorkers": 0,
+      "retiredRootsWorkers": 0,
+      "startedWorkers": 1,
+      "terminatedWorkers": 1
+    },
+    "remainingNativeResources": 0,
+    "remainingOwnedProcesses": 0,
+    "sourceStable": true,
+    "observer": "Real append ACK gated 50 ms; no release or Worker termination before ACK delivery; real release ACK before retirement."
+  }
+}

@@ -655,7 +655,7 @@
   "重新开始空间采样": "Restart spatial sampling",
   "复根呈现规则仅适用于复根场景": "Roots presentation rules apply only to a Roots scene",
   "源复根运行实例标识必须是非空字符串": "The Roots runtime instance ID must be a nonempty string",
-  "输出保留目标帧的 RGBA；预览和导出按完整帧 RGB 不透明显示，不声明与原版 PNG 透明度等价。": "Output retains target RGBA. Preview and export display the complete framebuffer RGB opaquely; native PNG alpha equivalence is not established.",
+  "预览按完整帧 RGB 不透明显示；PNG 保留目标帧的 RGBA，不声明与原版 PNG 逐像素等价。": "Preview displays the complete framebuffer RGB opaquely. PNG preserves target RGBA; pixel-for-pixel equivalence with the original PNG is not established.",
   "空间相机与变换暂不使用旧平面动画轨道；旧轨道保留，空间参数可直接编辑。": "Spatial camera and transforms currently use direct edits. Old planar animation tracks are retained but do not control the spatial view.",
   "目标相机缩放": "Target camera zoom",
   "phi 角速度 · 弧度/秒": "phi angular rate · radians/s",

@@ -1,6 +1,8 @@
 import {prepareSourcePerlinNativeDrawing} from './sourcePerlinNativeDrawing';
 import {renderSourceNativeFrame} from './sourceNativeClient';
 import {ensureSourceNativeLease} from './sourceNativeLease';
+import {RootsPointCloudPageBroker} from './rootsPointCloudPageBroker';
+import type {RootsNativeCommandRequest} from './rootsPointCloudBrokerProtocol';
 import type {GenerationWorkerResponse,PerlinNativeDrawRequest,PerlinNativeDrawResponse} from './generationProtocol';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
 import {usesSourceDomain} from './sourceDomainTimeline';
@@ -285,10 +287,38 @@ export class Generator {
   private nativeCleanup?:Promise<void>;
   private perlinBroker?:{worker:Worker;done:Promise<void>};
   private perlinDrawIds=new WeakMap<Worker,number>();
+  private readonly rootsBroker=new RootsPointCloudPageBroker();
+  private readonly retiredRootsWorkers=new Set<Worker>();
+  private async releaseRoots(){
+    try{await this.rootsBroker.release();}finally{
+      for(const worker of this.retiredRootsWorkers)if(!this.rootsBroker.has(worker)&&this.retiredRootsWorkers.delete(worker))worker.terminate();
+    }
+  }
   private retireWorker(){
     const worker=this.worker;this.worker=null;if(!worker)return;
     const pending=this.perlinBroker?.worker===worker?this.perlinBroker.done:undefined;
+    if(this.rootsBroker.has(worker)){
+      this.retiredRootsWorkers.add(worker);
+      const cleanup=this.rootsBroker.release(worker);
+      void Promise.all([pending?.catch(()=>{}),cleanup]).then(()=>{if(this.retiredRootsWorkers.delete(worker))worker.terminate();},()=>{});
+      return;
+    }
     if(pending)void pending.then(()=>worker.terminate(),()=>worker.terminate());else worker.terminate();
+  }
+  private brokerRootsCommand(worker:Worker,request:RootsNativeCommandRequest){
+    const pending=this.pending.get(request.id);
+    const current=()=>this.worker===worker&&this.sessionId===request.sessionId&&this.pending.get(request.id)===pending;
+    if(!pending||!current())return;
+    const scene=pending.operation==='generate'?pending.scene:'source' in pending?pending.source.scene:undefined;
+    // A family transition must first release the preceding Roots owner. The
+    // next scene's kind cannot revoke that exact Worker's cleanup authority.
+    const eligible=sourceDrawingPolicy()==='native'&&(request.command?.kind==='release'||scene?.kind==='roots'||this.recording?.family==='roots'&&['source-recording-frame','source-recording-finish'].includes(pending.operation));
+    if(!eligible){this.invalidate(new SourceNativeError('protocol','复根原生代理不属于当前任务'));return;}
+    const cleanup=this.nativeCleanup;
+    void (async()=>{
+      await cleanup;if(!current())return;
+      await this.rootsBroker.execute(worker,request,{current,retainedBytes:()=>('source' in pending&&pending.source?.output.type==='raster'?pending.source.output.pixels.byteLength:0)});
+    })().catch(error=>{if(current())this.invalidate(error instanceof Error?error:new Error(String(error)));});
   }
   private brokerPerlinDraw(worker:Worker,request:PerlinNativeDrawRequest){
     const pending=this.pending.get(request.id);
@@ -352,7 +382,7 @@ export class Generator {
   private async releaseSamila(){const owned=this.nativeSamila;if(!owned)return;await owned.session.release();if(this.nativeSamila===owned)this.nativeSamila=undefined;}
   private releaseNative(){
     const previous=this.nativeCleanup,perlin=this.perlinBroker?.done;this.nativeSamila?.backend.cancel();
-    this.nativeCleanup=(async()=>{await perlin?.catch(()=>{});await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();await this.releaseAttractor();})();void this.nativeCleanup.catch(()=>{});
+    this.nativeCleanup=(async()=>{await perlin?.catch(()=>{});await previous?.catch(()=>{});await this.releaseRoots();await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();await this.releaseAttractor();})();void this.nativeCleanup.catch(()=>{});
   }
   private sessionId = 0;
   private pending = new Map<number, Pending>();
@@ -388,6 +418,7 @@ export class Generator {
     this.worker.onmessage = ({ data }: MessageEvent<GenerationWorkerResponse>) => {
       if(this.worker!==worker||data.sessionId!==this.sessionId)return;
       if(data.operation==='perlin-native-draw'){this.brokerPerlinDraw(worker,data);return;}
+      if(data.operation==='roots-native-command'){this.brokerRootsCommand(worker,data);return;}
       const p = this.pending.get(data.id);
       if (!p) return;
       if(p.operation==='surface-navigation'){
@@ -696,6 +727,7 @@ export class Generator {
             // cancel() remains synchronous for UI callers; remote retirement
             // must settle before a replacement can acquire the native slot.
             if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});
+            await this.releaseRoots();
             await sourceBouncingNativeSession.settleCancellation();
             if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
             if(attractorNative){
@@ -831,7 +863,7 @@ export class Generator {
         else if(context.rootsLive?.controls!==undefined){this.completed=source;reject(new RootsLiveGenerationError(error instanceof Error?error.message:String(error),source!==undefined));}
         else reject(error);return;
       }
-      try { this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal||input.rootsLive?.controls||input.implicitControls?source:undefined, resolve, reject, onProgress, onStatus });
+      try { this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal||scene.kind==='roots'||input.implicitControls?source:undefined, resolve, reject, onProgress, onStatus });
       const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene:sourcePaletteRuntimeScene(scene), ...(onStatus?{wantsStatus:true as const}:{}), context: input };
       this.worker!.postMessage(request); } catch (error) { this.pending.delete(id); reject(error); }
     });
@@ -1439,7 +1471,7 @@ export class Generator {
     }
     this.pending.clear();
   }
-  async settledNativeCleanup(){await this.perlinBroker?.done.catch(()=>{});if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();await this.releaseAttractor();}
+  async settledNativeCleanup(){await this.perlinBroker?.done.catch(()=>{});if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await this.releaseRoots();await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();await this.releaseFractal();await this.releaseFractalCold();await this.releaseDomain();await this.releaseDomainCold();await this.releaseAttractor();}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

@@ -1,3 +1,8 @@
+import {RootsNativePresentationSession} from './rootsNativePresentationSession';
+import {RootsPointCloudWorkerBackend} from './rootsPointCloudWorkerBackend';
+import type {RootsNativeCommandRequest,RootsNativeCommandResponse,RootsPointBrokerResult} from './rootsPointCloudBrokerProtocol';
+import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
+import {SourceNativeError} from './sourceNativeError';
 import {SourcePerlinSession} from '../scenes/sourcePerlin';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import type {GenerationWorkerRequest,PerlinNativeDrawRequest,PerlinNativeDrawResponse} from './generationProtocol';
@@ -48,9 +53,47 @@ async function generateNativePerlin(scene:SceneDocument,context:GenerateContext)
  return nativePerlin.generateAsync(scene,context);
 }
 
+// The Worker owns numerical state and sequential chunk production. Only its
+// current page peer owns the native lease; no native resource token crosses in.
+let rootsRpcSequence=0;
+let nativeRootsCall:{active:NonNullable<typeof activeRequest>;rpcId:number;displayId:number;kind:RootsPointBrokerResult['kind'];resolve:(result:RootsPointBrokerResult)=>void;reject:(error:Error)=>void}|undefined;
+const nativeRoots=new RootsNativePresentationSession({pointCloudBackend:new RootsPointCloudWorkerBackend((command,displayId)=>{
+ const active=activeRequest;
+ if(!active||nativeRootsCall)return Promise.reject(new SourceNativeError('ownership','Roots native RPC requires the exclusive active Worker request'));
+ if(rootsRpcSequence>=0xffffffff)return Promise.reject(new SourceNativeError('capacity','Roots native RPC identity exhausted'));
+ const request:RootsNativeCommandRequest={operation:'roots-native-command',...active,displayId,rpcId:++rootsRpcSequence,command};
+ return new Promise((resolve,reject)=>{
+  const pending=nativeRootsCall={active,rpcId:request.rpcId,displayId,kind:command.kind,resolve,reject};
+  try{self.postMessage(request,{transfer:command.kind==='append'?[command.points.buffer]:[]});}
+  catch(error){if(nativeRootsCall===pending)nativeRootsCall=undefined;reject(error);}
+ });
+})});
+let nativeRootsActive=false;
+const rootsOwner=()=>nativeRootsActive?nativeRoots:temporalSession.rootsNative;
+function nativeRootsScene(scene:SceneDocument,c:GenerateContext){return sourceDrawingPolicy()==='native'&&scene.kind==='roots'&&(usesRootsNativePresentation(scene)||nativeRootsActive&&c.rootsLive?.controls!==undefined);}
+function receiveNativeRoots(result:RootsNativeCommandResponse):void {
+ const pending=nativeRootsCall;
+ // Stale/foreign messages grant no progress or cleanup authority. In
+ // particular, a duplicate old ACK cannot settle a newer outstanding chunk.
+ if(!pending||result.id!==pending.active.id||result.sessionId!==pending.active.sessionId||result.rpcId!==pending.rpcId||result.displayId!==pending.displayId)return;
+ nativeRootsCall=undefined;
+ if(activeRequest!==pending.active){pending.reject(new SourceNativeError('ownership','Roots native response lost its active Worker owner'));return;}
+ if('error' in result){
+  const e=result.error;
+  if(!e||Array.isArray(e)||typeof e.kind!=='string'||!e.kind.length||typeof e.reason!=='string'||typeof e.cleanupPending!=='boolean'){pending.reject(new SourceNativeError('protocol','Roots native error response is malformed'));return;}
+  pending.reject(Object.assign(new SourceNativeError(e.kind,e.reason),{reason:e.reason,cleanupPending:e.cleanupPending}));
+ }else if(!result.result||result.result.kind!==pending.kind)pending.reject(new SourceNativeError('protocol','Roots native response operation mismatch'));
+ else pending.resolve(result.result);
+}
+async function generateNativeRoots(scene:SceneDocument,context:GenerateContext){
+ if([context.perlinLive,context.implicitLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.fractalRecording].some(value=>value!==undefined))throw Error('一次生成只能拥有一个复根实时或录制时钟');
+ if(!nativeRootsActive){temporalSession.reset();nativeRootsActive=true;}
+ return nativeRoots.generateAsync(scene,context);
+}
+
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)?temporalSession.sourceImplicit:scene.kind==='roots'?temporalSession.rootsNative:scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?perlinOwner():scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)?temporalSession.sourceImplicit:scene.kind==='roots'?rootsOwner():scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?perlinOwner():scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingOutput=RuntimeStart['warmup'];
@@ -66,6 +109,7 @@ self.onmessage = async (
   event: MessageEvent<GenerationWorkerRequest>,
 ) => {
   if(event.data.operation==='perlin-native-result'){receiveNativePerlin(event.data);return;}
+  if(event.data.operation==='roots-native-result'){receiveNativeRoots(event.data);return;}
   const { id, operation, sessionId } = event.data;
   const send = (payload: GenerationPayload, transfer: Transferable[] = []) => self.postMessage({ ...payload, sessionId }, { transfer });
   if(activeRequest){send({id,operation,error:'Worker 当前生成请求尚未结束'});return;}
@@ -82,7 +126,7 @@ self.onmessage = async (
   try {
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
-    if (owner !== sessionId) { if(nativePerlinActive){await nativePerlin.resetAsync();nativePerlinActive=false;}temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if (owner !== sessionId) { if(nativePerlinActive){await nativePerlin.resetAsync();nativePerlinActive=false;}if(nativeRootsActive){await nativeRoots.resetAsync();nativeRootsActive=false;}temporalSession.reset(); owner = sessionId; completed=undefined; }
     if(event.data.operation==='implicit-paused-capture'){
       const source=implicitCaptureSource=completed;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='implicit'||!temporalSession.sourceImplicit.matchesCompletedPrimary(source.scene,source.context))throw Error('隐式截图对应的实时主预览已过期');
@@ -154,8 +198,8 @@ self.onmessage = async (
     }
     if(event.data.operation==='roots-playback'){
       const source=completed,live=source?.context.rootsLive;
-      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='roots'||!live||typeof event.data.paused!=='boolean'||!temporalSession.rootsNative.matchesCompletedPrimary(source.scene,source.context))throw Error('复根 播放控制对应的实时主预览已过期');
-      temporalSession.rootsNative.setPaused(event.data.paused,event.data.timestampMs);
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='roots'||!live||typeof event.data.paused!=='boolean'||!rootsOwner().matchesCompletedPrimary(source.scene,source.context))throw Error('复根 播放控制对应的实时主预览已过期');
+      rootsOwner().setPaused(event.data.paused,event.data.timestampMs);
       completed={...source,context:{...source.context,rootsLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
       send({operation:'roots-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
@@ -191,7 +235,7 @@ self.onmessage = async (
       const source=recordingSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('源场景录制对应的主预览已过期');
       const producer=recordingProducer(source.scene);if(!producer)throw new Error('当前场景不支持源录制');
-      const runtime=producer===nativePerlin?await nativePerlin.beginRecordingAsync(source.scene,source.context,event.data.options):producer.beginRecording(source.scene,source.context,event.data.options);
+      const runtime=producer===nativeRoots?await nativeRoots.beginRecordingAsync(source.scene,source.context,event.data.options):producer===nativePerlin?await nativePerlin.beginRecordingAsync(source.scene,source.context,event.data.options):producer.beginRecording(source.scene,source.context,event.data.options);
       recording={id,producer,runtime};completed=undefined;
       send({operation:event.data.operation,id,recordingId:id,result:{scene:runtime.scene,context:runtime.context,clock:runtime.clock,warmup:runtime.warmup}},outputBuffers(runtime.warmup));return;
     }
@@ -206,7 +250,7 @@ self.onmessage = async (
         if(pending&&pending.index!==displayFrame)throw new Error('源场景上一录制帧尚未交付，请重试该帧或结束录制');
         if(pending&&(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface||lease.producer===temporalSession.sourceImplicit)&&!Object.is(pending.actualFrameRate,event.data.actualFrameRate))throw new Error('源场景未交付帧重试不能改变实际帧率');
         if(pending&&!pending.storage.intact())throw new Error('源场景录制帧传输状态未知，请结束录制');
-        const output=pending?.output??(lease.producer===nativePerlin?await nativePerlin.nextRecordingFrameAsync(lease.runtime.handle,displayFrame):lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface||lease.producer===temporalSession.sourceImplicit?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
+        const output=pending?.output??(lease.producer===nativeRoots?await nativeRoots.nextRecordingFrameAsync(lease.runtime.handle,displayFrame):lease.producer===nativePerlin?await nativePerlin.nextRecordingFrameAsync(lease.runtime.handle,displayFrame):lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface||lease.producer===temporalSession.sourceImplicit?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
         if(output.type==='raster'&&output.pixels.byteLength!==output.width*output.height*4)throw new Error('源场景录制帧传输状态未知，请结束录制');
         lease.pendingFrame=pending??{...publication(output),index:displayFrame,actualFrameRate:event.data.actualFrameRate};
         send({operation:event.data.operation,id,recordingId:lease.id,displayFrame,output},outputBuffers(output));lease.pendingFrame=undefined;return;
@@ -214,11 +258,11 @@ self.onmessage = async (
       // finishRecording mutates runtime ownership exactly once. If publication
       // fails, retain its result and completed preview for an explicit retry.
       if(event.data.timestampMs!==undefined&&lease.producer!==temporalSession.sourceImplicit)throw Error('注入停止时钟仅支持隐式录制');
-      lease.finish??=lease.producer===nativePerlin?await nativePerlin.finishRecordingAsync(lease.runtime.handle):lease.producer===temporalSession.sourceImplicit?lease.producer.finishRecording(lease.runtime.handle,event.data.timestampMs):lease.producer.finishRecording(lease.runtime.handle);
+      lease.finish??=lease.producer===nativeRoots?await nativeRoots.finishRecordingAsync(lease.runtime.handle):lease.producer===nativePerlin?await nativePerlin.finishRecordingAsync(lease.runtime.handle):lease.producer===temporalSession.sourceImplicit?lease.producer.finishRecording(lease.runtime.handle,event.data.timestampMs):lease.producer.finishRecording(lease.runtime.handle);
       if(lease.preview&&!lease.preview.storage.intact()&&'preview' in lease.finish){
         // The retained numerical handoff republishes detached buffers without
         // another update or host-clock reset, for raster and geometry owners.
-        lease.finish=lease.producer===nativePerlin?await nativePerlin.finishRecordingAsync(lease.runtime.handle):lease.producer.finishRecording(lease.runtime.handle);
+        lease.finish=lease.producer===nativeRoots?await nativeRoots.finishRecordingAsync(lease.runtime.handle):lease.producer===nativePerlin?await nativePerlin.finishRecordingAsync(lease.runtime.handle):lease.producer.finishRecording(lease.runtime.handle);
       }
       const {scene,context}=lease.finish;
       if(!lease.preview||!lease.preview.storage.intact()){
@@ -246,7 +290,7 @@ self.onmessage = async (
       if(domain&&(source.scene.kind!=='domain'||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context)))throw Error('域着色当前帧截图对应的实时主预览已过期');
       // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
-      const rootsFormulas=event.data.operation==='roots-paused-capture'&&temporalSession.rootsNative.completedHasFormulas();
+      const rootsFormulas=event.data.operation==='roots-paused-capture'&&rootsOwner().completedHasFormulas();
       const currentBase=rootsFormulas?{width,height,logicalWidth:width,logicalHeight:height,density:1}:fractal||domain?prepareSourcePausedCaptureSize({width,height},domain?source.context.domainLive?.viewport?.pixelDensity??NaN:source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
       const base=currentBase??(perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height});
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
@@ -263,7 +307,7 @@ self.onmessage = async (
         ?temporalSession.sourceSamila.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
         :perlin
         ?nativePerlinActive?await nativePerlin.capturePausedAsync(source.scene,{...source.context,quality:'export',width,height,sourceViewport:{...source.context.sourceViewport!,target:'offscreen'}},{additionalBytes}):temporalSession.sourcePerlin.capturePaused(source.scene,{...source.context,quality:'export',width,height,sourceViewport:{...source.context.sourceViewport!,target:'offscreen'}},{additionalBytes})
-        :temporalSession.rootsNative.capturePaused(source.scene,{...source.context,quality:'export',width,height,rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:source.context.rootsViewport?.referenceLogicalHeight??source.context.height,target:'offscreen'}},{additionalBytes});
+        :nativeRootsActive?await nativeRoots.capturePausedAsync(source.scene,{...source.context,quality:'export',width,height,rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:source.context.rootsViewport?.referenceLogicalHeight??source.context.height,target:'offscreen'}},{additionalBytes}):temporalSession.rootsNative.capturePaused(source.scene,{...source.context,quality:'export',width,height,rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:source.context.rootsViewport?.referenceLogicalHeight??source.context.height,target:'offscreen'}},{additionalBytes});
       captureRendered=true;
       if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('暂停截图没有生成图像');
       const captureWidth=result.capture.width,captureHeight=result.capture.height;
@@ -318,9 +362,10 @@ self.onmessage = async (
       output.dimension ??= definition(scene.kind).dimension;
       send({ operation: 'generate-progress', id, output }, outputBuffers(output));
     } } satisfies GenerateContext;
-    const native=nativePerlinScene(scene);
+    const native=nativePerlinScene(scene),rootsNative=nativeRootsScene(scene,executionContext);
     if(!native&&nativePerlinActive){await nativePerlin.resetAsync();nativePerlinActive=false;}
-    const output = native?await generateNativePerlin(scene,executionContext):await generateSceneAsync(scene, executionContext, temporalSession);
+    if(!rootsNative&&nativeRootsActive){await nativeRoots.resetAsync();nativeRootsActive=false;}
+    const output = rootsNative?await generateNativeRoots(scene,executionContext):native?await generateNativePerlin(scene,executionContext):await generateSceneAsync(scene, executionContext, temporalSession);
     output.dimension ??= definition(scene.kind).dimension;
     output.stats.elapsedMs = performance.now() - start;
     if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive&&!context.implicitControls)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
@@ -345,7 +390,7 @@ self.onmessage = async (
         ?temporalSession.sourceSamila.matchesCompletedPrimary(captureSource.scene,captureSource.context)
         :operation==='perlin-paused-capture'
         ?perlinOwner().matchesCompletedPrimary(captureSource.scene,captureSource.context)
-        :temporalSession.rootsNative.matchesCompletedPrimary(captureSource.scene,captureSource.context));
+        :rootsOwner().matchesCompletedPrimary(captureSource.scene,captureSource.context));
       completed=retained?captureSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:captureSource!.id}:{})});
     }else if(implicitCaptureSource){
@@ -361,7 +406,7 @@ self.onmessage = async (
       completed=retained?generationSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:generationSource.id}:{})});
     }else if(operation==='generate'&&generationSource?.context.rootsLive?.controls){
-      const retained=owner===sessionId&&temporalSession.rootsNative.matchesCompletedPrimary(generationSource.scene,generationSource.context);
+      const retained=owner===sessionId&&rootsOwner().matchesCompletedPrimary(generationSource.scene,generationSource.context);
       completed=retained?generationSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:generationSource.id}:{})});
     }else if(operation==='generate'&&generationSource?.context.fractalLive){

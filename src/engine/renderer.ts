@@ -199,7 +199,9 @@ export class ArtRenderer {
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
     this.formulaFrame=output.formulaPresentation;
-    this.sourceCompositedRaster=(sourceMap||sourceSamila||sourceSymmetry)&&output.type==='raster'?output:undefined;
+    // Roots also owns a completed framebuffer. The preview below copies its
+    // RGB opaquely; PNG composition must retain the producer's original RGBA.
+    this.sourceCompositedRaster=output.type==='raster'&&(sourceMap||sourceSamila||sourceSymmetry||output.rootsPresentation&&output.cameraResolved)?output:undefined;
     const cameraResolved=output.type==='raster'&&output.cameraResolved===true;
     if(cameraResolved!==this.cameraResolved)fit=true;
     this.cameraResolved=cameraResolved;

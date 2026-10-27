@@ -347,7 +347,6 @@ export function ExportDialog({
       const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width:attractorTarget?.width??width,height:attractorTarget?.height??height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:attractorTarget?.sourceViewport??ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:undefined;
       const nativeAttractor=sourceDrawingPolicy()==='native'&&usesSourceAttractor(exportScene)&&!usesSourceAttractorCpu(exportScene);
-      if(!bouncing&&!sourceFractal&&!nativeAttractor&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(attractorTarget?.logicalWidth??width,attractorTarget?.logicalHeight??height,attractorTarget?.density??1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));
         checkCancelled();assertSourceBouncingExportFrame(warmup,bouncing,bouncing.warmup);
@@ -435,6 +434,11 @@ export function ExportDialog({
         }else if(nativeAttractor){
           if(output.type!=='raster'||output.backend!=='native'||output.sourcePixelRenderer?.backend!=='native')throw new Error('原生吸引子导出缺少像素来源');
           blob=await encodeFormulaRaster(output,kind==='image'&&format==='jpg'?'image/jpeg':'image/png',{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
+        }else if(output.type==='raster'&&(output.rootsPresentation||usesRootsNativePresentation(exportScene))&&(output.backend==='native'||output.sourcePixelRenderer?.backend==='native')){
+          // The completed frame owns the route: an authored mode may be staged
+          // while its retained Roots instance still presents another mode.
+          if(output.backend!=='native'||output.sourcePixelRenderer?.backend!=='native'||output.rootsPresentation?.mode!=='point-cloud'||!output.cameraResolved)throw new Error('原生复根导出缺少已完成的像素来源');
+          blob=await encodeFormulaRaster(output,kind==='image'&&format==='jpg'?'image/jpeg':'image/png',{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
         }else if(bouncing||perlinRecording){
           if(bouncing)assertSourceBouncingExportFrame(output,bouncing,bouncing.frames[frame]);
           if(output.type!=='raster')throw new Error('录制帧没有生成图像');
@@ -442,6 +446,9 @@ export function ExportDialog({
             ?await encodeSourcePausedPng(output.pixels,output.width,output.height,1,{signal:abort.signal,isCancelled:()=>cancelRef.current})
             :await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
         }else{
+          // Allocate only for a delivered frame that needs this renderer. Native
+          // RGBA must never pass through an opaque display texture on export.
+          if(!r){const canvas=document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(attractorTarget?.logicalWidth??width,attractorTarget?.logicalHeight??height,attractorTarget?.density??1);}
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
           blob=usesSourceGeometryImage(exportScene)&&(kind==='video'||format==='png'||usesSourceAttractorCpu(exportScene))

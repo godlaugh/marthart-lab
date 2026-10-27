@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {inspectDrawingRequest,inspectDrawingResponse} from './source-drawing-protocol.mjs';
 import {inspectAttractorRequest,inspectAttractorResponse,admitAttractorRequest} from './source-attractor-protocol.mjs';
+import {inspectRootsPointRequest,inspectRootsPointResponse,admitRootsPointRequest} from './source-roots-point-protocol.mjs';
 
 const BUDGET=256*1024*1024,HEADER=44,MAX_ERROR=8192;
 const failure=(kind,message)=>({ok:false,error:{kind,message}});
@@ -32,7 +33,7 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11,12,13,14].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===12?60:version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===12?60:version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
@@ -40,6 +41,7 @@ export function inspectSourceFrameHeader(packet){
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*(version===12?6:4)+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
  if(version===13)return inspectDrawingRequest(b,{generation,sequence,width,height,samples},inspectSourceFrameHeader);
  if(version===14)return inspectAttractorRequest(b,{generation,sequence,width,height,samples});
+ if(version===15)return inspectRootsPointRequest(b,{generation,sequence,width,height,samples});
  if(version===11){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
   if(b.readUInt32LE(60)!==4||![1,2,3].includes(operation)||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','分形原生帧头部无效');
@@ -87,7 +89,7 @@ function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
  const length=bytes.readUInt32LE(8),generation=bytes.readUInt32LE(12),sequence=bytes.readUInt32LE(16),width=bytes.readUInt32LE(20),height=bytes.readUInt32LE(24),status=bytes.readUInt32LE(28),format=bytes.readUInt32LE(32),payloadBytes=bytes.readUInt32LE(36),contextSerial=bytes.readUInt32LE(40);
  if(generation!==expected.generation||sequence!==expected.sequence||width!==expected.width||height!==expected.height)return failure('protocol','原生响应不属于当前帧');
- if(length!==HEADER+payloadBytes||status>12||(status===0?(format!==(expected.family==='attractor'?8:expected.family==='drawing'?7:expected.family==='fractal'?6:expected.family==='iterated-render'?5:expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='attractor'?expected.responseBytes:expected.family==='drawing'?64+(expected.control?0:width*height*4):expected.family==='fractal'?64+expected.count*52:expected.family==='iterated-render'?128+(expected.control?0:width*height*4):expected.family==='iterated'?64+expected.readCount*24+(expected.processingBytes??0):expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
+ if(length!==HEADER+payloadBytes||status>12||(status===0?(format!==(expected.family==='roots-point'?9:expected.family==='attractor'?8:expected.family==='drawing'?7:expected.family==='fractal'?6:expected.family==='iterated-render'?5:expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(['roots-point','attractor'].includes(expected.family)?expected.responseBytes:expected.family==='drawing'?64+(expected.control?0:width*height*4):expected.family==='fractal'?64+expected.count*52:expected.family==='iterated-render'?128+(expected.control?0:width*height*4):expected.family==='iterated'?64+expected.readCount*24+(expected.processingBytes??0):expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
  return {ok:true,value:{generation,sequence,width,height,status,format,payloadBytes,contextSerial}};
 }
 function fractalResponse(payload,expected){
@@ -142,7 +144,7 @@ function iteratedRenderResponse(payload,expected){
  if((kind===1||kind===5)&&!payload.subarray(64,92).every(n=>n===0)||kind===2&&(!Number.isSafeInteger(invalid)||accepted+clipped>count||sampleInvalid!==(expected.record?count-accepted-clipped:0)||!payload.subarray(84,92).every(n=>n===0))||kind===3&&(!payload.subarray(64,84).every(n=>n===0)||occupied>width*height||!Number.isFinite(maxCount)||maxCount<0))return failure('protocol','迭代原生绘制统计覆盖无效');
  return{ok:true,value:metadata};
 }
-const releaseOperation={attractor:6,drawing:4,fractal:3,bouncing:4,samila:3,iterated:5,'iterated-render':4};
+const releaseOperation={'roots-point':5,attractor:6,drawing:4,fractal:3,bouncing:4,samila:3,iterated:5,'iterated-render':4};
 /** Owns the actual ChildProcess handle until close, never locates/kills a PID.
  * This helper executes no shell and spawns no subprocesses. A failed cleanup
  * retains its owner and blocks replacements. One request; no unbounded queue.
@@ -191,6 +193,7 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(offset!==chunk.length){retire(o,failure('protocol','原生响应附带额外字节'));return;}
      const meta=o.response,pixels=o.payload;o.headerUsed=0;o.payload=undefined;o.response=undefined;
      let result,resourceMetadata;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure(meta.status>=7?'runtime':{1:'input',2:'unsupported',3:'capacity',4:'runtime',5:'state-lost',6:'ownership'}[meta.status],message);if(meta.status>=7)result.error.gpuStage={7:'compile',8:'link',9:'context',10:'allocation',11:'render',12:'readback'}[meta.status];}
+     else if(j.expected.family==='roots-point'){const parsed=inspectRootsPointResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}resourceMetadata=parsed.value;result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'roots-point-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='attractor'){const parsed=inspectAttractorResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}resourceMetadata=parsed.value;result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'attractor-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='drawing'){const parsed=inspectDrawingResponse(pixels,j.expected);if(!parsed.ok){retire(o,failure('protocol',parsed.error.message));return;}resourceMetadata=parsed.value;result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'drawing-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='fractal'){const parsed=fractalResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}resourceMetadata=parsed.value;result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'fractal-v1',rowOrder:'none',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
@@ -201,8 +204,15 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(meta.status===4||meta.status>=7){
       // Ink and source-prefix cleanup can fail after a context error. Only close
       // proves those child owners are gone, including a failed unacknowledged create.
-      if(j.expected.family==='attractor'||j.expected.family==='drawing'||j.expected.family==='fractal'||j.expected.family==='iterated-render'||j.expected.family==='iterated'&&[6,7].includes(j.expected.operation)||[...retainedResources.values()].some(r=>r.family==='attractor'||r.family==='fractal'||r.family==='iterated-render'||r.profile==='source-prefix'||r.profile==='source-fragment')){retire(o,result);return;}
+      if(j.expected.family==='roots-point'||j.expected.family==='attractor'||j.expected.family==='drawing'||j.expected.family==='fractal'||j.expected.family==='iterated-render'||j.expected.family==='iterated'&&[6,7].includes(j.expected.operation)||[...retainedResources.values()].some(r=>r.family==='roots-point'||r.family==='attractor'||r.family==='fractal'||r.family==='iterated-render'||r.profile==='source-prefix'||r.profile==='source-fragment')){retire(o,result);return;}
       retainedResources.clear();
+     }
+     if(!result.ok&&j.expected.family==='roots-point'){
+      const key='roots-point:'+j.expected.resource,retained=retainedResources.get(key);
+      // An explicit foreign-ownership create response does not grant custody.
+      // Every uncertain create instead remains reserved until release or close.
+      if(meta.status===6&&retained===j.expected.provisional)retainedResources.delete(key);
+      else if(retained){retained.failed=true;retained.transaction||=j.expected.operation>=2&&j.expected.operation<=4;}
      }
      if(!result.ok&&j.expected.family==='drawing'){const retained=retainedResources.get('drawing:'+j.expected.resource);if(retained)retained.failed=true;}
      if(result.ok&&j.expected.family){
@@ -236,6 +246,9 @@ export async function createSourceRendererService({executablePath,executableSha2
   if(drawing&&(header.value.family!=='drawing'||header.value.resource!==drawing.resource)||header.value.family==='drawing'&&header.value.operation===1&&retainedResources.size)return Promise.resolve(failure('ownership','原生绘制通道已有保留资源'));
   if(header.value.family==='drawing'&&owned){if(header.value.frameKey!==owned.frameKey){owned.failed=true;return Promise.resolve(failure('ownership','分块帧目标身份变化'));}if(header.value.operation!==4&&(header.value.expectedIndex!==owned.index||owned.finished||owned.failed)){owned.failed=true;return Promise.resolve(failure('input','分块绘制检查点无效'));}if(header.value.operation===2&&header.value.packetBytes>owned.maximum){owned.failed=true;return Promise.resolve(failure('capacity','分块绘制超过已准入容量'));}}
   if(header.value.family==='drawing'&&!owned&&![1,4].includes(header.value.operation))return Promise.resolve(failure('state-lost','分块绘制资源不存在'));
+  const rootsTransaction=[...retainedResources.values()].find(r=>r.family==='roots-point'&&(r.phase===1||r.transaction));
+  if(rootsTransaction&&(expected.family!=='roots-point'||expected.resource!==rootsTransaction.resource))return Promise.resolve(failure('ownership','原生点云帧事务尚未完成'));
+  if(expected.family==='roots-point'){const admitted=admitRootsPointRequest(expected,retainedResources);if(!admitted.ok)return Promise.resolve(admitted);}
   if(header.value.family==='attractor'){const admitted=admitAttractorRequest(expected,retainedResources);if(!admitted.ok)return Promise.resolve(admitted);}
   // The acknowledged compute owner, not the packet version or caller, owns its
   // execution profile. Reject before any await, child write or sequence commit.
@@ -256,6 +269,10 @@ export async function createSourceRendererService({executablePath,executableSha2
      const o=owner??start();j.owner=o;
      if(o.reason){retire(o,o.reason);return;}
      if(o.last&&(expected.generation<o.last.generation||(expected.generation===o.last.generation&&expected.sequence<=o.last.sequence))){finish(j,failure('input','同一原生会话的帧身份必须递增'));return;}
+     if(expected.family==='roots-point'&&expected.operation===1){
+      expected.provisional={family:'roots-point',resource:expected.resource,session:expected.session,target:expected.target,width:expected.width,height:expected.height,programBytes:expected.programBytes,residentBytes:expected.residentBytes,phase:2,failed:true,transaction:false};
+      retainedResources.set('roots-point:'+expected.resource,expected.provisional);
+     }
      o.last=expected;o.stderrBytes=0;o.child.stdin.write(input,error=>{if(error)retire(o,failure('runtime','无法写入原生帧'));});
      if(signal?.aborted||closing)j.cancel();
     }catch{if(j.finished)return;const reason=failure('unavailable','原生程序不可用');j.owner??=owner;if(j.owner)retire(j.owner,reason);else finish(j,reason);}

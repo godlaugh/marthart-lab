@@ -1,107 +1,18 @@
-import {RootsPointCloudRing, ROOTS_POINT_CLOUD_RECENT_WINDOW} from './rootsPointCloudRing';
-import {validatePreparedRootsProjection, type PreparedRootsProjection} from './rootsProjection';
-import {prepareRootsMetricValue, validateRootsMetricColorPlan, type RootsMetricColorPlan} from './rootsDensityColor';
-import {RootsGpuError, rootsGpuRequire as require, rootsGpuCall as device, rootsGpuInput, rootsGpuCancel as cancel, rootsGpuCleanup, rootsGpuFinally} from './rootsGpuFailure';
+import {RootsPointCloudRing} from './rootsPointCloudRing';
+import type {PreparedRootsProjection} from './rootsProjection';
+import type {RootsMetricColorPlan} from './rootsDensityColor';
+import {ROOTS_NATIVE_POINT_CLOUD_CHUNK, ROOTS_POINT_FRAME_BINDING_BYTES, rootsPointCloudPrograms, prepareRootsPointCloudBackground, prepareRootsPointFrame, rootsPointCloudChunkPoints, prepareRootsPointChunks} from './rootsPointCloudDrawing';
+import {RootsGpuError, rootsGpuRequire as require, rootsGpuCall as device, rootsGpuCancel as cancel, rootsGpuCleanup, rootsGpuFinally} from './rootsGpuFailure';
 
-export const ROOTS_NATIVE_POINT_CLOUD_CHUNK = 65_536;
 const MAX_BYTES = 768 * 1024 * 1024;
 const HEADER = '#version 300 es\nprecision highp float;\nprecision highp int;\n';
-// Retained complex_roots_point_cloud shaders. Only ES precision/version and
-// attribute declarations differ; the transform/tone/alpha bodies are verbatim.
-const POINT_VERTEX = HEADER + `uniform mat4 projection;
-uniform mat4 modelview;
-uniform float pointSize;
-uniform float rotationDegrees;
-uniform vec3 scaleVec;
-uniform vec3 offsetVec;
-
-layout(location=0) in vec3 rootPosition;
-layout(location=1) in float pointMetric;
-
-out float vertMetric;
-
-void main() {
-    float angle = radians(rotationDegrees);
-    float c = cos(angle);
-    float s = sin(angle);
-    vec2 rotated = vec2(
-        rootPosition.x * c - rootPosition.y * s,
-        rootPosition.x * s + rootPosition.y * c
-    );
-    vec3 positionWorld = vec3(
-        rotated.x * scaleVec.x + offsetVec.x,
-        rotated.y * scaleVec.y + offsetVec.y,
-        rootPosition.z * scaleVec.z + offsetVec.z
-    );
-    vec4 viewPos = modelview * vec4(positionWorld, 1.0);
-    gl_Position = projection * viewPos;
-    gl_PointSize = max(pointSize, 0.001);
-    vertMetric = pointMetric;
-}`;
-const POINT_FRAGMENT = HEADER + `uniform float brightness;
-uniform float contrast;
-uniform float gamma;
-uniform float dynamicRange;
-uniform float pointSize;
-uniform float saturation;
-uniform float paletteOffset;
-uniform vec3 backgroundRgb;
-uniform sampler2D paletteTex;
-
-in float vertMetric;
-
-out vec4 fragColor;
-
-vec3 adjustSaturation(vec3 rgb, float amount) {
-    float luma = dot(rgb, vec3(0.299, 0.587, 0.114));
-    return mix(vec3(luma), rgb, amount);
-}
-
-float smoothLimit(float x, float k) {
-    x = 2.0 * x - 1.0;
-    float a = pow(abs(x), 1.0 / max(k, 0.01));
-    return sign(x) * pow(a / (a + 1.0), max(k, 0.01)) * 0.5 + 0.5;
-}
-
-void main() {
-    vec2 localCoord = gl_PointCoord * 2.0 - 1.0;
-    float r2 = dot(localCoord, localCoord);
-    if (r2 > 1.0) {
-        discard;
-    }
-
-    float edgeAlpha = 1.0 - smoothstep(0.75, 1.0, r2);
-    float exposure = clamp(pow(2.0, brightness * 2.0), 0.15, 8.0);
-    float value = smoothLimit(contrast * edgeAlpha * exposure + brightness, dynamicRange);
-    vec3 vertColor = texture(paletteTex, vec2(fract(vertMetric + paletteOffset), 0.5)).rgb;
-    vec3 rgb = mix(backgroundRgb, vertColor, clamp(value, 0.0, 1.0));
-    rgb = pow(clamp(rgb, 0.0, 1.0), vec3(1.0 / max(gamma, 0.001)));
-    rgb = adjustSaturation(rgb, saturation);
-    float subpixelAlphaScale = clamp(pointSize / 0.125, 0.02, 1.0);
-    fragColor = vec4(rgb, clamp(edgeAlpha * 0.38 * subpixelAlphaScale * exposure, 0.0, 0.85));
-}`;
-const FULLSCREEN = HEADER + `void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}`;
-const FILL_FRAGMENT = HEADER + `uniform vec4 fillColor;out vec4 pixel;void main(){pixel=fillColor;}`;
 const PROBE_VERTEX = HEADER + `void main(){gl_Position=vec4(0.,0.,0.,1.);gl_PointSize=16.;}`;
 const PROBE_FRAGMENT = HEADER + `out vec4 pixel;void main(){vec2 p=gl_PointCoord*2.-1.;if(dot(p,p)>1.)discard;pixel=vec4(1.);}`;
-const F = Math.fround;
-/** Source PGraphics RGB/default255 colorCalc(int[,alpha]), followed by the
- * packed fillColor byte path. An alpha-zero int <=255 is a grayscale input.
- * Shader backgroundRGB intentionally has different semantics. */
-export function prepareRootsPointCloudBackground(packed: number, alpha255?: number): readonly [number, number, number, number] {
- require(Number.isInteger(packed) && packed >= 0 && packed <= 0xffffffff, 'Native point background requires packed ARGB', 'input');
- require(alpha255 === undefined || Number.isFinite(alpha255) && Number.isFinite(F(alpha255)), 'Native point fade alpha is invalid', 'input');
- const gray = packed <= 255, alpha = gray ? 255 : packed >>> 24;
- const factor = alpha255 === undefined ? 1 : F(Math.min(255, Math.max(0, F(alpha255))) / 255);
- const a = alpha255 === undefined ? alpha : Math.trunc(F(alpha * factor));
- const r = gray ? packed : (packed >>> 16) & 255, g = gray ? packed : (packed >>> 8) & 255, b = gray ? packed : packed & 255;
- return [F(r / 255), F(g / 255), F(b / 255), F(a / 255)];
-}
 /** RGBA8 target + two complete protocol-checked CPU readbacks, CPU/GPU chunk,
  * LUT copies and row flip storage. Ring/math/input and driver overhead excluded. */
 export function rootsNativePointCloudGpuBytes(width: number, height: number): number {
  require([width, height].every(x => Number.isInteger(x) && x > 0 && x <= 16384), 'Native point target dimensions exceed capacity', 'capacity');
- return width * height * 12 + ROOTS_NATIVE_POINT_CLOUD_CHUNK * 32 + 3 * 1024 + width * 4;
+ return width * height * 12 + ROOTS_NATIVE_POINT_CLOUD_CHUNK * 32 + 3 * 1024 + ROOTS_POINT_FRAME_BINDING_BYTES + width * 4;
 }
 function allocation<T>(create: () => T): T { try { return create(); } catch (cause) { throw new RootsGpuError('Native point CPU allocation failed', 'capacity', {cause}); } }
 type ProgramKind = 'point' | 'fill' | 'probe';
@@ -116,7 +27,7 @@ export class RootsNativePointCloudGpu {
  private buffer?: WebGLBuffer;
  private programs = new Map<ProgramKind, WebGLProgram>();
  private shaders = new Set<WebGLShader>();
- private upload?: Float32Array;
+ private upload?: Float32Array<ArrayBuffer>;
  private uploadedLut?: Uint8Array;
  private width = 0; private height = 0;
  private cleanupPending = false;
@@ -173,7 +84,8 @@ export class RootsNativePointCloudGpu {
     this.targetTexture = gl.createTexture() ?? undefined; this.paletteTexture = gl.createTexture() ?? undefined;
     this.framebuffer = gl.createFramebuffer() ?? undefined; this.vao = gl.createVertexArray() ?? undefined; this.buffer = gl.createBuffer() ?? undefined;
     require(this.targetTexture && this.paletteTexture && this.framebuffer && this.vao && this.buffer, 'Native point resource allocation failed');
-    this.program('point', POINT_VERTEX, POINT_FRAGMENT); this.program('fill', FULLSCREEN, FILL_FRAGMENT); this.program('probe', PROBE_VERTEX, PROBE_FRAGMENT);
+    const programs = rootsPointCloudPrograms('webgl2');
+    this.program('point', programs.point.vertex, programs.point.fragment); this.program('fill', programs.fade.vertex, programs.fade.fragment); this.program('probe', PROBE_VERTEX, PROBE_FRAGMENT);
     for (const [texture, w, h, filter] of [[this.targetTexture, width, height, gl.NEAREST], [this.paletteTexture, 256, 1, gl.LINEAR]] as const) {
      gl.bindTexture(gl.TEXTURE_2D, texture); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     }
@@ -217,36 +129,35 @@ export class RootsNativePointCloudGpu {
   this.run(() => {
    const isCancelled = options.isCancelled; cancel(isCancelled);
    require(this.gl && this.upload, 'Native point target is not initialized', 'input');
-   rootsGpuInput(() => { validatePreparedRootsProjection(plan); validateRootsMetricColorPlan(color); });
-   require(plan.mode === 'point-cloud' && plan.physicalWidth === this.width && plan.physicalHeight === this.height, 'Native point projection mode/dimensions do not match target', 'input');
-   require(ring instanceof RootsPointCloudRing, 'Native point requires the owned arrival ring', 'input');
-   const window = rootsGpuInput(() => ring.recentWindow());
-   require(window.pointCount <= ROOTS_POINT_CLOUD_RECENT_WINDOW, 'Native point recent window exceeds 3M capacity', 'capacity');
-   const fresh = () => require(ring.isCurrentWindow(window), 'Native point borrowed window changed during draw', 'input');
+   const frame = prepareRootsPointFrame(plan, color, false);
+   require(plan.physicalWidth === this.width && plan.physicalHeight === this.height, 'Native point projection mode/dimensions do not match target', 'input');
+   const batch = rootsPointCloudChunkPoints(this.width, this.height, plan.pointCloudUniformSize, this.deviceFacts!.pointSizeRange);
+   const chunks = prepareRootsPointChunks(ring, batch, {...options, destination: this.upload});
    const gl = this.gl, program = this.programs.get('point')!;
    device(() => {
     this.target(); gl.bindVertexArray(this.vao!); gl.useProgram(program); gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    const location = (name: string) => gl.getUniformLocation(program, name);
-    gl.uniformMatrix4fv(location('projection'), false, plan.projection.columnMajor); gl.uniformMatrix4fv(location('modelview'), false, plan.modelView.columnMajor);
-    gl.uniform1f(location('pointSize'), plan.pointCloudUniformSize); gl.uniform1f(location('rotationDegrees'), plan.transform.rotationDegrees); gl.uniform3fv(location('scaleVec'), plan.transform.scale); gl.uniform3fv(location('offsetVec'), plan.transform.offset);
-    for (const name of ['brightness', 'contrast', 'gamma', 'dynamicRange', 'saturation', 'paletteOffset'] as const) gl.uniform1f(location(name), color[name]);
-    gl.uniform3fv(location('backgroundRgb'), color.backgroundRGB); gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.paletteTexture!); gl.uniform1i(location('paletteTex'), 0);
-    if (!this.uploadedLut || !this.uploadedLut.every((v, i) => v === color.lut[i])) { gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, color.lut); this.uploadedLut = allocation(() => color.lut.slice()); }
+    for (const u of frame.uniforms) {
+     const loc = gl.getUniformLocation(program, u.name);
+     switch (u.kind) {
+      case 'mat4': gl.uniformMatrix4fv(loc, false, u.values as Float32Array<ArrayBuffer>); break;
+      case 'float': gl.uniform1f(loc, u.values[0]); break;
+      case 'vec3': gl.uniform3fv(loc, u.values as Float32Array<ArrayBuffer>); break;
+      case 'sampler2d': gl.activeTexture(gl.TEXTURE0 + u.texture); gl.bindTexture(gl.TEXTURE_2D, this.paletteTexture!); gl.uniform1i(loc, u.texture); break;
+      default: throw new RootsGpuError('Unsupported prepared point uniform: ' + u.kind, 'input');
+     }
+    }
+    if (!this.uploadedLut || !this.uploadedLut.every((v, i) => v === frame.palette[i])) { gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, frame.palette); this.uploadedLut = frame.palette; }
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer!); gl.enableVertexAttribArray(0); gl.enableVertexAttribArray(1); gl.vertexAttribDivisor(0, 0); gl.vertexAttribDivisor(1, 0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 16, 0); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 16, 12); this.check('uniform/upload');
    });
-   const diameter = Math.max(1, Math.min(plan.pointCloudUniformSize, this.deviceFacts!.pointSizeRange[1]));
-   const footprint = Math.min(this.width, Math.ceil(diameter) + 2) * Math.min(this.height, Math.ceil(diameter) + 2);
-   const batch = Math.max(1, Math.min(ROOTS_NATIVE_POINT_CLOUD_CHUNK, Math.floor(8_000_000 / Math.max(1, footprint))));
    rootsGpuFinally(() => {
-    for (const range of window.ranges) for (let at = 0; at < range.pointCount; at += batch) {
-     cancel(isCancelled); fresh(); const count = Math.min(batch, range.pointCount - at);
-     this.upload!.set(range.values.subarray(at * 4, (at + count) * 4), 0);
-     for (let i = 0; i < count; i++) { if ((i & 1023) === 0) { cancel(isCancelled); fresh(); } this.upload![i * 4 + 3] = rootsGpuInput(() => prepareRootsMetricValue(this.upload![i * 4 + 3])).clamped; }
-     device(() => { gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.upload!.subarray(0, count * 4)); gl.drawArrays(gl.POINTS, 0, count); this.check('draw'); }); this.draws++;
+    const iterator = chunks[Symbol.iterator]();
+    for (;;) {
+     const step = iterator.next(); if (step.done) break; const chunk = step.value;
+     device(() => { gl.bufferSubData(gl.ARRAY_BUFFER, 0, chunk.points); gl.drawArrays(gl.POINTS, 0, chunk.pointCount); this.check('draw'); }); this.draws++;
     }
-    cancel(isCancelled); fresh();
+    chunks.assertCurrent();
    }, () => this.releaseDraw());
-   this.completedFrames++; this.drawnPoints = window.pointCount;
+   this.completedFrames++; this.drawnPoints = chunks.pointCount;
   });
  }
  readback(isCancelled?: () => boolean): Uint8ClampedArray {

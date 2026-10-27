@@ -952,7 +952,7 @@ export default function App() {
   function pauseForExport(independent=false){
     const queue=generationQueue.current;
     const lending=independent&&nativeAttractorRasterPreviewEnabled(sceneRef.current)?{releasePreview:async()=>{if(!queue)throw Error('原生预览队列尚未就绪');await queue.releaseNativePreview();}}:undefined;
-    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current)||!!sceneRef.current.perlinSource||usesSourceAttractorCpu(sceneRef.current)||independent&&usesSourceAttractor(sceneRef.current))?nativeExportPreview.current.open(nativePreviewInput(),{...lending,fixedInput:nativeFixedPreviewInput()}):undefined;
+    const ticket=sourceDrawingPolicy()==='native'&&(usesSourceSamilaSampling(sceneRef.current)||['fractal','domain'].includes(sourceLivePreviewKind(sceneRef.current)??'')||usesDomainNativeRendering(sceneRef.current)||!!sceneRef.current.perlinSource||usesRootsNativeMath(sceneRef.current)&&usesRootsNativePresentation(sceneRef.current)||usesSourceAttractorCpu(sceneRef.current)||independent&&usesSourceAttractor(sceneRef.current))?nativeExportPreview.current.open(nativePreviewInput(),{...lending,fixedInput:nativeFixedPreviewInput()}):undefined;
     if(ticket)setNativeExportPaused(false);
     const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
     if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}
