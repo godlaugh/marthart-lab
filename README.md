@@ -27,6 +27,8 @@ npm run server
 
 复根新增[高密度独立终点验收](docs/source-roots-dense-terminal.zh-CN.md)：四个实际工作线程完成 131,072 个样本、1,310,720 个根，停止后画面稳定。一轮完整数学及公式图与原版零差异，另一轮有一个颜色通道相差一级；严格密度差异保留，同顺序绘制器诊断逐位一致。本轮仅更新验证与记录，桌面包仍为上述版本。
 
+复根新增[点云完整终点对照与差异定位](docs/source-roots-point-cloud-reference.zh-CN.md)：两次独立四 Worker 求解均完成全部 1,310,720 个根；当前 WebGL 整图仍有差异。现有 CGL 服务三次同顺序数学帧零差异仅为诊断，尚未接入产品；原版独立重复也非逐位一致。宿主 alpha 与观察器勘误已单独说明，生产代码和 preview.14 未改变。
+
 ## 2.0 创作预览
 
 2026-10-26 预览版 `2.0.0-preview.5` 修复 Samila 已有画布被重复计入内存预算的问题。1724×1160 默认窗口下，126 万及 656 万基础采样场景的公式 Apply、六倍热改、连续播放、暂停 PNG、独立冷 PNG 和重开原生显示通过；预算上限未提高。Map、两类 Symmetry 和公式服务桌面回归通过。整体仍在 M3，见[Samila 桌面修复中文验收](docs/source-samila-desktop-budget-validation.zh-CN.md)。

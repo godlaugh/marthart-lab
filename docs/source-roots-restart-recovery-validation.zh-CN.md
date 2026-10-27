@@ -1,5 +1,7 @@
 # Roots 工具栏重播与非法 Apply 恢复验收
 
+2026-10-27 最新点云证据见[完整终点对照与差异定位](source-roots-point-cloud-reference.zh-CN.md)：当前 WebGL 仍有整图差异，现有 CGL 同顺序零差异诊断尚未接入产品。下文保留本批原有验收范围。
+
 本批补齐[此前 Roots 界面验收](source-roots-control-ui.zh-CN.md)明确留出的两个实际 App 流程：工具栏从已 Apply 配置重播，以及非法数学 Apply 后保留旧预览、修复并重新应用。最终 density、point-cloud 两模式共 **121 项检查通过**。这只关闭这两个有限界面子项，整体仍在 M3；不代表 Roots 原版整图一致性或长期、多 Worker 验收完成。
 
 运行基线为 `c9e308b30416d0e87ecc0a6e65bf189bb76d5387` 加本批工作树修复，精确来源及本地报告摘要见[证据索引](../tests/fixtures/source-roots-controls/restart-recovery-20261025.json)。原版依据沿用此前固定 MathArt 1.7.8 JAR 的静态控制流；**本批未执行原版 JVM、原版窗口或新增原版图像对照**。本地验收使用独立隐藏 Chrome、公共控件、实际 App、GenerationQueue、生产生成/计算 Worker 和 WebGL，没有操作桌面窗口。

@@ -1,0 +1,237 @@
+{
+  "date": "2026-10-27",
+  "scope": "Bounded independent Roots GPU_3D terminal comparison, calibrated original host, and explicitly separate same-order renderer diagnostics.",
+  "status": "completed-with-differences",
+  "wholeFamilyAcceptance": false,
+  "productionChanged": false,
+  "nativePointCloudIntegrated": false,
+  "milestone": "M3",
+  "milestoneComplete": false,
+  "elevenFamilyGoalComplete": false,
+  "desktopVersion": "2.0.0-preview.14",
+  "deviceCoverage": "One Apple M2 Max Mac only.",
+  "input": {
+    "samples": 131072,
+    "degree": 10,
+    "workers": 4,
+    "points": 1310720,
+    "batchSize": 32256,
+    "seed": 0,
+    "timeline": [],
+    "mode": "GPU_3D",
+    "referenceHeapBytes": 536870912,
+    "logicalSize": [
+      250,
+      300
+    ],
+    "physicalSize": [
+      500,
+      600
+    ],
+    "pixelDensity": 2,
+    "ringCapacity": 10000000,
+    "recentWindow": 3000000,
+    "originalPresetSamplesNotCompleted": 47550000
+  },
+  "completion": {
+    "independentProductRuns": 2,
+    "snapshotsPerRun": [
+      "terminal",
+      "paused-1",
+      "paused-2"
+    ],
+    "originalWorkersAlive": 0,
+    "originalPendingPointCount": 1310720,
+    "originalPendingMeaning": "Retained fallback history; not unfinished queue. Completion uses finished workers and empty queue.",
+    "productPendingQueue": 0,
+    "uploadChainDifferentBytes": 0,
+    "rawRgbaPreserved": true
+  },
+  "strictProductVersusR5": [
+    {
+      "run": 0,
+      "snapshots": 3,
+      "mathDifferentPixels": 13287,
+      "mathDifferentBytes": 17735,
+      "formulaArtDifferentPixels": 13235,
+      "formulaArtDifferentBytes": 17642,
+      "rawPngIncludingBrandingDifferentPixels": 21205,
+      "enhancedPngIncludingBrandingDifferentPixels": 23295
+    },
+    {
+      "run": 1,
+      "snapshots": 3,
+      "mathDifferentPixels": 7432,
+      "mathDifferentBytes": 9459,
+      "formulaArtDifferentPixels": 7399,
+      "formulaArtDifferentBytes": 9404,
+      "rawPngIncludingBrandingDifferentPixels": 15707,
+      "enhancedPngIncludingBrandingDifferentPixels": 17407
+    }
+  ],
+  "originalR5VersusR6": {
+    "matched": false,
+    "mathDifferentPixels": 19679,
+    "mathDifferentComponents": 27257,
+    "mathMaximumByteDifference": 4,
+    "fullBrandRawPngDifferentPixels": 19077,
+    "enhancedPngDifferentPixels": 20740,
+    "eachRunInternallyPausedStable": true
+  },
+  "diagnostics": {
+    "webglSameOrder": {
+      "differentPixels": 11,
+      "differentBytes": 13,
+      "maximumByteDifference": 1
+    },
+    "worldViewCandidate": {
+      "worldExactFloat32Words": 3932160,
+      "firstDifference": "viewZ, 44480 words",
+      "fullRgbaDifferentBytes": 0,
+      "clipZDifferentWords": 364030,
+      "pointSizeStillDifferent": true,
+      "cpuHelperWallMs": 129.070543,
+      "integrated": false
+    },
+    "existingProductionCgl": {
+      "renders": 3,
+      "fullRgbaDifferentBytes": [
+        0,
+        0,
+        0
+      ],
+      "serviceElapsedMs": [
+        172.800792,
+        29.64525,
+        28.753666
+      ],
+      "preparationIncludingColdViteMs": 2378.254625,
+      "helperSha256": "34d67b265cdbdb57bd903216c070645626c1dfc3ca4a3c2eca4b35c7a5b3996f",
+      "integrated": false,
+      "excludesFullProductRingBudget": true,
+      "paletteMinFilterStillDifferent": true
+    }
+  },
+  "referenceQualification": {
+    "final": [
+      "reference-r5",
+      "reference-control-r6"
+    ],
+    "normalPermissions": [
+      "VIEW",
+      "RUN",
+      "EDIT",
+      "EXPORT"
+    ],
+    "watermarkPreserved": true,
+    "stderrEmpty": true,
+    "primaryInitialized": true,
+    "adapter": "drawable-owned-default-buffer-v1",
+    "pngBoundaryCompleteRgbaPreserved": true,
+    "oldR4PngQualified": false,
+    "oldR4Reason": "Uninitialized primary restored null without rebinding; endDraw alpha clear hit target. GPU math/formula capture remains separate.",
+    "denseTerminal1281ObserverArtifacts": 6,
+    "observedGlErrors": []
+  },
+  "checks": {
+    "captureConsumerNegativePassed": 6,
+    "pngBoundaryCpuChecksPassed": 6,
+    "productionSourceFilesUnchanged": 615,
+    "productionServerFilesUnchanged": 27,
+    "ownedProcessesRemaining": 0,
+    "visibleWindowsOpened": 0,
+    "fullSuiteOrBuildRepeatedForDocumentation": false,
+    "verifierSyntaxPassed": true,
+    "checkSourcesTransformsPassed": 4
+  },
+  "limits": [
+    "Independent solver/arrival differences remain; no tolerance pass.",
+    "Same-order diagnostics intentionally use original point streams and do not replace independent product proof.",
+    "Formula-art and full original branding PNG are distinct whole-image layers.",
+    "CPU view candidate excludes world readback and public frame costs; no per-frame integration.",
+    "CGL diagnostic excludes full 160 MB ring joint capacity, retained target history, public lifecycle, formula and branding.",
+    "Default preset completion, arbitrary camera/rotation/depth/trails and cross-device behavior remain unverified."
+  ],
+  "evidence": {
+    "source": {
+      "path": ".cache/roots-point-cloud-20261027/source.json",
+      "sha256": "1b2a2d9d26486916ad3cec87bc7e3bea230791a8db06ff6912532e93470494c6"
+    },
+    "originalR5": {
+      "path": ".cache/roots-point-cloud-20261027/default-fbo-host/reference-r5/report.json",
+      "sha256": "2f817f03e44ffd01221c00366acc4a4316933bda0805f81ed968686b3d8fb255"
+    },
+    "originalR6": {
+      "path": ".cache/roots-point-cloud-20261027/default-fbo-host/reference-control-r6/report.json",
+      "sha256": "effbcf1e905f23b092f582e7bf90ccc5577872de0285a4d1a3db54e0d61d6f9f"
+    },
+    "originalRepeat": {
+      "path": ".cache/roots-point-cloud-20261027/default-fbo-host/repeat-r5-r6.json",
+      "sha256": "fe0cc46b4b1fc61ff4c444dde4fa9b467ad6dfb4bd7d569708ddfd1e23e35c29"
+    },
+    "productCapture": {
+      "path": ".cache/roots-point-cloud-product-20261027/capture-r1/report.json",
+      "sha256": "e43d72990cb486f6ce2463b36d27b1546457fce7137cb7a6ff933e61513b0402"
+    },
+    "strictComparison": {
+      "path": ".cache/roots-point-cloud-product-20261027/capture-r1/native-comparison.r5.json",
+      "sha256": "778eef1faf375fea51f01a761a95560681a69cc821ce18997eb6b6ed4c23b89d"
+    },
+    "uploadChain": {
+      "path": ".cache/roots-point-cloud-product-20261027/capture-r1/product-upload-chain.json",
+      "sha256": "f50a0b038c429a76ef8e5e6533d4af55535963bf67e533b7a233ea66be292bde"
+    },
+    "drawState": {
+      "path": ".cache/roots-point-cloud-product-20261027/capture-r1/draw-state-comparison.r5.json",
+      "sha256": "02b638fd53339d42033ceb39d3b0be789acf18318e7319702ec2978926fbda2d"
+    },
+    "webglSameOrder": {
+      "path": ".cache/roots-point-cloud-renderer-diagnostic-20261027/run-4-calibrated/report.json",
+      "sha256": "0d84ef98bce92eff45e469554c45183e40a673f80d6d2c7585812580dffde91c"
+    },
+    "worldViewCandidate": {
+      "path": ".cache/roots-point-cloud-renderer-diagnostic-20261027/world-view-candidate-findings.json",
+      "sha256": "a9292cd658528d242068ef3b015ddf7c1ecd91147585c36248734a7363ef4afa"
+    },
+    "productionCgl": {
+      "path": ".cache/roots-point-cloud-20261027/production-cgl/prepared-r1/report.json",
+      "sha256": "e34e4282a5e94d216573e66bc3112a4c4da71108c65a51c5a1872d3ea6869a35"
+    },
+    "productionCglPlan": {
+      "path": ".cache/roots-point-cloud-20261027/production-cgl/prepared-r1/plan.json",
+      "sha256": "cf697591b35dc3806bdac9ccd950a3ffe20038d6ee7e98517ac61017c7705553"
+    },
+    "alphaBoundary": {
+      "path": ".cache/roots-point-cloud-20261027/alpha-boundary/comparison.json",
+      "sha256": "e0e1a415ac62d27652767e3d9cfd29417319b62036c4caa73fa5c7cb42724075"
+    },
+    "referenceQualification": {
+      "path": ".cache/roots-point-cloud-product-20261027/reference-status.json",
+      "sha256": "32076fe537242968f3670267d916d4fd7e7778d7b26ccf99a5e0fb9d0aacdef5"
+    },
+    "denseObserverErratum": {
+      "path": ".cache/roots-point-cloud-20261027/dense-observer-retrospective.json",
+      "sha256": "7b5aa49bb8d72223d9db213ef1ae403b335511401f04638fbed75ce5201daa9f"
+    },
+    "captureNegativeChecks": {
+      "path": ".cache/roots-point-cloud-product-20261027/consumer-negative/report.json",
+      "sha256": "044cec164a5b95cb6181d636a52a4e4273ca1d0cec0974255da7ced1baa66570"
+    },
+    "pngBoundaryChecks": {
+      "path": ".cache/roots-point-cloud-product-20261027/png-boundary-consumer-checks.json",
+      "sha256": "3b6c0aca2d35a05245b1f1436e692187d14eef5b17a906340d1b6ffea5e8d193"
+    },
+    "productionPins": {
+      "path": ".cache/roots-point-cloud-20261027/final-production-pins.json",
+      "sha256": "b26a0d6e52f76591e035532207cf656e764cb3c1fe23fe1490bd0c3746fef81b"
+    },
+    "verifier": {
+      "path": "scripts/verify-roots-point-cloud-terminal.mjs",
+      "sha256": "d8e950508e9b275708620ef091d74e3fed2d731fa2864b05e2eae60506b10ca2"
+    },
+    "documentationChecks": {
+      "path": ".cache/roots-point-cloud-product-20261027/documentation-checks.json",
+      "sha256": "64415b8294871d33b08a583a962a4eba053abaefe8b3aa7590cecb1592494f15"
+    }
+  }
+}

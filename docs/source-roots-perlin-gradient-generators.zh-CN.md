@@ -1,5 +1,7 @@
 # Roots / Perlin 色板生成器与热更新验收
 
+2026-10-27 最新点云证据见[完整终点对照与差异定位](source-roots-point-cloud-reference.zh-CN.md)：当前 WebGL 仍有整图差异，现有 CGL 同顺序零差异诊断尚未接入产品。下文保留本批原有验收范围。
+
 2026-10-24。仍处于 **M3：场景补全与效果一致性验证**。本批接入 Roots、Perlin 的手动随机、Cosine 和 RGB 曲线生成器，并修复 Perlin 调色导致模拟重建的问题。
 
 ## 使用变化

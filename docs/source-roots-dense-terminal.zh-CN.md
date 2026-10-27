@@ -74,3 +74,7 @@ node scripts/verify-roots-dense-terminal.mjs --compare \
 ## 仍需完成
 
 本轮只覆盖固定相机、空时间线的密度模式。默认 47,550,000 样本全程、独立异步动画的逐帧对照、原版点云完整画面、其余场景及最终发行验收仍未完成。当前只有一台 Mac，跨设备保持未验证。
+
+## 后续观察器勘误（2026-10-27）
+
+终点及两次暂停读取期间的六个 1281 已定位为观察器误把 `glDrawBuffer` 状态操作当作绘制、继而查询 program 0 uniforms。frame 0 原版点绘制能力探测与 quad 回退另行保留。本轮未重跑或覆盖本报告的像素、密度或运行证据，详见[点云参考的观察器勘误](source-roots-point-cloud-reference.zh-CN.md#观察器勘误)。
