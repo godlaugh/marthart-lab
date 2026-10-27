@@ -1,9 +1,8 @@
 import {prepareGenerationPresentation} from './generationPresentation';
 import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
-import {replaySourceImplicitTimeline} from './sourceImplicitTimeline';
 import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
-import {SourceImplicitRecordingSession} from './sourceImplicitRecording';
+import {SourceImplicitRecordingSession,type SourceImplicitEvaluation} from './sourceImplicitRecording';
 import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
 import {usesSourceFractal} from './sourceFractalDocument';
@@ -390,9 +389,9 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
 }
 
 /** All public callers receive the same unsupported-timeline evidence. */
-function generateImplicitFrame(scene:SceneDocument,context:GenerateContext):Extract<SceneOutput,{type:'geometry'}> {
+function generateImplicitFrame(scene:SceneDocument,context:GenerateContext,evaluated:SourceImplicitEvaluation):Extract<SceneOutput,{type:'geometry'}> {
       const formulas=formulaPresentation(scene,context.sourceViewport);
-      const evaluated=replaySourceImplicitTimeline(scene,context.time,context.isCancelled),current={...scene,parameters:evaluated.parameters,evaluatedSourceCamera:evaluated.frame};
+      const current={...scene,parameters:evaluated.parameters,evaluatedSourceCamera:evaluated.frame};
       const camera=ordinarySourceCameraFrame(current,context);
       const bind=(output:SceneOutput)=>{
         if(output.type!=='geometry')throw Error('源标注与实际帧类型不匹配');
@@ -402,7 +401,9 @@ function generateImplicitFrame(scene:SceneDocument,context:GenerateContext):Extr
         if(evaluated.frame.diagnostics.length)output.warnings=[...(output.warnings??[]),...evaluated.frame.diagnostics.map(d=>d.message)];
         return output;
       };
-      return bind(definition(scene.kind).generate(current,{...context,onProgress:context.onProgress?output=>context.onProgress!(bind(output)):undefined}));
+      // Source MC is an atomic two-pass producer. Publish only the complete
+      // mesh, after its owning display transaction has attached immutable facts.
+      return bind(definition(scene.kind).generate(current,{...context,onProgress:undefined}));
 }
 function generationSceneInput(scene:SceneDocument,context:GenerateContext):SceneDocument{
   scene=sourcePaletteRuntimeScene(scene);
@@ -435,7 +436,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
  scene=generationSceneInput(scene,context);
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
-    if(context.implicitControls!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateControlled(scene,context,(effective,palette)=>generateImplicitFrame(effective,{...context,implicitPalettePrepared:palette,onProgress:undefined}));}
+    if(context.implicitControls!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateControlled(scene,context,(effective,palette,evaluated)=>generateImplicitFrame(effective,{...context,implicitPalettePrepared:palette,onProgress:undefined},evaluated));}
     if(context.rootsLive!==undefined){owner.select(scene,context);return owner.rootsNative.generate(scene,context);}
     if(context.implicitLive!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateContinuation(scene,context);}
     if(context.surfaceLive!==undefined){owner.select(scene,context);return owner.sourceSurface.generate(scene,context);}
@@ -451,7 +452,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
     if(usesSourceImplicitMesh(scene)){
       owner.select(scene,context);
-      return generateImplicitFrame(scene,context);
+      return owner.sourceImplicit.generateFixed(scene,context,(effective,palette,evaluated)=>generateImplicitFrame(effective,{...context,implicitPalettePrepared:palette},evaluated));
     }
     const presentation=prepareGenerationPresentation(scene,context);
     return presentation.complete(generateSceneFrame(scene,presentation.context,owner));

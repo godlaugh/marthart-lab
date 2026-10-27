@@ -8,6 +8,7 @@ import {SOURCE_IMPLICIT_GPU_PRESENTATION} from './sourceImplicitGpuPresentation'
 import type {SceneDocument} from '../types';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {implicitPaletteControlReceiptMatches} from './implicitPaletteControl';
+import {validateSourceImplicitDisplay} from './sourceImplicitDisplay';
 export type ImplicitCameraFrame=OrdinarySourceCameraFrame&NumericalFrame;
 type Geometry=Extract<SceneOutput,{type:'geometry'}>&{sourceCameraFrame:ImplicitCameraFrame};
 /** Validate the actual owner's receipt; staged author values never select the
@@ -33,13 +34,16 @@ export function validSourceImplicitOutput(output:SceneOutput,input:GenerationInp
   const facts=output.sourceImplicitPresentation,count=output.positions.length/3;
   if(!facts||!Number.isSafeInteger(count)||facts.referencePixelDensity!==input.sourcePointPixelDensity||!Number.isFinite(facts.referencePixelDensity)||facts.referencePixelDensity<=0||typeof facts.fill!=='boolean'||!Number.isFinite(facts.lineWeight)||facts.lineWeight<=0||!(facts.fillColors instanceof Float32Array)||facts.fillColors.length!==count*4)return false;
   if(facts.model===SOURCE_IMPLICIT_GPU_PRESENTATION){
+   const display=validateSourceImplicitDisplay(output.sourceImplicitDisplay,input);
+   const formula=output.formulaPresentation;
+   if(formula?.layout==='source-surface-centered-v1'&&(!formula.drawingViewport||display.viewport.some((v,i)=>v!==formula.drawingViewport![i])))return false;
    const scalar=(v:unknown):v is number=>typeof v==='number'&&Number.isFinite(v)&&Object.is(v,Math.fround(v));
    const packed=(v:unknown)=>typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=0xffffffff;
    const vector=(v:unknown)=>Array.isArray(v)&&v.length===3&&v.every(scalar);
    const m=facts.material;
    if(!['GPU','AUTO'].includes(facts.meshMode)||facts.meshComputation!=='source-cpu-fallback'||!(facts.palette instanceof Uint32Array)||facts.palette.length>65536||!vector(facts.boundsMin)||!vector(facts.boundsMax)||!scalar(facts.fillOpacity)||facts.fillOpacity<0||facts.fillOpacity>1||!m||!scalar(m.shininess)||m.shininess<0||m.shininess>100||!packed(m.ambient)||!packed(m.specular)||!Number.isInteger(m.proceduralTextureType)||m.proceduralTextureType<0||m.proceduralTextureType>4)return false;
    new Uint8Array(facts.palette.buffer,0,0); // Empty is valid; a detached transfer is not.
-  }else if(facts.model!==SOURCE_IMPLICIT_PRESENTATION)return false;
+  }else if(facts.model!==SOURCE_IMPLICIT_PRESENTATION||output.sourceImplicitDisplay!==undefined)return false;
   const wire=facts.wire;
   if(wire&&(!(wire.positions instanceof Float32Array)||wire.positions.length%6!==0||!(wire.colors instanceof Float32Array)||wire.colors.length!==wire.positions.length||!(wire.alphas instanceof Float32Array)||wire.alphas.length!==wire.positions.length/3||!Array.isArray(wire.axes)||wire.axes.length!==2||new Set(wire.axes).size!==2||wire.axes.some(v=>!Number.isInteger(v)||v<0||v>2)||!Number.isSafeInteger(wire.samples)||wire.samples<0))return false;
   const display=facts.display;if(!display||[display.transparentBackground,display.showGrid,display.showAxes].some(value=>typeof value!=='boolean'))return false;

@@ -28,7 +28,7 @@ describe('source implicit GPU material common lifecycle (CPU execution)',()=>{
   for(const time of [0,.25,.5,1]){
    const cpu=geometry(generateScene(a.scene,{...a.input,time})),out=geometry(generateScene(b.scene,{...b.input,time}));
    expect(out.positions).toEqual(cpu.positions);expect(out.sourceCameraFrame).toEqual(cpu.sourceCameraFrame);
-   expect(out.sourceImplicitParameters).toEqual(cpu.sourceImplicitParameters);expect(out.formulaPresentation).toEqual(cpu.formulaPresentation);
+   expect(out.sourceImplicitParameters).toEqual(cpu.sourceImplicitParameters);expect(out.formulaPresentation).toEqual({...cpu.formulaPresentation,drawingViewport:out.sourceImplicitDisplay!.viewport});
    expect(out).not.toHaveProperty('implicitLive');expect(validSourceImplicitGenerationOutput(out,{...b.input,time},b.scene)).toBe(true);
    expect(validSourceImplicitGenerationOutput(out,{...b.input,time},a.scene)).toBe(false);
   }

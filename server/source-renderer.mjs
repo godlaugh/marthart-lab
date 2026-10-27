@@ -33,12 +33,18 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===12?60:version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===16?80:version===12?60:version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
- if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*(version===12?6:4)+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*(version===12||version===16?6:4)+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ let viewport;
+ if(version===16){
+  const mode=b.readUInt32LE(60);viewport=[b.readInt32LE(64),b.readInt32LE(68),b.readUInt32LE(72),b.readUInt32LE(76)];
+  if(mode>1||viewport[2]>0x7fffffff||viewport[3]>0x7fffffff)return failure('input','物理 viewport 或绘制模式无效');
+  if(mode===1)return inspectDrawingRequest(b,{generation,sequence,width,height,samples,viewport},inspectSourceFrameHeader,80);
+ }
  if(version===13)return inspectDrawingRequest(b,{generation,sequence,width,height,samples},inspectSourceFrameHeader);
  if(version===14)return inspectAttractorRequest(b,{generation,sequence,width,height,samples});
  if(version===15)return inspectRootsPointRequest(b,{generation,sequence,width,height,samples});
@@ -83,7 +89,7 @@ export function inspectSourceFrameHeader(packet){
  const operation=version===4?b.readUInt32LE(60):undefined;if(operation!==undefined&&(operation<1||operation>4))return failure('input','原生状态操作无效');
  const control=operation!==undefined&&operation!==3;if(control&&(width!==1||height!==1))return failure('input','原生状态确认尺寸无效');
  const resource=operation===undefined?undefined:b.subarray(68,84).toString('hex');if(operation!==undefined&&(b.readUInt32LE(64)!==16||resource==='0'.repeat(32)))return failure('input','原生状态资源身份无效');
- return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource,family:operation===undefined?undefined:'bouncing'}};
+ return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource,...(viewport?{viewport}:{}),family:operation===undefined?undefined:'bouncing'}};
 }
 function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
@@ -214,7 +220,7 @@ export async function createSourceRendererService({executablePath,executableSha2
       if(meta.status===6&&retained===j.expected.provisional)retainedResources.delete(key);
       else if(retained){retained.failed=true;retained.transaction||=j.expected.operation>=2&&j.expected.operation<=4;}
      }
-     if(!result.ok&&j.expected.family==='drawing'){const retained=retainedResources.get('drawing:'+j.expected.resource);if(retained)retained.failed=true;}
+     if(!result.ok&&j.expected.family==='drawing'){const key='drawing:'+j.expected.resource,retained=retainedResources.get(key);if(meta.status===6&&retained===j.expected.provisional)retainedResources.delete(key);else if(retained)retained.failed=true;}
      if(result.ok&&j.expected.family){
       const key=j.expected.family+':'+j.expected.resource;
       if(j.expected.family==='iterated'&&j.expected.operation===5&&[...retainedResources.values()].some(r=>r.family==='iterated-render'&&r.stateResource===j.expected.resource)){retire(o,failure('protocol','迭代计算释放未保留仍有子墨迹的所有者'));return;}
@@ -244,7 +250,7 @@ export async function createSourceRendererService({executablePath,executableSha2
   const expected={...header.value,owned};
   const drawing=[...retainedResources.values()].find(r=>r.family==='drawing');
   if(drawing&&(header.value.family!=='drawing'||header.value.resource!==drawing.resource)||header.value.family==='drawing'&&header.value.operation===1&&retainedResources.size)return Promise.resolve(failure('ownership','原生绘制通道已有保留资源'));
-  if(header.value.family==='drawing'&&owned){if(header.value.frameKey!==owned.frameKey){owned.failed=true;return Promise.resolve(failure('ownership','分块帧目标身份变化'));}if(header.value.operation!==4&&(header.value.expectedIndex!==owned.index||owned.finished||owned.failed)){owned.failed=true;return Promise.resolve(failure('input','分块绘制检查点无效'));}if(header.value.operation===2&&header.value.packetBytes>owned.maximum){owned.failed=true;return Promise.resolve(failure('capacity','分块绘制超过已准入容量'));}}
+  if(header.value.family==='drawing'&&owned){if(header.value.operation!==4&&header.value.frameKey!==owned.frameKey){owned.failed=true;return Promise.resolve(failure('ownership','分块帧目标身份变化'));}if(header.value.operation!==4&&(header.value.expectedIndex!==owned.index||owned.finished||owned.failed)){owned.failed=true;return Promise.resolve(failure('input','分块绘制检查点无效'));}if(header.value.operation===2&&header.value.packetBytes>owned.maximum){owned.failed=true;return Promise.resolve(failure('capacity','分块绘制超过已准入容量'));}}
   if(header.value.family==='drawing'&&!owned&&![1,4].includes(header.value.operation))return Promise.resolve(failure('state-lost','分块绘制资源不存在'));
   const rootsTransaction=[...retainedResources.values()].find(r=>r.family==='roots-point'&&(r.phase===1||r.transaction));
   if(rootsTransaction&&(expected.family!=='roots-point'||expected.resource!==rootsTransaction.resource))return Promise.resolve(failure('ownership','原生点云帧事务尚未完成'));
@@ -272,6 +278,10 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(expected.family==='roots-point'&&expected.operation===1){
       expected.provisional={family:'roots-point',resource:expected.resource,session:expected.session,target:expected.target,width:expected.width,height:expected.height,programBytes:expected.programBytes,residentBytes:expected.residentBytes,phase:2,failed:true,transaction:false};
       retainedResources.set('roots-point:'+expected.resource,expected.provisional);
+     }
+     if(expected.family==='drawing'&&expected.operation===1){
+      expected.provisional={family:'drawing',resource:expected.resource,index:0,chunks:expected.chunks,finished:false,frameKey:expected.frameKey,maximum:expected.maximum,failed:true};
+      retainedResources.set('drawing:'+expected.resource,expected.provisional);
      }
      o.last=expected;o.stderrBytes=0;o.child.stdin.write(input,error=>{if(error)retire(o,failure('runtime','无法写入原生帧'));});
      if(signal?.aborted||closing)j.cancel();

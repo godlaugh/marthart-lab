@@ -1,3 +1,4 @@
+import {isSourceDrawingViewport,type SourceDrawingViewport} from './sourceDrawingViewport';
 import * as THREE from 'three';
 import {sourceTextureUsesMaximumAnisotropy} from './sourceProcessingTextureSampling';
 import {sourceShaderUniformOwner,sourceShaderDrawContract,type SourceShaderUniform} from './sourceShaderMaterial';
@@ -206,6 +207,8 @@ export interface SourceDrawingPlan {
  dispose():SourceDrawingResult<void>;
 }
 export interface SourceDrawingPlanOptions {
+ /** Same physical viewport as the encoded frame; only its envelope is budgeted. */
+ viewport?:SourceDrawingViewport;
  /** maxChunkBytes is a ceiling; joint admission may select smaller complete ranges. */
  maxBytes?:number;maxChunkBytes?:number;
  retainedBuffers?:readonly ArrayBuffer[];additionalBytes?:number;frameBytes?:number;
@@ -217,6 +220,7 @@ export interface SourceDrawingPlanOptions {
  * interleaved across chunks. Only a producer-declared attribute identity allows
  * range rebasing; arbitrary GLSL is not inferred from names or text searches. */
 export function prepareSourceDrawingPlan(meshes:readonly THREE.Mesh[],options:SourceDrawingPlanOptions={}):SourceDrawingResult<SourceDrawingPlan>{return result(()=>{
+ requireValue(options.viewport===undefined||isSourceDrawingViewport(options.viewport),['viewport'],'物理 viewport 无效');
  const limit=options.maxBytes??MAX_BYTES,chunkLimit=options.maxChunkBytes??SOURCE_DRAWING_DEFAULT_CHUNK_BYTES;budget(limit);
  requireValue(Number.isSafeInteger(chunkLimit)&&chunkLimit>0&&chunkLimit<=SOURCE_DRAWING_MAX_CHUNK_BYTES,['maxChunkBytes'],'分块上限必须为 1 字节至 4 MiB 的整数');
  const check=()=>{if(options.isCancelled?.()||options.isCurrent?.()===false)fail('cancelled',[],'绘制计划已取消或所属渲染帧已改变');};check();
@@ -234,7 +238,7 @@ export function prepareSourceDrawingPlan(meshes:readonly THREE.Mesh[],options:So
  // Admit immutable declarations, all borrowed storage and the full-sized
  // target first. Only transport granularity adapts to the remaining budget;
  // no primitive, pass or pixel is omitted and no packed copy exists yet.
- const fixedBudget={retainedBytes,frameBytes,metadataBytes:admittedMetadataBytes,scheduleCount:p.prepared.length};
+ const fixedBudget={viewport:options.viewport!==undefined,retainedBytes,frameBytes,metadataBytes:admittedMetadataBytes,scheduleCount:p.prepared.length};
  capacity(sourceDrawingChunkPeak({...fixedBudget,maxChunkBytes:0}),limit);
  const availableChunkBytes=Math.min(chunkLimit,sourceDrawingChunkAvailableBytes(fixedBudget,limit));
  // This bound includes conservative UTF-8 names/shaders, block headers and
@@ -269,7 +273,7 @@ export function prepareSourceDrawingPlan(meshes:readonly THREE.Mesh[],options:So
  // Source buffers and mathematical output are deduplicated by backing storage.
  // One packed chunk plus the shared transport/receiver copy bound coexist.
  // frameBytes comes from the actual target/sample count, never a lowered mode.
- const peakBytes=sourceDrawingChunkPeak({retainedBytes,frameBytes,metadataBytes:admittedMetadataBytes,scheduleCount:schedule.length,maxChunkBytes});
+ const peakBytes=sourceDrawingChunkPeak({viewport:options.viewport!==undefined,retainedBytes,frameBytes,metadataBytes:admittedMetadataBytes,scheduleCount:schedule.length,maxChunkBytes});
  capacity(peakBytes,limit);requireValue(Number.isSafeInteger(chunkCount)&&chunkCount<=0xffffffff,['chunks'],'绘制分块数量超出 uint32');check();
  let textures:readonly SourceDrawingTexture[]=textureCopies(p);
  let templates:readonly SourceDrawingCommand[]=p.prepared.map(d=>command(d,[],undefined,uniformCopies(p!,d)));

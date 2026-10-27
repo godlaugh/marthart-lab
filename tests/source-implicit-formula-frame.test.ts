@@ -37,11 +37,11 @@ describe('source implicit formula frame owner',()=>{
   const restored=parseProjectFile(JSON.stringify(scene)).scene,p=formulaPresentation(restored);expect(restored.formulas).toEqual(scene.formulas);expect(p.labels[0].latex).toBe('old authored text');expect(p).not.toHaveProperty('layout');expect(generateScene(restored,context(restored)).formulaPresentation).toEqual(p);
   const local=createScene(definition('implicit'));local.formulas=imported().formulas;expect(()=>parseScene(JSON.stringify(local))).toThrow('源曲面');
  });
- it('delivers immutable initial labels to every progress frame and final frame',()=>{
+ it('publishes atomic source mesh labels only after final frame ownership is established',()=>{
   const scene=imported(),input=context(scene),observed:unknown[]=[];
   vi.spyOn(definition('implicit'),'generate').mockImplementation((_s,c)=>{const output={type:'geometry' as const,topology:'mesh' as const,positions:new Float32Array(),stats:{samples:0,generated:0,invalid:0}};c.onProgress?.(output);return output;});
   const output=generateScene(scene,{...input,onProgress:frame=>{observed.push(structuredClone(frame.formulaPresentation));frame.formulaPresentation!.labels[0].latex='consumer mutation';}});
-  expect(observed).toEqual([output.formulaPresentation]);expect(output.formulaPresentation!.labels[0].latex).not.toBe('consumer mutation');
+  expect(observed).toEqual([]);expect(output.formulaPresentation!.labels).toMatchObject([nativeFormula.label]);
  });
  it.each(['missing','height','layout','local-missing','local-layout'] as const)('rejects %s producer formula facts at the Worker boundary for progress and final',async mutation=>{
   for(const operation of ['generate','generate-progress'] as const){

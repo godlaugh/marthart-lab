@@ -76,7 +76,7 @@ import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperation
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
-import {validateFrameFormulas,type FormulaViewport} from './formulaConfig';
+import {formulaAnnotations,validateFrameFormulas,type FormulaViewport} from './formulaConfig';
 import {usesSourceFractal} from './sourceFractalDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 type FormulaOutputContract =
@@ -249,7 +249,10 @@ function validGeometryCapture(result:import('./sourceGeometryCapture').SourceGeo
    if(!validSourceImplicitOutput(output,input)||source.output.type!=='geometry'||output.sourceImplicitPresentation?.model!==source.output.sourceImplicitPresentation?.model||output.implicitLive?.renderKind!=='snapshot'||!output.implicitLive.paused)return false;
    const {viewport,...frame}=implicitCameraFrame(output);void viewport;
    if(!sameSourceRecordingValue(output.implicitControls,source.output.implicitControls)||!sameSourceRecordingValue(output.sourceImplicitParameters,source.output.sourceImplicitParameters)||!sameSourceRecordingValue(frame,before))return false;
+   const a=output.formulaPresentation,b=source.output.formulaPresentation;
+   if(!sameSourceRecordingValue(formulaAnnotations(a),formulaAnnotations(b))||(a?.layout==='source-surface-centered-v1'?a.finalBlackOverlayAlpha:undefined)!==(b?.layout==='source-surface-centered-v1'?b.finalBlackOverlayAlpha:undefined))return false;
   }
+  return true;
  }else{
   const frame=surfaceFrame(source);
   if(result.scene.kind!=='surface'||!validSourceSurfaceOutput(result.capture,target)||!validSourceSurfaceOutput(result.preview,source.context)||result.capture.surfaceLive?.renderKind!=='snapshot'||result.preview.surfaceLive?.renderKind!=='snapshot'||!sameSourceRecordingValue(result.capture.surfaceLive.frame,frame)||!sameSourceRecordingValue(result.preview.surfaceLive.frame,frame))return false;

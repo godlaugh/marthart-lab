@@ -226,13 +226,13 @@ export async function releaseSourceNativeDrawingFrame():Promise<void>{
 /** Holds the shared page slot through begin, every acknowledged chunk, final
  * readback and explicit release. No partial image escapes this transaction. */
 export async function renderSourceNativeChunks(input:SourceNativeDrawingFrame,plan:SourceDrawingPlan,options:{signal?:AbortSignal}={}):Promise<SourceNativePixels>{
- const frame:SourceNativeDrawingFrame={...input,clear:[...input.clear]};check(options.signal);if(active)throw new SourceNativeError('capacity','当前页面已有原生帧请求');if(pendingDrawing)await releaseSourceNativeDrawingFrame();if(active)throw new SourceNativeError('capacity','清理后原生通道已由其它请求持有');
+ const frame:SourceNativeDrawingFrame={...input,clear:[...input.clear],...(input.viewport?{viewport:[...input.viewport]}:{})};check(options.signal);if(active)throw new SourceNativeError('capacity','当前页面已有原生帧请求');if(pendingDrawing)await releaseSourceNativeDrawingFrame();if(active)throw new SourceNativeError('capacity','清理后原生通道已由其它请求持有');
  const slot=Symbol();active=slot;let primary:unknown,result:SourceNativePixels|undefined;
  try{
   const begin={kind:'begin' as const,resource:crypto.randomUUID().replaceAll('-',''),chunkCount:plan.chunkCount,maxChunkBytes:plan.maxChunkBytes,metadataBytes:plan.admittedMetadataBytes,schedule:plan.schedule};
   const admitted=encodeSourceNativeDrawingRequest({...frame,operation:begin},{retainedBytes:plan.retainedBytes,isCancelled:()=>!!options.signal?.aborted});if(!admitted.ok)throw new SourceNativeError(admitted.error.kind,admitted.error.reason);
   await ensureSourceNativeLease(options.signal??new AbortController().signal);check(options.signal);
-  const state:DrawingCustody={frame:{...frame,clear:[...frame.clear]},resource:begin.resource,index:0,chunks:plan.chunkCount};pendingDrawing=state;
+  const state:DrawingCustody={frame:{...frame,clear:[...frame.clear],...(frame.viewport?{viewport:[...frame.viewport]}:{})},resource:begin.resource,index:0,chunks:plan.chunkCount};pendingDrawing=state;
   let reply:DrawingResponse;
   try{reply=await drawingExchange(state,begin,slot,options.signal,plan.retainedBytes,admitted.value);}catch(error){if(error instanceof SourceNativeError&&error.kind==='ownership')pendingDrawing=undefined;throw error;}
   drawingIdentity(state,reply);let requestBytes=reply.requestBytes;

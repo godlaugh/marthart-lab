@@ -21,7 +21,7 @@ function fixture(mode='normal',marker=''){
 import fs from 'node:fs';
 let input=Buffer.alloc(0),state;const mode=${JSON.stringify(mode)};
 if(mode==='slow-stop')process.on('SIGTERM',()=>setTimeout(()=>process.exit(0),500));
-function run(b){let format,payload;const v=b.readUInt32LE(4),kind=b.readUInt32LE(64);if(mode==='slow-stop'&&v===13&&kind===1){fs.writeFileSync(${JSON.stringify(marker)},'received');return;}if(v===13){const resource=b.subarray(72,88);if(kind===1)state={resource,index:0,chunks:b.readUInt32LE(92),finished:0};if(kind===2)state.index++;if(kind===3)state.finished=1;payload=Buffer.alloc(64+(kind===3?4:0));[5,kind].forEach((n,i)=>payload.writeUInt32LE(n,i*4));resource.copy(payload,8);[state?.index??0,kind===4?(state?1:2):0,1,1,state?.chunks??0,state?.finished??0].forEach((n,i)=>payload.writeUInt32LE(n,24+i*4));if(kind===3&&mode==='wrong-count')payload.writeUInt32LE(1,40);if(kind===4)state=undefined;format=7;}else if(v===4){format=2;payload=Buffer.alloc(4);}else{format=1;payload=Buffer.alloc(4);}const h=Buffer.alloc(44);[0x31524c4d,1,44+payload.length,b.readUInt32LE(12),b.readUInt32LE(16),1,1,0,format,payload.length,1].forEach((n,i)=>h.writeUInt32LE(n,i*4));process.stdout.write(Buffer.concat([h,payload]));}
+function run(b){let format,payload;const v=b.readUInt32LE(4),shift=v===16?20:0,kind=b.readUInt32LE(64+shift);if(mode==='slow-stop'&&v===13&&kind===1){fs.writeFileSync(${JSON.stringify(marker)},'received');return;}if(v===13||v===16&&b.readUInt32LE(60)===1){const resource=b.subarray(72+shift,88+shift);if(kind===1)state={resource,index:0,chunks:b.readUInt32LE(92+shift),finished:0};if(kind===2)state.index++;if(kind===3)state.finished=1;payload=Buffer.alloc(64+(kind===3?4:0));[5,kind].forEach((n,i)=>payload.writeUInt32LE(n,i*4));resource.copy(payload,8);[state?.index??0,kind===4?(state?1:2):0,1,1,state?.chunks??0,state?.finished??0].forEach((n,i)=>payload.writeUInt32LE(n,24+i*4));if(kind===3&&mode==='wrong-count')payload.writeUInt32LE(1,40);if(kind===4)state=undefined;format=7;}else if(v===4){format=2;payload=Buffer.alloc(4);}else{format=1;payload=Buffer.alloc(4);}let status=0;if(kind===1&&['unsupported-begin','foreign-begin'].includes(mode)){status=mode==='foreign-begin'?6:2;format=0;payload=Buffer.from('controlled begin rejection');if(status===6)state=undefined;}const h=Buffer.alloc(44);[0x31524c4d,1,44+payload.length,b.readUInt32LE(12),b.readUInt32LE(16),1,1,status,format,payload.length,1].forEach((n,i)=>h.writeUInt32LE(n,i*4));process.stdout.write(Buffer.concat([h,payload]));}
 process.stdin.on('data',chunk=>{input=Buffer.concat([input,chunk]);while(input.length>=12&&input.length>=input.readUInt32LE(8)){const n=input.readUInt32LE(8),b=input.subarray(0,n);input=input.subarray(n);run(b);}});
 `;
  writeFileSync(executablePath,source);chmodSync(executablePath,0o755);return{executablePath,executableSha256:createHash('sha256').update(source).digest('hex')};
@@ -62,4 +62,26 @@ it('marks only the gateway busy interval retryable while a cancelled child exits
   let response:Response|undefined;await vi.waitFor(async()=>{response=await post(release);if(response.status===429)expect(await response.json()).toMatchObject({kind:'capacity',retryable:true});expect(response.status).toBe(200);},{timeout:3000,interval:25});
   const ack=new DataView(await response!.arrayBuffer());expect(ack.getUint32(24,true)).toBe(0);expect(ack.getUint32(28,true)).toBe(2);expect(ack.getUint32(40,true)).toBe(0);await reader.cancel();reader.releaseLock();
  }finally{draw.abort();connection.abort();await s.close();expect(s.ownedProcessCount).toBe(0);}
+});
+
+it('v16 binds viewport through the transaction and a changed frame retains only cleanup authority',async()=>{
+ const s=await createSourceRendererService(fixture()),viewport=[-3,4,20,30] as const,start={...begin(),viewport};
+ try{
+  expect(await s.render(packet(start))).toMatchObject({ok:true});
+  expect(await s.render(packet({...request({kind:'finish',resource:token,expectedIndex:0},2),viewport:[-3,4,21,30]}))).toMatchObject({ok:false,error:{kind:'ownership'}});
+  expect(s.retainedResourceCount).toBe(1);
+  expect(await s.render(packet({...request({kind:'finish',resource:token,expectedIndex:0},3),viewport}))).toMatchObject({ok:false,error:{kind:'input'}});
+  // Release authority is the owned token even when the last frame was invalid.
+  expect(await s.render(packet({...request({kind:'release',resource:token,expectedIndex:0},4),viewport:[0,0,0,0]}))).toMatchObject({ok:true});
+  expect(s.retainedResourceCount).toBe(0);
+ }finally{expect(await s.close()).toMatchObject({ok:true});expect(s.processCount).toBe(0);}
+});
+
+it.each(['unsupported-begin','foreign-begin'])('preserves only justified provisional drawing custody for %s',async mode=>{
+ const s=await createSourceRendererService(fixture(mode)),viewport=[0,0,20,30] as const;
+ try{
+  expect(await s.render(packet({...begin(),viewport}))).toMatchObject({ok:false,error:{kind:mode==='unsupported-begin'?'unsupported':'ownership'}});
+  expect(s.retainedResourceCount).toBe(mode==='unsupported-begin'?1:0);
+  if(mode==='unsupported-begin'){expect(await s.render(packet({...request({kind:'release',resource:token,expectedIndex:0},2),viewport}))).toMatchObject({ok:true});expect(s.retainedResourceCount).toBe(0);}
+ }finally{expect(await s.close()).toMatchObject({ok:true});expect(s.processCount).toBe(0);}
 });

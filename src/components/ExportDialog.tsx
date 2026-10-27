@@ -63,6 +63,7 @@ export function ExportDialog({
   sourcePerlinViewport,
   fractalPixelDensity,
   previewPointPixelDensity,
+  sourceImplicitPrimarySize,
   samilaPrimaryPixelHeight,
   sourceMapToneReference,sourceSymmetryToneReference,
   currentFractalCapture,currentDomainCapture,domainPixelDensity,
@@ -96,6 +97,7 @@ export function ExportDialog({
   fractalPixelDensity?:number;
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
+  sourceImplicitPrimarySize?:readonly [number,number];
   samilaPrimaryPixelHeight?:number;
   sourceMapToneReference?:SourceIteratedToneReference;
   sourceSymmetryToneReference?:SourceIteratedToneReference;
@@ -344,11 +346,12 @@ export function ExportDialog({
       const timeline=sourceFrames||sourceBouncing||perlinFrames||fractalFrames?exportScene.timeline:resolveTimeline(exportScene);
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
       if((usesSourceSurfaceParticles(exportScene)||usesSourceImplicitMesh(exportScene)||usesSourceAttractor(exportScene))&&previewPointPixelDensity===undefined)throw new Error('源场景导出缺少已呈现预览的像素密度，请等待预览完成');
+      if(sourceImplicitMeshRoute(exportScene)?.presentation==='gpu-material'&&!sourceImplicitPrimarySize)throw new Error('隐式 GPU 导出缺少已呈现的主画布尺寸，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
       if(usesSourceMapPresentation(exportScene)&&sourceMapToneReference===undefined)throw Error('Map 导出缺少已呈现主画布尺寸，请等待预览完成');
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
-      const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width:attractorTarget?.width??implicitTarget?.width??width,height:attractorTarget?.height??implicitTarget?.height??height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:attractorTarget?.sourceViewport??{...ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),...implicitTarget?.sourceViewport},sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      const exportContext={...(sourceImplicitMeshRoute(exportScene)?.presentation==='gpu-material'?{sourceImplicitPrimarySize}:{}),...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width:attractorTarget?.width??implicitTarget?.width??width,height:attractorTarget?.height??implicitTarget?.height??height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:attractorTarget?.sourceViewport??{...ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),...implicitTarget?.sourceViewport},sourcePointPixelDensity:usesSourceMapPresentation(exportScene)||usesSourceSymmetryPresentation(exportScene)?iteratedPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,referenceLogicalHeight:previewLogicalHeight,target:'offscreen' as const}}:undefined;
       const nativeAttractor=sourceDrawingPolicy()==='native'&&usesSourceAttractor(exportScene)&&!usesSourceAttractorCpu(exportScene);
       if(bouncing?.warmup){

@@ -3,6 +3,7 @@ import {sourceFormulaQuad} from './formulas';
 import {sourceFormulaGlyph,type SourceFormulaGlyph} from './sourceFormulaGlyphClient';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {validateFormulaPresentation} from './formulaConfig';
+import {parseSourceDrawingViewport} from './sourceDrawingViewport';
 import {sourceTextureAnisotropy,type SourceTextureAnisotropy} from './sourceProcessingTextureSampling';
 const QUAD_ORDER=[0,1,2,0,2,3],QUAD_UV=[0,0,0,1,1,1,1,0];
 export type SourceFormulaPresentation=Extract<FormulaPresentation,{layout:'source-surface-centered-v1'}>;
@@ -83,9 +84,16 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
   if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width*height>MAX_RASTER_PIXELS||width>gl.getParameter(gl.MAX_TEXTURE_SIZE)||height>gl.getParameter(gl.MAX_TEXTURE_SIZE))throw new Error('源公式合成画布超出图像预算');
   if(!(base.buffer instanceof ArrayBuffer)||base.length!==width*height*4)throw new Error('源公式需要完整未共享的基础 RGBA 图像');
   if(prepared&&prepared.glyphs.length!==prepared.presentation.labels.length)throw new Error('源公式字形与标注不对应');
+  const viewport=parseSourceDrawingViewport(prepared?.presentation.drawingViewport??[0,0,width,height]);
+  if(!viewport.ok)throw new Error(viewport.error.reason);
+  const maximum=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
+  if(viewport.value[2]>maximum[0]||viewport.value[3]>maximum[1])throw new Error('源公式绘制视口超过当前 GPU 上限');
   if(this.canvas.width!==width)this.canvas.width=width;if(this.canvas.height!==height)this.canvas.height=height;
   gl.viewport(0,0,width,height);gl.useProgram(this.program);gl.uniform2f(this.projection,Math.fround(2/width),Math.fround(-2/height));gl.disable(gl.BLEND);gl.disable(gl.DITHER);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   this.upload(this.texture,width,height,base,false);this.quad([-width/2,-height/2,-width/2,height/2,width/2,height/2,width/2,-height/2]);
+  // The mathematical framebuffer is already projected. Copy it over the
+  // whole target first; only subsequent source draws inherit this GL state.
+  gl.viewport(...viewport.value);
   const keep=new Set(prepared?.glyphs);for(const [glyph,texture]of this.textures)if(!keep.has(glyph)){gl.deleteTexture(texture);this.textures.delete(glyph);}
   gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
   prepared?.glyphs.forEach((glyph,index)=>{

@@ -64,7 +64,7 @@ describe('Implicit recording production Worker transport',()=>{
    const facts=out.sourceImplicitPresentation!;if(facts.model!=='mathart-1.7.8-gpu-material-v1')throw Error('GPU material');
    expect(facts.palette).toBeInstanceOf(Uint32Array);expect(facts.palette.byteLength).toBeGreaterThan(0);expect(facts.fillColors.byteLength).toBe(out.positions.length/3*16);
    expect(out.sourceCameraFrame).toMatchObject({frameIndex:i,sceneTime:expected.sceneTime,rawDt:expected.rawDt,queueComplete:expected.complete});
-   expect(out.formulaPresentation).toEqual(start.result.warmup.formulaPresentation);
+   expect(out.formulaPresentation).toEqual({...start.result.warmup.formulaPresentation,drawingViewport:out.sourceImplicitDisplay!.viewport});
   }
   const stop=result(await send({operation:'source-recording-finish',recordingId:start.recordingId}),'source-recording-finish');
   expect(stop.result.preview.implicitLive?.renderKind).toBe('snapshot');expect(stop.result.preview.sourceCameraFrame?.frameIndex).toBe(f.row.frames.length-1);

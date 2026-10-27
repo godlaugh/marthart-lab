@@ -1,6 +1,6 @@
 # 隐式曲面 GPU：本机原版路径与剩余缺口（2026-10-27）
 
-原版 MathArt 1.7.8 在这台 Apple M2 Max 上可以完成隐式曲面的 GPU 模式绘制，但实际采用 **CPU 生成网格、GPU 绘制材质**。这不是 OpenGL Compute Shader 成功运行的证据。后续产品接入已完成六种稳定材质状态的整图零差异对照，见[GPU 材质验收](source-implicit-gpu-material.zh-CN.md)；首次及 dirty 网格重建的视口恢复仍待处理，MAS-IMP-023 不能整体标为完成。
+原版 MathArt 1.7.8 在这台 Apple M2 Max 上可以完成隐式曲面的 GPU 模式绘制，但实际采用 **CPU 生成网格、GPU 绘制材质**。这不是 OpenGL Compute Shader 成功运行的证据。后续产品接入已完成六种稳定材质状态的整图零差异对照，见[GPU 材质验收](source-implicit-gpu-material.zh-CN.md)；首次及 dirty 网格重建的视口恢复也已接入，并完成 17 张含公式整图对照，见[重建帧验收](source-implicit-dirty-display.zh-CN.md)。两项结果均限定本机实际 CPU 回退，不证明 Compute 成功。
 
 ## 实际验证
 

@@ -125,6 +125,8 @@ export type FormulaConfig=(LegacyFormulaLayout|SourceSurfaceFormulaLayout)&{main
  * consumers must not replace them with a newer authoring draft. */
 export type FormulaContent=(LegacyFormulaLayout|SourceSurfaceFormulaLayout)&{labels:readonly FormulaLabel[];};
 export type FormulaPresentation=(LegacyFormulaLayout|(SourceSurfaceFormulaLayout&{primaryLogicalHeight:number;
+  /** Actual GL viewport of this delivered display, independent of target pixels. */
+  drawingViewport?:import('./engine/sourceDrawingViewport').SourceDrawingViewport;
   /** Delivered source transition, after formulas; integer Processing alpha. */
   finalBlackOverlayAlpha?:number;
 }))&{labels:readonly FormulaLabel[];};
@@ -367,6 +369,7 @@ export interface GeometryOutput {
   implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   sourceImplicitMesh?:import('./engine/sourceImplicitMesh').SourceImplicitMesh;
   sourceImplicitPresentation?:import('./engine/sourceImplicitPresentation').SourceImplicitPresentation;
+  sourceImplicitDisplay?:import('./engine/sourceImplicitDisplay').SourceImplicitDisplay;
   formulaPresentation?:FormulaPresentation;
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
   /** Implicit work counts include confirmed attempts before a CPU replay;
@@ -565,6 +568,8 @@ export interface GenerateContext {
   sourceViewport?:SourceCameraViewport;
   /** Measured local primary renderer density; separate from source-app DPI evidence. */
   sourcePointPixelDensity?:number;
+  /** Actual primary framebuffer size, retained when generating an offscreen Implicit display. */
+  sourceImplicitPrimarySize?:readonly [physicalWidth:number,physicalHeight:number];
   /** Measured primary canvas physical height, retained for offscreen Samila splats. */
   samilaPrimaryPixelHeight?:number;
   /** Measured primary canvas physical size, retained independently for export tone. */
@@ -606,7 +611,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'implicitLive'|'implicitControls'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'sourceImplicitPrimarySize'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'implicitLive'|'implicitControls'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

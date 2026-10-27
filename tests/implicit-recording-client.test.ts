@@ -145,8 +145,8 @@ describe('Implicit queue handoff',()=>{
 });
 
 describe('Implicit capture identity admission',()=>{
- it.each(['scene','frame','viewport','live','formula','parameters'] as const)('rejects corrupt capture %s before drawing',async kind=>{
-  const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options),stop=await f.generator.finishSourceRecording(start.handle,1000);
+ it.each(['scene','frame','viewport','live','formula','parameters','display','formula-viewport'] as const)('rejects corrupt capture %s before drawing',async kind=>{
+  const f=await setup('fps4-varying',kind==='display'||kind==='formula-viewport'?'GPU':'CPU'),start=await f.generator.beginSourceRecording(f.output,f.options),stop=await f.generator.finishSourceRecording(start.handle,1000);
   await f.generator.setImplicitPaused(stop.preview,true,2000);
   await expect(f.generator.captureImplicitPaused({...stop.preview},{width:65,height:49})).rejects.toMatchObject({previewRetained:false});
   await expect(f.generator.captureImplicitPaused(stop.preview,{width:30000,height:30000})).rejects.toMatchObject({previewRetained:true});
@@ -158,6 +158,8 @@ describe('Implicit capture identity admission',()=>{
    if(kind==='viewport')r.result.capture.sourceCameraFrame={...r.result.capture.sourceCameraFrame!,viewport:{...r.result.capture.sourceCameraFrame!.viewport,logicalWidth:33}};
    if(kind==='live')r.result.capture.implicitLive!.sessionId='foreign';
    if(kind==='formula')r.result.capture.formulaPresentation=undefined;
+   if(kind==='display')Object.assign(r.result.capture.sourceImplicitDisplay!,{viewport:[0,0,810,972]});
+   if(kind==='formula-viewport')Object.assign(r.result.capture.formulaPresentation!,{drawingViewport:[0,0,810,972]});
   };
   await expect(f.generator.captureImplicitPaused(stop.preview,{width:65,height:49})).rejects.toThrow('响应状态');
   expect(port.terminated).toBe(true);f.generator.dispose();

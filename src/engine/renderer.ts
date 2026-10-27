@@ -1,6 +1,9 @@
 import {hasFormulaComposition} from './formulaConfig';
 import {snapshotSourceDrawings,prepareSourceDrawingPlan,type SourceDrawingResult,type SourceDrawingPlan,type SourceDrawingPlanOptions} from './sourceDrawingSnapshot';
 import type {SourceDrawingFrame} from './sourceDrawingFrame';
+import type {SourceDrawingViewport} from './sourceDrawingViewport';
+import {validateSourceImplicitDisplay} from './sourceImplicitDisplay';
+import {SOURCE_IMPLICIT_GPU_PRESENTATION} from './sourceImplicitGpuPresentation';
 import {usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {usesSourceAttractorCpu} from './sourceAttractorDocument';
 import {createSourceImplicitMesh} from './sourceImplicitRenderer';
@@ -37,7 +40,7 @@ import {fitGeometryCamera} from './cameraFit';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 export type ArtRendererPurpose='display'|'local-export'|'source-offscreen-export';
 export type SourceDrawingPlannedFrame=Omit<SourceDrawingFrame,'drawing'|'bouncing'>&{plan:SourceDrawingPlan};
-export type SourceDrawingPlanOwnerOptions=Omit<SourceDrawingPlanOptions,'frameBytes'|'retainedBuffers'|'additionalBytes'>&{retainedBuffers:readonly ArrayBuffer[];additionalBytes:number};
+export type SourceDrawingPlanOwnerOptions=Omit<SourceDrawingPlanOptions,'frameBytes'|'retainedBuffers'|'additionalBytes'|'viewport'>&{retainedBuffers:readonly ArrayBuffer[];additionalBytes:number};
 /** Context attributes are fixed at allocation. MathArt.ensureRenderBuffer(F)
  * calls noSmooth before beginDraw; primary display smoothing is separate.
  * Source Surface, Implicit and CPU Attractor use this offscreen policy. */
@@ -56,6 +59,8 @@ export class ArtRenderer {
   private raster = false;
   private cameraResolved = false;
   private sourceCameraPlan?:SourceCameraPlan;
+  private sourceDrawingViewport?:SourceDrawingViewport;
+  private sourceDrawingViewportApplied=false;
   private drawingRevision=0;
   private sourceClear?:readonly [number,number,number,number];
   private sourceCompositedRaster?:RasterOutput;
@@ -171,6 +176,10 @@ export class ArtRenderer {
   }
   setOutput(output: SceneOutput, document: SceneDocument, fit = false,optics?:{roll:number;focalLength:number;camera?:CameraState}) {
     this.drawingRevision++;
+    const gpuImplicit=output.type==='geometry'&&output.sourceImplicitPresentation?.model===SOURCE_IMPLICIT_GPU_PRESENTATION;
+    const implicitDisplay=output.type==='geometry'?output.sourceImplicitDisplay:undefined;
+    if(gpuImplicit!==!!implicitDisplay)throw new Error('GPU 隐式曲面需要对应的已交付显示事实');
+    this.sourceDrawingViewport=implicitDisplay?validateSourceImplicitDisplay(implicitDisplay).viewport:undefined;
     if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(usesSourceBouncing(document)!==!!output.sourceBouncingFrame||output.sourceBouncingFrame&&(output.type!=='raster'||!output.cameraResolved))throw new Error('源弹跳需要与文档配对的已投影图像');
@@ -436,6 +445,16 @@ export class ArtRenderer {
   }
   render() {
     if(this.shaderFailure)throw this.shaderFailure;
+    if(this.sourceDrawingViewport||this.sourceDrawingViewportApplied){
+      const gl=this.renderer.getContext(),ratio=this.renderer.getPixelRatio();
+      const viewport=this.sourceDrawingViewport??[0,0,gl.drawingBufferWidth,gl.drawingBufferHeight];
+      const maximum=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
+      if(viewport[2]>maximum[0]||viewport[3]>maximum[1])throw new Error('绘制视口超过当前 GPU 上限');
+      // Use Three's viewport owner so its render-state cache and subsequent
+      // passes agree. Clear remains a full framebuffer operation.
+      this.renderer.setViewport(viewport[0]/ratio,viewport[1]/ratio,viewport[2]/ratio,viewport[3]/ratio);
+      this.sourceDrawingViewportApplied=!!this.sourceDrawingViewport;
+    }
     if(this.samilaRecordingPreview){this.samilaRecordingPreview.render(this.renderer);return;}
     if(this.sourceCameraPlan){
       const plan=this.sourceCameraPlan;
@@ -483,7 +502,7 @@ export class ArtRenderer {
     if(!options||!Array.isArray(options.retainedBuffers)||!Number.isSafeInteger(options.additionalBytes)||options.additionalBytes<0)return{ok:false,error:{kind:'input',path:['retainedBytes'],reason:'分块绘制必须显式声明源输出缓冲及其他留存容量'}};
     const input=this.sourceDrawingInput(generation,sequence);if(!input.ok)return input;
     const revision=this.drawingRevision,{frame,meshes}=input.value;
-    const plan=prepareSourceDrawingPlan(meshes,{...options,frameBytes:frame.width*frame.height*(12+8*frame.samples),isCurrent:()=>this.drawingRevision===revision&&options.isCurrent?.()!==false});
+    const plan=prepareSourceDrawingPlan(meshes,{...options,...(frame.viewport?{viewport:frame.viewport}:{}),frameBytes:frame.width*frame.height*(12+8*frame.samples),isCurrent:()=>this.drawingRevision===revision&&options.isCurrent?.()!==false});
     if(!plan.ok)return plan;
     return{ok:true,value:{...frame,plan:plan.value}};
   }
@@ -491,7 +510,7 @@ export class ArtRenderer {
     if(!this.sourceCameraPlan||this.raster)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'当前画面不是可提交原生绘制的源几何帧'}};
     this.render();const gl=this.renderer.getContext();
     if(gl.isContextLost()||gl.isEnabled(gl.SCISSOR_TEST))return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧暂不支持丢失的上下文或裁剪视口'}};
-    const viewport=gl.getParameter(gl.VIEWPORT) as Int32Array;if(viewport[0]!==0||viewport[1]!==0||viewport[2]!==gl.drawingBufferWidth||viewport[3]!==gl.drawingBufferHeight)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧需要完整物理视口'}};
+    const viewport=gl.getParameter(gl.VIEWPORT) as Int32Array,expected=this.sourceDrawingViewport??[0,0,gl.drawingBufferWidth,gl.drawingBufferHeight];if(expected.some((value,index)=>value!==viewport[index]))return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧的绘制视口与已交付事实不匹配'}};
     const meshes:THREE.Mesh[]=[];
     const scenes=[this.scene,...(this.surfaceOverlay?.visible?[this.surfaceOverlayScene]:[])];
     for(const scene of scenes){
@@ -505,7 +524,7 @@ export class ArtRenderer {
     // Read the actual clear state. Source packed colors and legacy Three
     // backgrounds have different conversion/alpha rules, already applied here.
     const clear=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE) as Float32Array) as [number,number,number,number];
-    return{ok:true,value:{meshes,frame:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,samples:gl.getParameter(gl.SAMPLES) as number,clear}}};
+    return{ok:true,value:{meshes,frame:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,samples:gl.getParameter(gl.SAMPLES) as number,clear,...(this.sourceDrawingViewport?{viewport:this.sourceDrawingViewport}:{})}}};
   }
   private sourceFramebufferPixels(isCancelled:()=>boolean){
     if(isCancelled())throw new DOMException('图像导出已取消','AbortError');

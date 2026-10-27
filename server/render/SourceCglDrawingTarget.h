@@ -4,7 +4,7 @@
 @interface SourceCglDrawingTarget:NSObject {
  GLuint _fb,_resolved,_color,_multiColor,_depth; CGLContextObj _context;
  GLsizei _width,_height,_samples; BOOL _completion,_prepared,_finished,_disposed;
- NSArray *_clear;
+ NSArray *_clear; GLint _viewport[4];
 }
 -(instancetype)initWithFrame:(NSDictionary*)frame;
 -(void)prepare:(uint64_t)retained;
@@ -15,16 +15,17 @@
 -(void)dispose;
 @end
 @implementation SourceCglDrawingTarget
--(instancetype)initWithFrame:(NSDictionary*)frame{self=[super init];if(self){_context=CGLGetCurrentContext();RUNTIME(_context!=NULL,@"Frame target requires context");_width=[frame[@"width"]intValue];_height=[frame[@"height"]intValue];_samples=[frame[@"samples"]intValue];_completion=[frame[@"completion"]boolValue];_clear=frame[@"clear"];}return self;}
+-(instancetype)initWithFrame:(NSDictionary*)frame{self=[super init];if(self){_context=CGLGetCurrentContext();RUNTIME(_context!=NULL,@"Frame target requires context");_width=[frame[@"width"]intValue];_height=[frame[@"height"]intValue];_samples=[frame[@"samples"]intValue];_completion=[frame[@"completion"]boolValue];_clear=frame[@"clear"];NSArray *viewport=frame[@"viewport"]?:@[@0,@0,@(_width),@(_height)];for(int i=0;i<4;i++)_viewport[i]=[viewport[i]intValue];}return self;}
 -(void)bind{
- RUNTIME(!_disposed&&CGLGetCurrentContext()==_context,@"Frame target context unavailable");glBindFramebuffer(GL_FRAMEBUFFER,_fb);glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,_width,_height);
+ RUNTIME(!_disposed&&CGLGetCurrentContext()==_context,@"Frame target context unavailable");glBindFramebuffer(GL_FRAMEBUFFER,_fb);glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(_viewport[0],_viewport[1],_viewport[2],_viewport[3]);
+ GLint actualViewport[4]={0};glGetIntegerv(GL_VIEWPORT,actualViewport);ensure(glGetError()==GL_NO_ERROR,@"gpu-render",@"Cannot bind frame viewport");ensure(memcmp(actualViewport,_viewport,sizeof(_viewport))==0,@"unsupported",@"Driver changed the requested physical viewport");
  if(_samples)glEnable(GL_MULTISAMPLE);else glDisable(GL_MULTISAMPLE);
  glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);glDisable(GL_SAMPLE_ALPHA_TO_ONE);glDisable(GL_SAMPLE_COVERAGE);glDisable(GL_SAMPLE_MASK);glDisable(GL_SCISSOR_TEST);glDisable(GL_DITHER);glDisable(GL_FRAMEBUFFER_SRGB);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 }
 -(void)prepare:(uint64_t)retained{
  INPUT(!_prepared&&!_disposed,@"Frame target already prepared");GLint maxTexture=0,maxRender=0,maxViewport[2]={0},maxSamples=0;
  glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTexture);glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,&maxRender);glGetIntegerv(GL_MAX_VIEWPORT_DIMS,maxViewport);glGetIntegerv(GL_MAX_SAMPLES,&maxSamples);
- ensure(_width<=MIN(maxTexture,maxRender)&&_height<=MIN(maxTexture,maxRender)&&_width<=maxViewport[0]&&_height<=maxViewport[1],@"unsupported",@"Frame exceeds native dimensions");ensure(_samples<=maxSamples,@"unsupported",@"Requested sample count exceeds native limit");
+ ensure(_width<=MIN(maxTexture,maxRender)&&_height<=MIN(maxTexture,maxRender)&&_viewport[2]<=maxViewport[0]&&_viewport[3]<=maxViewport[1],@"unsupported",@"Frame exceeds native dimensions");ensure(_samples<=maxSamples,@"unsupported",@"Requested sample count exceeds native limit");
  ensure(retained+(uint64_t)_width*_height*(12+(uint64_t)8*_samples)<=Budget,@"capacity",@"Retained state and frame targets exceed budget");
  glGenFramebuffers(1,&_fb);glBindFramebuffer(GL_FRAMEBUFFER,_fb);glGenTextures(1,&_color);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,_color);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,_width,_height,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,_color,0);
  if(_samples){_resolved=_fb;glGenFramebuffers(1,&_fb);glBindFramebuffer(GL_FRAMEBUFFER,_fb);glGenRenderbuffers(1,&_multiColor);glBindRenderbuffer(GL_RENDERBUFFER,_multiColor);glRenderbufferStorageMultisample(GL_RENDERBUFFER,_samples,GL_RGBA8,_width,_height);glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,_multiColor);GLint actual=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actual);ensure(glGetError()==GL_NO_ERROR,@"gpu-allocation",@"Multisample color allocation failed");ensure(actual==_samples,@"unsupported",@"Driver rounded the requested color sample count");}

@@ -31,19 +31,20 @@ beforeEach(async()=>{vi.resetModules();corrupt=undefined;hold=false;held=[];work
  if(hold&&message.operation==='generate'&&!('error'in message))held.push(message);else port.onmessage?.({data:message});
 }};vi.stubGlobal('self',worker);vi.stubGlobal('Worker',Transport);await import('../src/engine/generate.worker');});
 afterEach(()=>vi.unstubAllGlobals());
-function fixture(){
+function fixture(mode:'CPU'|'GPU'='CPU'){
  const raw=structuredClone(native.cases[0].input.project);raw.settings.x_segments=raw.settings.y_segments=raw.settings.z_segments=4;
+ Object.assign(raw.settings,{mesh_mode:mode});
  const scene=parseProjectFile(JSON.stringify(raw)).scene;scene.implicitSourcePalette={colors:['#80112233']};scene.settings.opacity=1;scene.settings.meshWireframe=false;
  const context:GenerationInput={time:0,width:810,height:972,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,405,486,'primary',486),implicitControls:{sessionId:'client-palette',acknowledgedRevision:0,commands:[{kind:'apply',revision:1,scene}]}};
  return{scene,context,options:{width:128,height:96,simulationFps:4,actualFrameRate:37}};
 }
-async function setup(){const f=fixture(),g=new Generator(),output=await g.generate(f.scene,f.context);return{...f,g,output};}
+async function setup(mode:'CPU'|'GPU'='CPU'){const f=fixture(mode),g=new Generator(),output=await g.generate(f.scene,f.context);return{...f,g,output};}
 const hot=(context:GenerationInput,revision:number,colors=['#aabbcc']):GenerationInput=>({...context,implicitControls:{sessionId:'client-palette',acknowledgedRevision:revision-1,commands:[{kind:'palette',revision,colors}]}});
 const rgba=(output:SceneOutput)=>{if(output.type!=='geometry')throw Error('geometry');return [...output.sourceImplicitPresentation!.fillColors.slice(0,4)];};
 const color=(r:number,g:number,b:number,a=255)=>[r,g,b,a].map(v=>Math.fround(v/255));
 describe('Implicit control public client and queue transport',()=>{
- it('admits a held capture after restoring the author editor state and retains it if drawing fails',async()=>{
-  const f=await setup();expect(f.scene.implicitPaletteEditor).toBeDefined();
+ it.each(['CPU','GPU'] as const)('admits a held %s capture after restoring the author editor state and retains it if drawing fails',async mode=>{
+  const f=await setup(mode);expect(f.scene.implicitPaletteEditor).toBeDefined();
   try{
    const start=await f.g.beginSourceRecording(f.output,f.options),stop=await f.g.finishSourceRecording(start.handle,1000);
    await f.g.setImplicitPaused(stop.preview,true,1100);

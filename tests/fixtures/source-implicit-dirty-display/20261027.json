@@ -1,0 +1,1485 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "status": "passed-listed-local-scope",
+  "readableReport": "docs/source-implicit-dirty-display.zh-CN.md",
+  "scope": "Seventeen independent whole mathematical and prebranding-art comparisons. Public fixed-frame replay is used; original paused controls and recording lifecycle are not simulated by this verifier.",
+  "limits": [
+    "First two images compare constructor dirty/steady visual effects only: fixed replay has already performed its first update (.25 seconds), whereas the original reference is initially paused at time zero. Parameters, geometry and formula content are unchanged; no initial paused-clock equivalence claim.",
+    "Remaining fifteen frames require exact scene time, queue completion, parameter bits, mesh buffers and viewport. Repeated fixed-time requests represent repeated displays; retained pause/record/capture UI is verified separately.",
+    "Finite diagnostic 12³ input, 500×600 target, density two and this Mac. Other hardware, all parameter ranges, VRAM and task tokens are not measured.",
+    "Original native Compute remains unavailable on this Mac; verified source CPU fallback and GPU materials. Cross-device remains unverified; user has only this Mac.",
+    "The package check confirms its actual import/native/PNG path and cleanup, not another original image comparison."
+  ],
+  "reference": {
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "index": {
+      "path": ".cache/source-implicit-dirty-animation-20261027/capture-index.json",
+      "sha256": "84b303803432a0085258105b7a8cf78a442f832fc431292f9f5bfcc80344ba4c",
+      "bytes": 29940
+    },
+    "input": {
+      "path": ".cache/source-implicit-dirty-animation-20261027/reference-r1/source.json",
+      "sha256": "043af66e93032f1c33932952b77793d80a12bbedc02a412d96ac2759c9a3ccce",
+      "bytes": 2523
+    },
+    "authorPlan": {
+      "path": ".cache/source-implicit-dirty-animation-20261027/reference-r1/plan.json",
+      "sha256": "cde71bbf513f768c43a3a4b5a9bdbc2d81897fdfe4375a72d12217a119bb592d",
+      "bytes": 6945
+    },
+    "frames": 17,
+    "actualUpdates": 11,
+    "terminalSceneTime": 2.75,
+    "sameValueDirtyFrames": [
+      3,
+      4,
+      7
+    ]
+  },
+  "comparison": {
+    "report": {
+      "path": ".cache/source-implicit-dirty-product-20261027/run-1/report.json",
+      "sha256": "4e7c3ad0357097f69e91cf6db842d50d8afdb176b089af4f9584c0882ac0f108",
+      "bytes": 206159
+    },
+    "runtime": {
+      "node": "v24.18.0",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "initialVisualOnly": 2,
+    "alignedTimeAndState": 15,
+    "nativeCompleteAndBounded": "byte-exact",
+    "sourceStable": true,
+    "referenceStable": true,
+    "cleanupErrors": [],
+    "remainingProcesses": 0,
+    "elapsedMs": 14891.040500000001,
+    "processFamily": {
+      "rootPid": 36126,
+      "samples": 27,
+      "observedProcesses": 38,
+      "maxConcurrentProcesses": 12,
+      "sampledPeakRssKiB": 2295168,
+      "observedCpuMs": 12559.999999999996,
+      "samplingErrors": []
+    },
+    "frames": [
+      {
+        "index": 0,
+        "requestedTime": 0,
+        "sceneTime": 0.25,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "d6f876503f1996e3f1e566810cb4078b012336c9078abf35072590879351fbbd",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-0/source-facts.json",
+          "sha256": "daa7d91fff22b843ac286f5fec2cddd8e3199bc459b42cf0ae89e75a25b0f10a"
+        }
+      },
+      {
+        "index": 1,
+        "requestedTime": 0,
+        "sceneTime": 0.25,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "cb09a90d0416d590468f4f1b154989939c6c5505e209367d6611f6ede99aa8e5",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-1/source-facts.json",
+          "sha256": "0c7b6dc410041785db9781261dbddb132117a5e8b5d31b1edf8f581401a26f65"
+        }
+      },
+      {
+        "index": 2,
+        "requestedTime": 0,
+        "sceneTime": 0.25,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "cb09a90d0416d590468f4f1b154989939c6c5505e209367d6611f6ede99aa8e5",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-2/source-facts.json",
+          "sha256": "6d9be885bd2ebd313b8fe77dc3efdd11a02ac52a37dfbd7060a4447f77552a71"
+        }
+      },
+      {
+        "index": 3,
+        "requestedTime": 0.25,
+        "sceneTime": 0.5,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "d6f876503f1996e3f1e566810cb4078b012336c9078abf35072590879351fbbd",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-3/source-facts.json",
+          "sha256": "04e8ad3994a95d15024397300b4db88616db690b5ebef03c3180131ed72422e3"
+        }
+      },
+      {
+        "index": 4,
+        "requestedTime": 0.5,
+        "sceneTime": 0.75,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "d6f876503f1996e3f1e566810cb4078b012336c9078abf35072590879351fbbd",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-4/source-facts.json",
+          "sha256": "6c5eb289310e89fd13147fb97c393a4065c58d55f3f18d20dc9faaab74ebede4"
+        }
+      },
+      {
+        "index": 5,
+        "requestedTime": 0.5,
+        "sceneTime": 0.75,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "cb09a90d0416d590468f4f1b154989939c6c5505e209367d6611f6ede99aa8e5",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-5/source-facts.json",
+          "sha256": "5852d296dc54baf36b0964570afd155199ca1ebb20db0d89b60a0457a319b85b"
+        }
+      },
+      {
+        "index": 6,
+        "requestedTime": 0.5,
+        "sceneTime": 0.75,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "cb09a90d0416d590468f4f1b154989939c6c5505e209367d6611f6ede99aa8e5",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-6/source-facts.json",
+          "sha256": "1af46bd4e9004b5af1c043bc3781bb619f7acb939c0af1ac23bfbaa7c2e83867"
+        }
+      },
+      {
+        "index": 7,
+        "requestedTime": 0.75,
+        "sceneTime": 1,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "d6f876503f1996e3f1e566810cb4078b012336c9078abf35072590879351fbbd",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-7/source-facts.json",
+          "sha256": "825ce0dd71f90243ad16b879d81b62dabfcb378eb58b7f569b3625db383927f6"
+        }
+      },
+      {
+        "index": 8,
+        "requestedTime": 1,
+        "sceneTime": 1.25,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "cb09a90d0416d590468f4f1b154989939c6c5505e209367d6611f6ede99aa8e5",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-8/source-facts.json",
+          "sha256": "a9b0e2f8af9dbc3c274712686f1dbf0c1c2e4957d83ee290c27208ab71eaed31"
+        }
+      },
+      {
+        "index": 9,
+        "requestedTime": 1.25,
+        "sceneTime": 1.5,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0000000000000",
+        "positionsSha256": "d876f226bdce79610315544b9d77f9b5c9c2bfb2a99251496d0b4a7f13666752",
+        "normalsSha256": "d08e61518f01f67f6d46f067d2041dbfb4ecbef0034e642d745e18ad19f77106",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "cb09a90d0416d590468f4f1b154989939c6c5505e209367d6611f6ede99aa8e5",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-9/source-facts.json",
+          "sha256": "64453e1f85a86df72c9430af7f23281bcd4675a4073cedcd4c72eee4863fce28"
+        }
+      },
+      {
+        "index": 10,
+        "requestedTime": 1.5,
+        "sceneTime": 1.75,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff051e5ed7577c4",
+        "positionsSha256": "6ecfbf453ad23a58ac815fe083b9b77da1c507cb259c55bb12a787efbff79d36",
+        "normalsSha256": "bb2c5a6295ded610d725f2c07d66d24a9ca9884d16288a6279e0cd169ddb38e6",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "a5fdc46f06ba356d4b5311f713af029fb2deef8fe2613fdf44912b9c8db2ab93",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-10/source-facts.json",
+          "sha256": "f2abae8888b29adeeb7c4982584732369dba5af51112e246585f930c0fe4f965"
+        }
+      },
+      {
+        "index": 11,
+        "requestedTime": 1.75,
+        "sceneTime": 2,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff0a3aa506b4bcb",
+        "positionsSha256": "4eef0ee7176e99de7ce4d7a9c2dd408145a8f2803258e109c257bab703fe7ddb",
+        "normalsSha256": "df92a32705b4f0e76235283886f8223af9ed5bf4ab02f849330552a3b8f7a757",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "fbf8a31fc568fdb22c25c8309f168723da2a4ece2c2b36446d6f30559767c585",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-11/source-facts.json",
+          "sha256": "a38157815809cb25998e356ae1b7bc66ec62a27454f59fb95f659529a67e1b23"
+        }
+      },
+      {
+        "index": 12,
+        "requestedTime": 2,
+        "sceneTime": 2.25,
+        "rebuilt": true,
+        "viewport": [
+          0,
+          0,
+          810,
+          972
+        ],
+        "parameterBits": "3ff0f52bac1e67e3",
+        "positionsSha256": "b62a0f51a426405fa8620ea5cd4dbf6aa83526fa9a21438da568f360c84b3169",
+        "normalsSha256": "849003f304986647e242d18a5e9633d519324db6bd834bb5d537f8722aca521f",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "524bbdcdf243dd9aa6f85ccb52b79ffe02b97130e4fa064748c5053b01af267b",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-12/source-facts.json",
+          "sha256": "045aa9b728bad10191dbce318d408959b171671dfee36cf804908ea3e2228b30"
+        }
+      },
+      {
+        "index": 13,
+        "requestedTime": 2.25,
+        "sceneTime": 2.5,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0f52bac1e67e3",
+        "positionsSha256": "b62a0f51a426405fa8620ea5cd4dbf6aa83526fa9a21438da568f360c84b3169",
+        "normalsSha256": "849003f304986647e242d18a5e9633d519324db6bd834bb5d537f8722aca521f",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "2164c7f836ccc0bec6e9a7bcaa965a0b01e8fcfcaf63ffa35fca2950faca8cda",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-13/source-facts.json",
+          "sha256": "fcccc537186fe1ee56cf36f79974747d084ed4faefc244dfe0199a8b216ac85a"
+        }
+      },
+      {
+        "index": 14,
+        "requestedTime": 2.5,
+        "sceneTime": 2.75,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0f52bac1e67e3",
+        "positionsSha256": "b62a0f51a426405fa8620ea5cd4dbf6aa83526fa9a21438da568f360c84b3169",
+        "normalsSha256": "849003f304986647e242d18a5e9633d519324db6bd834bb5d537f8722aca521f",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "2164c7f836ccc0bec6e9a7bcaa965a0b01e8fcfcaf63ffa35fca2950faca8cda",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-14/source-facts.json",
+          "sha256": "fe05d8971950bfc665ea61ec9aec1568814b116829032382a80125db88ac1b76"
+        }
+      },
+      {
+        "index": 15,
+        "requestedTime": 2.5,
+        "sceneTime": 2.75,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0f52bac1e67e3",
+        "positionsSha256": "b62a0f51a426405fa8620ea5cd4dbf6aa83526fa9a21438da568f360c84b3169",
+        "normalsSha256": "849003f304986647e242d18a5e9633d519324db6bd834bb5d537f8722aca521f",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "2164c7f836ccc0bec6e9a7bcaa965a0b01e8fcfcaf63ffa35fca2950faca8cda",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-15/source-facts.json",
+          "sha256": "7b4d4e68130e98ec482b7b2779aa1329afc4bf9a927a945f3c703322a986a75c"
+        }
+      },
+      {
+        "index": 16,
+        "requestedTime": 2.5,
+        "sceneTime": 2.75,
+        "rebuilt": false,
+        "viewport": [
+          0,
+          0,
+          500,
+          600
+        ],
+        "parameterBits": "3ff0f52bac1e67e3",
+        "positionsSha256": "b62a0f51a426405fa8620ea5cd4dbf6aa83526fa9a21438da568f360c84b3169",
+        "normalsSha256": "849003f304986647e242d18a5e9633d519324db6bd834bb5d537f8722aca521f",
+        "comparison": {
+          "math": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          },
+          "artwork": {
+            "bytes": 1200000,
+            "pixels": 0,
+            "channels": 0,
+            "maxDelta": 0
+          }
+        },
+        "artSha256": "2164c7f836ccc0bec6e9a7bcaa965a0b01e8fcfcaf63ffa35fca2950faca8cda",
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-animation-20261027/frames/frame-16/source-facts.json",
+          "sha256": "a510277cc3c0d3f019083ea5374387cb114ff29d233116a523bfb581accfd48d"
+        }
+      }
+    ]
+  },
+  "app": {
+    "report": {
+      "path": ".cache/source-implicit-dirty-product-20261027/app-r3/report.json",
+      "sha256": "85b8e5240b09a9b43c9856642e7e3a02b142fd95fac24a067dd4afdfca10f1f5",
+      "bytes": 231261
+    },
+    "sourceStable": true,
+    "artifactErrors": [],
+    "cleanupErrors": [],
+    "remainingProcesses": 0,
+    "elapsedMs": 61853.266333,
+    "processFamily": {
+      "rootPid": 58400,
+      "samples": 127,
+      "observedProcesses": 153,
+      "maxConcurrentProcesses": 12,
+      "sampledPeakRssKiB": 3393440,
+      "observedCpuMs": 105580,
+      "samplingErrors": []
+    },
+    "cases": [
+      {
+        "name": "natural",
+        "status": "passed",
+        "recordingUpdates": 5,
+        "inputSha256": "021bfcdece2fd9517d37e985cf679162653de3e98817a81998b99e06b32c783c",
+        "videoFrames": 4,
+        "distinctVideoFrames": 4,
+        "clippedFormulaFrames": [],
+        "pngs": [
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/natural-paused-odd.png",
+            "sha256": "d2e241b7065e1d757d8761ed91bda88ccca72a871d9e6b992a0a3361490bddd1",
+            "width": 66,
+            "height": 50
+          },
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/natural-paused-repeat.png",
+            "sha256": "d2e241b7065e1d757d8761ed91bda88ccca72a871d9e6b992a0a3361490bddd1",
+            "width": 66,
+            "height": 50
+          },
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/natural-paused-upscale.png",
+            "sha256": "2996ea561173acee80655fc019da9492c0c02980c236241d86f299ec51670600",
+            "width": 384,
+            "height": 288
+          },
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/natural-paused-after-cancel.png",
+            "sha256": "d2e241b7065e1d757d8761ed91bda88ccca72a871d9e6b992a0a3361490bddd1",
+            "width": 66,
+            "height": 50
+          }
+        ],
+        "jpeg": {
+          "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/natural-replay.jpg",
+          "width": 64,
+          "height": 48,
+          "sha256": "0ff66c5e99c2807d45fbe39c324dd9af7788ac713d9b589d5dbf70206dd83e04",
+          "nativeFrameSha256": "3681bb005292ab507b84272e4f51f679008372b019f8786366365baeff04aef5",
+          "scope": "Actual native route, JPEG decoding and dimensions; no lossy-JPEG original pixel parity claim."
+        },
+        "cancelRemovedEncoder": null,
+        "retryCompleted": null
+      },
+      {
+        "name": "cancel",
+        "status": "passed",
+        "recordingUpdates": 2,
+        "inputSha256": "d94ef58ced5a14ba2b07b83950ea1161debc46169ec95bf0a13178a792a4e014",
+        "videoFrames": 0,
+        "distinctVideoFrames": null,
+        "clippedFormulaFrames": [],
+        "pngs": [],
+        "jpeg": null,
+        "cancelRemovedEncoder": true,
+        "retryCompleted": true
+      },
+      {
+        "name": "formulas",
+        "status": "passed",
+        "recordingUpdates": 11,
+        "inputSha256": "b66ae9194be21585dea61c47292d19ca28770549efaa4a566adede0592689555",
+        "videoFrames": 10,
+        "distinctVideoFrames": 3,
+        "clippedFormulaFrames": [
+          {
+            "index": 0,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 4,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 5,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 7,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 8,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          },
+          {
+            "index": 9,
+            "viewport": [
+              0,
+              0,
+              1564,
+              914
+            ],
+            "bounds": [
+              {
+                "rectangle": [
+                  459.8741854826609,
+                  124.99999263551501,
+                  1104.1258145173392,
+                  187.99999396006265
+                ],
+                "clipped": true
+              },
+              {
+                "rectangle": [
+                  460.6442275047302,
+                  713.7999855677286,
+                  591.0346124966939,
+                  760.2000046836006
+                ],
+                "clipped": true
+              }
+            ]
+          }
+        ],
+        "pngs": [
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/formulas-paused-odd.png",
+            "sha256": "1bbe8347a13d253c99adf59647eeb00d861c818eb8c24c90d13a762a2f08d5c9",
+            "width": 66,
+            "height": 50
+          },
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/formulas-paused-repeat.png",
+            "sha256": "1bbe8347a13d253c99adf59647eeb00d861c818eb8c24c90d13a762a2f08d5c9",
+            "width": 66,
+            "height": 50
+          },
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/formulas-paused-upscale.png",
+            "sha256": "1c58d47423a34ff825686bc165465757dcb570f22f18147f1bfb616f8f922043",
+            "width": 384,
+            "height": 288
+          },
+          {
+            "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/formulas-paused-after-cancel.png",
+            "sha256": "1bbe8347a13d253c99adf59647eeb00d861c818eb8c24c90d13a762a2f08d5c9",
+            "width": 66,
+            "height": 50
+          }
+        ],
+        "jpeg": {
+          "file": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-dirty-product-20261027/app-r3/formulas-replay.jpg",
+          "width": 64,
+          "height": 48,
+          "sha256": "0864673397c887f38ae84797e909ebd8069b184ff3e9782dda0b065f41fe57cc",
+          "nativeFrameSha256": "fd43b471901d6509cb6cce795d9b0f66f0bd6dcb8772b2e84107d3c90064ba66",
+          "scope": "Actual native route, JPEG decoding and dimensions; no lossy-JPEG original pixel parity claim."
+        },
+        "cancelRemovedEncoder": null,
+        "retryCompleted": null
+      }
+    ]
+  },
+  "nativeProtocol": {
+    "version": 16,
+    "report": {
+      "path": ".cache/source-drawing-viewport-20261027/index.json",
+      "sha256": "84e6f7a4ea3de8acccf337620d630994b7a92195f08b9c7b82c5d4a4d985051f",
+      "bytes": 7006
+    },
+    "checks": {
+      "uniqueTests": 125,
+      "files": 7,
+      "newTests": 32,
+      "cpu": {
+        "files": 4,
+        "tests": 58,
+        "elapsedSeconds": 2.84,
+        "log": "cpu-final.log"
+      },
+      "nativeAndService": {
+        "frameTests": 43,
+        "boundedRuntimeTests": 15,
+        "serviceTests": 9,
+        "logs": [
+          "native-r1.log",
+          "native-r2.log"
+        ]
+      },
+      "typescript": {
+        "exitCode": 0,
+        "log": "final-tsc.log"
+      },
+      "strictNativeParserCompile": true,
+      "crop": {
+        "target": [
+          31,
+          23
+        ],
+        "viewport": [
+          -3,
+          -4,
+          62,
+          46
+        ],
+        "referenceTarget": [
+          62,
+          46
+        ],
+        "referenceCrop": [
+          3,
+          4,
+          31,
+          23
+        ],
+        "rgba": "byte-exact"
+      },
+      "zeroExtent": "matches independently cleared image",
+      "nativeCleanup": "every service close acknowledged with zero owned processes"
+    }
+  },
+  "package": {
+    "version": "2.0.0-preview.17",
+    "path": "dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app",
+    "report": {
+      "path": ".cache/source-implicit-dirty-product-20261027/desktop-r1/report.json",
+      "sha256": "171b0904e20c4424231553581079d7f055b14010d5242c9de5a06a8cdd61c43c",
+      "bytes": 51301
+    },
+    "startupRestoreReport": {
+      "path": ".cache/desktop-smoke-lJSEdF/report.json",
+      "sha256": "10859d22460282891cdef234b7f84ffd9e10eb2400fd37964a9eb997ebeb1385",
+      "bytes": 4395
+    },
+    "asarSha256": "4a843a162a93a40ea368b6c947d745110e4d9067c4617eb16c0c87f423a2a063",
+    "nativeHelperSha256": "906ae767e12c86b2a4123a0b1e32cc8f3c92ee75c0d549d568c79ecc47619a90",
+    "exportFrame": {
+      "version": 16,
+      "generation": 1,
+      "sequence": 1,
+      "width": 500,
+      "height": 600,
+      "samples": 0,
+      "viewport": [
+        0,
+        0,
+        1724,
+        1128
+      ]
+    },
+    "formulaContributes": false,
+    "formulaHorizontalBounds": [
+      {
+        "left": 651.836170212766,
+        "right": 1072.1638297872341
+      }
+    ],
+    "pngSha256": "83db63ad4b8015776dfd816dfe4c1364efa82edf645e86e614a21612e969e358",
+    "rgbaSha256": "6ad8f77ae4fb49617920026c7be8e4c9f07f1b6476d62ed8bae2be2cc9d2dd80",
+    "hiddenBefore": {
+      "visibleWindows": 0,
+      "showEvents": []
+    },
+    "hiddenAfter": {
+      "visibleWindows": 0,
+      "showEvents": []
+    },
+    "exitCode": 0,
+    "remainingOwnedProcesses": [],
+    "portsClosed": true,
+    "seconds": 6.372589834
+  },
+  "checks": {
+    "files": 23,
+    "passed": 295,
+    "tests": [
+      {
+        "path": "tests/formula-display-viewport.test.ts",
+        "sha256": "d0bf50bd243a68b85e94ea562aff49b68000447e75918db4e4cc69d436d6babd",
+        "bytes": 1847,
+        "tests": 3
+      },
+      {
+        "path": "tests/implicit-palette-client.test.ts",
+        "sha256": "85b988db5775983cb5e91189387200d81d1f24eef99a039bb6837fbc16828c21",
+        "bytes": 14605,
+        "tests": 14
+      },
+      {
+        "path": "tests/implicit-palette-session.test.ts",
+        "sha256": "230fcb8015f9302a28dd2edc97d6d786eb0903d0c502d1c5830034ca3e1cd893",
+        "bytes": 13441,
+        "tests": 8
+      },
+      {
+        "path": "tests/implicit-recording-client.test.ts",
+        "sha256": "27ea3565461af87a0b6b62fe75a553d8f81eb6d845ba91c3d47603b0d667f11e",
+        "bytes": 16956,
+        "tests": 32
+      },
+      {
+        "path": "tests/implicit-recording-owner.test.ts",
+        "sha256": "818d4179d3da1faf4aede833ff0667a33a25adcf23365abd6e901b87b4d95141",
+        "bytes": 7872,
+        "tests": 7
+      },
+      {
+        "path": "tests/implicit-recording-worker.test.ts",
+        "sha256": "3959c3b8c47c215818d9bb4fd9c15b1e4289115b949554c2ff98a33bb514992d",
+        "bytes": 19851,
+        "tests": 25
+      },
+      {
+        "path": "tests/roots-raster-export-renderer.test.ts",
+        "sha256": "d88350ab368a1c5c352935261a0d67a8d3888f10f313913b1af8001f67518eca",
+        "bytes": 5701,
+        "tests": 4
+      },
+      {
+        "path": "tests/source-drawing-frame.test.ts",
+        "sha256": "0f38d7f8b3b854b28f55923519612239b50e89d452a3f1c42e28653a4051ff17",
+        "bytes": 14417,
+        "tests": 43
+      },
+      {
+        "path": "tests/source-drawing-native-client.test.ts",
+        "sha256": "59e7dd5de752f8a324bf892439db3768185b63fceced093f9ad08a9ff7d01cdd",
+        "bytes": 12174,
+        "tests": 14
+      },
+      {
+        "path": "tests/source-drawing-native-protocol.test.ts",
+        "sha256": "78a2b1376f918f7a582c2af8827c27ce307c05a5cf39bb792dae6aece6b130e4",
+        "bytes": 5006,
+        "tests": 7
+      },
+      {
+        "path": "tests/source-drawing-native-runtime.test.ts",
+        "sha256": "b61feaf1e3176511c47f2ee759a965121829aa0c5a6d0162db179eeca3b3ddb4",
+        "bytes": 11510,
+        "tests": 15
+      },
+      {
+        "path": "tests/source-drawing-native-service.test.ts",
+        "sha256": "e3ed0377215a753149fb471a2b19d05f8dacbba69362ae376bde4c6ca78d997a",
+        "bytes": 12938,
+        "tests": 9
+      },
+      {
+        "path": "tests/source-drawing-plan.test.ts",
+        "sha256": "bd4edd51d1afb380e49147f47e03aaa3ec32d41891bc507b990297ab39dd3fa5",
+        "bytes": 14332,
+        "tests": 14
+      },
+      {
+        "path": "tests/source-drawing-viewport.test.ts",
+        "sha256": "d5427dac83b409b225e56a61aacb15dbfe911d7ab64cfbbc2964d102fcc9d2e8",
+        "bytes": 7982,
+        "tests": 23
+      },
+      {
+        "path": "tests/source-formula-recording-lifecycle.test.ts",
+        "sha256": "f13868ee5fb7de7b8dd301a018802a301c2124f334223b256ec365a84b73590b",
+        "bytes": 12004,
+        "tests": 11
+      },
+      {
+        "path": "tests/source-formula-vertices.test.ts",
+        "sha256": "b45692bfb46b37dfe31e920d9b6ea6ea11389325e07ac8177b1188336de30ff6",
+        "bytes": 1055,
+        "tests": 3
+      },
+      {
+        "path": "tests/source-implicit-display.test.ts",
+        "sha256": "bf34e34b73b859e98ba75b85e7e04a353e292ae7bb08377c17a53fd75fb5e120",
+        "bytes": 11008,
+        "tests": 11
+      },
+      {
+        "path": "tests/source-implicit-formula-frame.test.ts",
+        "sha256": "821efe687d7423589ff5ff015fdb6de7ef373fac3a7fbde6ca6d57bfc555edfb",
+        "bytes": 5813,
+        "tests": 8
+      },
+      {
+        "path": "tests/source-implicit-gpu-lifecycle.test.ts",
+        "sha256": "92e17cf3eaaf258a78debcf42071bb1c052fd8601adc2fa22e37769d0bbc7eb7",
+        "bytes": 7109,
+        "tests": 15
+      },
+      {
+        "path": "tests/source-implicit-gpu-renderer.test.ts",
+        "sha256": "0723d289e2b37ab4d2177cce74e46d601b057deb741be485f2d42f2858887b32",
+        "bytes": 9773,
+        "tests": 8
+      },
+      {
+        "path": "tests/source-implicit-viewport.test.ts",
+        "sha256": "8a285e2b212f2e7e9357dfefd2f3fb3689017c41754ab016896e5b3a1f69cf10",
+        "bytes": 5718,
+        "tests": 5
+      },
+      {
+        "path": "tests/source-native-viewport.test.ts",
+        "sha256": "e5240eb7651a7dccaa1ae72c1a30da0c01b54068906ddde7acf8304b799a2cc6",
+        "bytes": 11269,
+        "tests": 12
+      },
+      {
+        "path": "tests/source-surface-capture-formulas.test.ts",
+        "sha256": "63df33b0456eee87a12ea4c4e58c8b43fd8d6eca41d8d708a06fcb692d9e9090",
+        "bytes": 5495,
+        "tests": 4
+      }
+    ],
+    "logs": [
+      {
+        "path": ".cache/source-drawing-viewport-20261027/cpu-final.log",
+        "sha256": "663306d2babc8d3327c12ce8224593ccabc59a86b321f619b5f02524e4aef521",
+        "bytes": 698
+      },
+      {
+        "path": ".cache/source-drawing-viewport-20261027/native-r1.log",
+        "sha256": "ce2ae7a355e993dbba91ee3cdff8473aefa798ec499be365be918e1bbf3457cc",
+        "bytes": 1266
+      },
+      {
+        "path": ".cache/source-drawing-viewport-20261027/native-r2.log",
+        "sha256": "42e48f1030fbd9824c8929edd0b12c7d837d38a24d42dd7e96cd5a6120fc4ae0",
+        "bytes": 1286
+      },
+      {
+        "path": ".cache/source-drawing-viewport-20261027/final-tsc.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": ".cache/implicit-gpu-lifecycle-20261027/mesh-display-tests-r4.log",
+        "sha256": "1a45cf1bc72dfc656c78cd3a83ef8935edad9358915067052ad5e1291edf00dc",
+        "bytes": 2676
+      },
+      {
+        "path": ".cache/source-implicit-dirty-product-20261027/root-focused.log",
+        "sha256": "e1049aa4caa85940ce8857e7cbb587ec44bde363b2a8a44b60a50b348af3af64",
+        "bytes": 4717
+      },
+      {
+        "path": ".cache/source-implicit-dirty-product-20261027/root-retest.log",
+        "sha256": "3c7de61aa238083ba9839b2c3bcd2685ec984207042ab68e660bd461c19607f6",
+        "bytes": 305
+      },
+      {
+        "path": ".cache/source-implicit-dirty-product-20261027/formula-viewport.log",
+        "sha256": "9706d5d174ea6c8801d035ea9cb1cf11e1fa6182012253143f2c936da1f5e39e",
+        "bytes": 297
+      },
+      {
+        "path": ".cache/source-implicit-dirty-product-20261027/producer-consumers-r3.log",
+        "sha256": "895a3e3bac004ee4368ba6c81383ef6bf4594b31113405805b6c6786f70278c5",
+        "bytes": 306
+      }
+    ],
+    "typescriptBuild": {
+      "path": ".cache/source-implicit-dirty-product-20261027/build-preview17.log",
+      "sha256": "3fd7ef3de9e7634738bbd0def1f6ec780c86fff77d4431e910eab94e7b81f905",
+      "bytes": 2835
+    }
+  },
+  "productionSources": [
+    {
+      "path": "server/render/SourceCglDrawingProtocol.h",
+      "sha256": "df239dd4b7f3d265e520682730a791104da8614e68950ef789265074041c229b",
+      "bytes": 3051
+    },
+    {
+      "path": "server/render/SourceCglDrawingState.h",
+      "sha256": "27c476b789d6ad72812021c8e24fd8020361f63c1e99905a34f2a02088b2fa1c",
+      "bytes": 6780
+    },
+    {
+      "path": "server/render/SourceCglDrawingTarget.h",
+      "sha256": "02764677c5c30d546b8044c8471f2f1127ad083f29a3c49b66d4d8cf7bd9c01d",
+      "bytes": 5997
+    },
+    {
+      "path": "server/render/SourceCglRenderer.m",
+      "sha256": "f3ba5f567e3b40df6883b773a41725de48b9e45e0079a7a18f78a6b1f8c12b36",
+      "bytes": 57767
+    },
+    {
+      "path": "server/source-drawing-protocol.mjs",
+      "sha256": "990cbdfed086d5c1675848801d204dee84bb47b5e97735065bfba3fbf97f2c0c",
+      "bytes": 3637
+    },
+    {
+      "path": "server/source-renderer.mjs",
+      "sha256": "74dd7c1823389e0d1a722a8852fd6ba3487f2435c682d7ba36db2a1d30a836d0",
+      "bytes": 39402
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "06aa3f282d02b3f8f197d1ebf602702fa2e1f216ef985e1671d429cf1e09a4fd",
+      "bytes": 182331
+    },
+    {
+      "path": "src/components/ExportDialog.tsx",
+      "sha256": "c630972c382352eef3304818514c45b77b88769936e2ccb5507a9df17796f382",
+      "bytes": 67023
+    },
+    {
+      "path": "src/engine/client.ts",
+      "sha256": "28226da61e77dea3ad75f51ef0a6ddcc26660e7bb243a3ed1bf9a3ea9c8781af",
+      "bytes": 173050
+    },
+    {
+      "path": "src/engine/formulaConfig.ts",
+      "sha256": "477febd7606dd28feace3ccb1a73e41e74b79807089dce560223abd5e0f74126",
+      "bytes": 6812
+    },
+    {
+      "path": "src/engine/generationInput.ts",
+      "sha256": "669adb8643076a8f6d49f020307caec2f621f3abe81ff8ca7996e51261539ae6",
+      "bytes": 2542
+    },
+    {
+      "path": "src/engine/renderer.ts",
+      "sha256": "5198547a8e3f51710a9eab6880b2eda3a3eab247bed6913ecf69d65dcde545d9",
+      "bytes": 39331
+    },
+    {
+      "path": "src/engine/sourceDrawingBudget.ts",
+      "sha256": "89e2719b3aeb4008099cb99d315b194569e624da54e245aabd7b808757727a60",
+      "bytes": 1643
+    },
+    {
+      "path": "src/engine/sourceDrawingFrame.ts",
+      "sha256": "f7a81387f11fb2e0866201e368c931da638814b9ac9163bc63727806f67f3ba0",
+      "bytes": 13188
+    },
+    {
+      "path": "src/engine/sourceDrawingNativeProtocol.ts",
+      "sha256": "1289548efe1d89d3eb3bdda1696c63829c7e292246f3e63fad1c9d5eafe6c024",
+      "bytes": 8786
+    },
+    {
+      "path": "src/engine/sourceDrawingSnapshot.ts",
+      "sha256": "7c347c5a0f4f86386990bd88d5ef1d04773b9aea18cd3ef5f39369084fd4e355",
+      "bytes": 26825
+    },
+    {
+      "path": "src/engine/sourceDrawingViewport.ts",
+      "sha256": "3753474d08b8efad0f4a5e91b53482b966c5019871c1a8c14a11f13a57243fb5",
+      "bytes": 1052
+    },
+    {
+      "path": "src/engine/sourceFormulaCompositor.ts",
+      "sha256": "1f31fb00f2ee00edf1f5bb1563b301d22b13d290eb414b3158a9f3629d4631da",
+      "bytes": 12249
+    },
+    {
+      "path": "src/engine/sourceGeometryCapture.ts",
+      "sha256": "6b5706b18f6c89f6d1223e680607ef795028582345a2a197f0b9da5a6a3f0fc9",
+      "bytes": 2839
+    },
+    {
+      "path": "src/engine/sourceGeometryRecordingLease.ts",
+      "sha256": "d330395cd0de4f3888130972cd4d404ececa47348d0fea2f5fce6c690f7b69d5",
+      "bytes": 15958
+    },
+    {
+      "path": "src/engine/sourceImplicitDisplay.ts",
+      "sha256": "e3d73a91007165bc8b1705639508cf8ec8803b0fe1977e3f27e67be4ccf1682f",
+      "bytes": 5557
+    },
+    {
+      "path": "src/engine/sourceImplicitRecording.ts",
+      "sha256": "f9e697e3ae7764758d8aae9b25632c0dd5e04d03753247c4d5800d941d4d4938",
+      "bytes": 23841
+    },
+    {
+      "path": "src/engine/sourceImplicitResponse.ts",
+      "sha256": "75ee91dd895403ec14aad54a54409691d16451dd8788dc21e0452cd08afcaa72",
+      "bytes": 8023
+    },
+    {
+      "path": "src/engine/sourceImplicitTimeline.ts",
+      "sha256": "05dbd56d30e7e697990d20325e44f48d78ff93478660bf8bd1831fecf2103765",
+      "bytes": 2550
+    },
+    {
+      "path": "src/engine/sourceNativeClient.ts",
+      "sha256": "1dfd3e7f3c58d5803654d5991f2b216f145491af018677b63ccada996a6ec28a",
+      "bytes": 34000
+    },
+    {
+      "path": "src/engine/temporal.ts",
+      "sha256": "97ded49518d105fe1e9c1d411741b38cf5ed2a72ad6a7afb347c31019a953fa8",
+      "bytes": 36757
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "ff052d42feaa4992f2285cc7e0720d1ee128fb775df720ab6b8dd5c65f5ec757",
+      "bytes": 36777
+    }
+  ],
+  "earlierAttempts": {
+    "app-r1": "Runtime reached formula case and failed the obsolete always-visible-glyph assumption; retained unchanged.",
+    "app-r2": "Runtime workflows passed, but generic artifact filenames overwrote natural-case PNG/JPEG during formulas case. Not the final retained-file evidence.",
+    "app-r3": "Distinct case filenames and final artifact hash checks passed.",
+    "producer-consumers": "Legacy mocked intermediate publication test updated to atomic source-mesh ownership; an overly strict complete-object assertion corrected against partial native label fixture."
+  }
+}

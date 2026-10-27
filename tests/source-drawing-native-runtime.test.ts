@@ -26,6 +26,29 @@ describe.skipIf(process.platform!=='darwin')('actual retained CGL drawing frame'
   expect(await send({...base,operation:{kind:'release',resource,expectedIndex:6}})).toMatchObject({ok:true});expect(s.retainedResourceCount).toBe(0);return{legacy,finished};
  }finally{if(!transferred){expect(await s.close()).toMatchObject({ok:true});expect(s.processCount).toBe(0);}}}
  it.each([0,4])('matches complete ordered double-sided transparent rendering at samples=%i',async samples=>{await run(frame(samples));});
+ it.each([0,4])('v16 keeps physical viewport independent from allocation and identical across bounded passes at samples=%i',async samples=>{
+  for(const viewport of [[-7,5,93,69],[4,3,0,23],[0,0,31,0]] as const){const f=frame(samples);f.viewport=viewport;const r=await run(f);if(!('finished'in r)||!r.finished)throw Error();expect(r.finished.value.pixels.length).toBe(64+31*23*4);}
+ });
+ it('physically crops a larger viewport without changing clip coordinates and clears zero-sized viewports',async()=>{
+  const s=await createSourceRendererService(backend);let sequence=0;
+  const send=(f:SourceDrawingFrame)=>s.render(bytes({...f,sequence:++sequence}));
+  try{
+   const f=frame(),command=f.drawing.commands[0];command.instances=1;command.attributes=command.attributes.filter(a=>!a.divisor);command.passes=['both'];command.vertexShader='in vec2 position;out vec2 uv;void main(){gl_Position=vec4(position,0,1);uv=position*.5+.5;}';command.fragmentShader='in vec2 uv;out vec4 color;void main(){color=vec4(uv,0.5,1);}';
+   const large=await send({...f,width:62,height:46}),cropped=await send({...f,viewport:[-3,-4,62,46]});expect(large).toMatchObject({ok:true});expect(cropped).toMatchObject({ok:true});
+   const expected=Buffer.alloc(31*23*4);for(let y=0;y<23;y++)Buffer.from(large.value.pixels).copy(expected,y*31*4,((y+4)*62+3)*4,((y+4)*62+34)*4);expect(Buffer.from(cropped.value.pixels)).toEqual(expected);
+   const empty=await send({...f,drawing:{...f.drawing,commands:[]}});expect(empty).toMatchObject({ok:true});
+   for(const viewport of [[0,0,0,23],[0,0,31,0]] as const){const zero=await send({...f,viewport});expect(zero).toMatchObject({ok:true});expect(Buffer.from(zero.value.pixels)).toEqual(Buffer.from(empty.value.pixels));}
+  }finally{expect(await s.close()).toMatchObject({ok:true});expect(s.processCount).toBe(0);}
+ });
+ it('retains a v16 transaction after a changed viewport and releases the original owner',async()=>{
+  const f=frame();f.viewport=[0,0,62,46];const r=await run(f,q=>{if(q.operation.kind==='append'&&q.operation.chunk.ordinal===1)q.viewport=[0,0,63,46];});if(!('failed'in r)||!r.s||!r.send||!r.base)throw Error('Expected viewport identity failure');const {s,send,base}=r;try{expect(r.failed).toMatchObject({ok:false,error:{kind:'ownership'}});expect(s.retainedResourceCount).toBe(1);expect(await send({...base,operation:{kind:'release',resource,expectedIndex:1}})).toMatchObject({ok:true});expect(s.retainedResourceCount).toBe(0);}finally{await s.close();expect(s.processCount).toBe(0);}
+ });
+ it('rejects a viewport beyond hardware dimensions without losing provisional cleanup custody',async()=>{
+  const s=await createSourceRendererService(backend),{drawing:_,...base}=frame();try{
+   const r=await s.render(bytes({...base,viewport:[0,0,2147483647,1],operation:{kind:'begin',resource,chunkCount:0,maxChunkBytes:1024,metadataBytes:0,schedule:[]}}));expect(r).toMatchObject({ok:false,error:{kind:'unsupported'}});expect(s.retainedResourceCount).toBe(1);
+   expect(await s.render(bytes({...base,sequence:2,viewport:[0,0,2147483647,1],operation:{kind:'release',resource,expectedIndex:0}}))).toMatchObject({ok:true});expect(s.retainedResourceCount).toBe(0);
+  }finally{await s.close();expect(s.processCount).toBe(0);}
+ });
  it.each([0,4])('transfers exact 4 MiB blocks with unchanged transparent pass order at samples=%i',async samples=>{
   const f=frame(samples),d=f.drawing.commands[0],a=d.attributes[0];
   const nested=()=>bytes({...f,width:1,height:1,samples:0,clear:[0,0,0,0],completion:undefined,drawing:{...f.drawing,commands:[{...d,passes:['back'],instances:1,attributes:d.attributes.map(a=>a.divisor?{...a,values:a.values.slice(0,3)}:a)}]}});

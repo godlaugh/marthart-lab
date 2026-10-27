@@ -1,3 +1,5 @@
+import {isSourceDrawingViewport,type SourceDrawingViewport} from './sourceDrawingViewport';
+export type {SourceDrawingViewport} from './sourceDrawingViewport';
 import {sourceBouncingRetainedBytes,sourceBouncingProgramBytes,type SourceBouncingOperation} from './sourceBouncingOperation';
 import type {SourceDrawingSnapshot,SourceDrawingResult,SourceDrawingUniform} from './sourceDrawingSnapshot';
 
@@ -12,6 +14,8 @@ export interface SourceDrawingFrame {
   samples:number;
   /** Original offscreen completion can restore opaque background alpha. */
   completion?:'opaque-alpha';
+  /** Omission preserves the full-target viewport used by legacy frames. */
+  viewport?:SourceDrawingViewport;
   clear:readonly [number,number,number,number];
   drawing:SourceDrawingSnapshot;
   bouncing?:SourceBouncingOperation;
@@ -42,6 +46,8 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     demand(uint(frame.samples)&&frame.samples<=0x7fffffff,'帧采样数必须为非负 GLsizei');
     demand(frame.clear.length===4&&frame.clear.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1),'帧背景必须为四个有限的 0 至 1 分量');
     demand(frame.completion===undefined||frame.completion==='opaque-alpha'&&frame.clear[3]===1,'帧完成阶段的 alpha 策略无效');
+    demand(frame.viewport===undefined||isSourceDrawingViewport(frame.viewport),'帧物理 viewport 必须为 int32 原点和非负 GLsizei 尺寸');
+    demand(!frame.bouncing||frame.viewport===undefined,'保留状态帧不支持通用 viewport');
     demand(frame.drawing.model==='source-drawing-v1','未知绘制快照版本');
     const maximumAnisotropy=frame.drawing.textures.some(t=>t.anisotropy==='maximum');
     const operation=frame.bouncing;
@@ -79,8 +85,9 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
       let bytes=strings.get(s);if(!bytes){bytes=encoder.encode(s);demand(new TextDecoder('utf-8',{fatal:true}).decode(bytes)===s,'帧字符串不是有效 Unicode');strings.set(s,bytes);}raw(bytes);
     };
     const emit=()=>{
-      u32(SOURCE_FRAME_MAGIC);u32(operation?4:maximumAnisotropy?12:3);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
+      u32(SOURCE_FRAME_MAGIC);u32(frame.viewport?16:operation?4:maximumAnisotropy?12:3);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
       frame.clear.forEach(f32);u32(frame.drawing.textures.length);u32(frame.drawing.commands.length);u32(frame.samples);u32(frame.completion==='opaque-alpha'?1:0);
+      if(frame.viewport){u32(0);frame.viewport.forEach(n=>u32(n>>>0));}
       if(operation){
         u32({create:1,upload:2,draw:3,release:4}[operation.kind]);raw(Uint8Array.from(operation.resource.match(/../g)!,v=>parseInt(v,16)));
         if(operation.kind!=='release'){u32(operation.particleCount);u32(operation.programBytes);}
@@ -122,7 +129,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     const frameStorage=frame.width*frame.height*(12+8*frame.samples);
     demand(Number.isSafeInteger(frame.drawing.admittedBytes)&&frame.drawing.admittedBytes>=0,'快照容量信息无效');
     if(operation&&size*6+frameStorage+nativeBytes+uploadBytes+retainedBytes+frame.drawing.admittedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','状态、调用方种子、协议副本与输出超过 256 MiB 预算');
-    if(size*(maximumAnisotropy?6:4)+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage+retainedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
+    if((frame.viewport?retainedBytes:0)+size*(maximumAnisotropy||frame.viewport?6:4)+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage+retainedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
     packet=new Uint8Array(size);view=new DataView(packet.buffer);offset=0;emit();
     demand(offset===size,'编码期间帧结构发生变化');check();return{ok:true,value:packet};
   }catch(error){if(error instanceof FrameFailure)return{ok:false,error:{kind:error.kind,path:['frame'],reason:error.message}};throw error;}
