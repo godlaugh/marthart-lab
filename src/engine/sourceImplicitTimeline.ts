@@ -11,7 +11,7 @@ export function createSourceImplicitTimeline(scene:SceneDocument,fps:number,isCa
  const authored=Object.freeze({...scene.parameters});let values={...authored},used=0,display=new SourceImplicitDisplayOwner();
  const reserve=(units:number)=>{if(isCancelled?.())throw new DOMException('隐式参数已取消','AbortError');used+=units;if(!Number.isSafeInteger(used)||used>20_000_000)throw Error('隐式参数单次操作超过本地 2000 万工作单位预算');};
  const queue=new OrdinarySourceCameraTimelineSession(initial,scene.timeline.tracks,fps,{particleActions:'implicit',isCancelled,createParticles:()=>{
-  values={...authored};display=new SourceImplicitDisplayOwner();
+  values={...authored};display.mesh.reset();display=new SourceImplicitDisplayOwner();
   const runtime=new SourceOscillatingParameterRuntime({implicit:{hasParameter:name=>Object.hasOwn(values,name)},read:name=>values[name]??0,write:(name,value)=>{if(Object.hasOwn(values,name)){display.markDirty();values[name]=value;}},reserve});
   const producer:OrdinarySourceCameraParticles={
    bind:()=>({kind:'ignored',reason:'原版隐式场景不提供粒子跟踪目标'}),
@@ -20,9 +20,9 @@ export function createSourceImplicitTimeline(scene:SceneDocument,fps:number,isCa
    displayFrame:(_index,final)=>{if(!final)display.consumeHistoricalDisplay();},
   };return producer;
  }});
- return{queue,parameters:()=>({...values}),get display(){return display;},beginOperation:()=>{used=0;}};
+ return{queue,parameters:()=>({...values}),get display(){return display;},beginOperation:()=>{used=0;},reset:()=>{display.mesh.reset();queue.reset();}};
 }
 export function replaySourceImplicitTimeline(scene:SceneDocument,time:number,isCancelled?:()=>boolean){
  const owner=createSourceImplicitTimeline(scene,scene.timeline.fps,isCancelled);
- try{const frame=owner.queue.evaluate(time);return{frame,parameters:owner.parameters()};}finally{owner.queue.reset();}
+ try{const frame=owner.queue.evaluate(time);return{frame,parameters:owner.parameters()};}finally{owner.reset();}
 }

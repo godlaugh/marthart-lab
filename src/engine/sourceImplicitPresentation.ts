@@ -15,6 +15,11 @@ export interface SourceImplicitCommonPresentation {
 }
 export interface SourceImplicitCpuPresentation extends SourceImplicitCommonPresentation {readonly model:typeof SOURCE_IMPLICIT_PRESENTATION;}
 export type SourceImplicitPresentation=SourceImplicitCpuPresentation|SourceImplicitGpuPresentation;
+export interface SourceImplicitSlices {positions:Float32Array;axes:number[];samples:number;estimatedPeakWorkingBytes:number;}
+export interface SourceImplicitGeometryReuse {
+ admitWorking:(bytes:number)=>void;
+ slices:(retainedBytes:number,build:()=>SourceImplicitSlices)=>SourceImplicitSlices;
+}
 const F=Math.fround;
 // ImplicitSurface.<clinit> MS_SEGMENTS; edges run around the square 0→1→2→3→0.
 const SEGMENTS=[[],[3,0],[0,1],[3,1],[1,2],[3,2,0,1],[0,2],[3,2],[2,3],[0,2],[0,3,1,2],[1,2],[1,3],[0,1],[3,0],[]] as const;
@@ -35,15 +40,15 @@ export function sourceImplicitHeightColor(palette:readonly number[],z:number,min
 }
 /** Source contour lines are independently sampled two-axis slices, not mesh
  * triangle edges. Keep their order and endpoints even when two slices meet. */
-export function sourceImplicitSliceLines(job:ImplicitJob,context:GenerateContext,retainedBytes=0,prepared=prepareSourceImplicitField(job)){
+export function sourceImplicitSliceLines(job:ImplicitJob,context:GenerateContext,retainedBytes=0,prepared=prepareSourceImplicitField(job),admitWorking?:(bytes:number)=>void):SourceImplicitSlices{
  const {dimensions,min,max,scale,iso,coordinate}=prepared,axes=sourceImplicitSliceAxes(min,max,scale);
  const chunks:Float32Array[]=[],CHUNK=12288;let length=0,samples=0,fieldBytes=0,peak=retainedBytes;
  const check=()=>{if(context.isCancelled?.())throw new DOMException('源隐式切片已取消','AbortError');};
- const append=(p:readonly number[])=>{if(length%CHUNK===0){const next=(chunks.length+1)*CHUNK*4;if(retainedBytes+next*4+fieldBytes>IMPLICIT_WORK_BYTES||retainedBytes+next*7/3>IMPLICIT_OUTPUT_BYTES)throw Error('源隐式切片与网格缓冲超过 256 MiB 预算');peak=Math.max(peak,retainedBytes+next*4+fieldBytes);chunks.push(new Float32Array(CHUNK));}for(const x of p){if(!Number.isFinite(x))throw Error('源隐式切片坐标超出有限 Float32 范围');chunks[Math.floor(length/CHUNK)][length%CHUNK]=x;length++;}};
+ const append=(p:readonly number[])=>{if(length%CHUNK===0){const next=(chunks.length+1)*CHUNK*4;if(retainedBytes+next*4+fieldBytes>IMPLICIT_WORK_BYTES||retainedBytes+next*7/3>IMPLICIT_OUTPUT_BYTES)throw Error('源隐式切片与网格缓冲超过 256 MiB 预算');admitWorking?.(retainedBytes+next*4+fieldBytes);peak=Math.max(peak,retainedBytes+next*4+fieldBytes);chunks.push(new Float32Array(CHUNK));}for(const x of p){if(!Number.isFinite(x))throw Error('源隐式切片坐标超出有限 Float32 范围');chunks[Math.floor(length/CHUNK)][length%CHUNK]=x;length++;}};
  for(const axis of axes){
   const [a,b]=[0,1,2].filter(i=>i!==axis),stride=dimensions[b]+1;fieldBytes=(dimensions[a]+1)*stride*4;
   if(retainedBytes+chunks.length*CHUNK*16+fieldBytes>IMPLICIT_WORK_BYTES)throw Error('源隐式切片场缓冲超过 256 MiB 预算');
-  peak=Math.max(peak,retainedBytes+chunks.length*CHUNK*16+fieldBytes);const plane=new Float32Array(fieldBytes/4);
+  admitWorking?.(retainedBytes+chunks.length*CHUNK*16+fieldBytes);peak=Math.max(peak,retainedBytes+chunks.length*CHUNK*16+fieldBytes);const plane=new Float32Array(fieldBytes/4);
   for(let slice=0;slice<=dimensions[axis];slice++){
    check();const fixed=coordinate(axis,slice),point=[0,0,0];point[axis]=fixed;
    for(let i=0;i<=dimensions[a];i++){check();point[a]=coordinate(a,i);for(let j=0;j<=dimensions[b];j++){point[b]=coordinate(b,j);const value=prepared.evaluate(point[0],point[1],point[2]);plane[i*stride+j]=Number.isFinite(value)?value:iso===0?1:F(iso*10);samples++;}}
@@ -58,7 +63,7 @@ export function sourceImplicitSliceLines(job:ImplicitJob,context:GenerateContext
 }
 /** One generation owner resolves fill/line presence and color. Consumers never
  * reinterpret current inspector settings or replace slice lines by topology. */
-export function bindSourceImplicitPresentation(output:GeometryOutput&{warnings?:string[]},job:ImplicitJob,context:GenerateContext,prepared?:SourceImplicitField):void{
+export function bindSourceImplicitPresentation(output:GeometryOutput&{warnings?:string[]},job:ImplicitJob,context:GenerateContext,prepared?:SourceImplicitField,reuse?:SourceImplicitGeometryReuse):void{
  const s=job.scene.settings;if(s.implicitPresentationVersion===undefined&&s.implicitSourceVersion===undefined)return;
  if(!usesSourceImplicitConfiguration(job.scene))throw Error('未知源隐式曲面显示版本');
  const route=sourceImplicitMeshRoute(job.scene);if(!route)return;
@@ -76,6 +81,7 @@ export function bindSourceImplicitPresentation(output:GeometryOutput&{warnings?:
  const field=prepared??prepareSourceImplicitField(job),zScale=field.scale[2],zOffset=field.offset[2],low=F(field.min[2]*zScale),high=F(field.max[2]*zScale),fillLow=F(low+zOffset),fillSpan=F(F(high+zOffset)-fillLow)||1,wireSpan=F(high-low)||1;
  const retained=output.positions.byteLength+(output.sourceImplicitMesh?.normals.byteLength??0)+(output.indices?.byteLength??0)+output.positions.length/3*16+(route.presentation==='gpu-material'?palette.length*4:0);
  if(retained>IMPLICIT_OUTPUT_BYTES||retained+output.positions.length/3*32>IMPLICIT_WORK_BYTES)throw Error('源隐式曲面显示缓冲超过容量');
+ reuse?.admitWorking(retained+output.positions.length/3*32);
  const fillColors=new Float32Array(output.positions.length/3*4);
  for(let i=0;i<output.positions.length;i+=3){if((i&4095)===0)check();const packed=sourceImplicitHeightColor(palette,output.positions[i+2],fillLow,fillSpan),alpha=Math.trunc(F(F(F((packed>>>24)/255)*opacity)*255));writeSourcePackedColor((packed&0xffffff)|(alpha<<24),fillColors,i/3*4);}
  // CPU immediate vertices and the GPU retained shape share this original
@@ -83,7 +89,7 @@ export function bindSourceImplicitPresentation(output:GeometryOutput&{warnings?:
  // presentation fact; contour slices retain their shared source owner.
  const facts:SourceImplicitCommonPresentation={fill,fillColors,lineWeight,referencePixelDensity:density,display:{transparentBackground:!!s.transparentBackground,showGrid:!!s.showGrid,showAxes:!!s.showAxes}};
  if(s.meshWireframe&&(!fill||opacity<F(.999))){
-  const wire=sourceImplicitSliceLines(job,context,retained,field),rgb=new Float32Array(wire.positions.length),alphas=new Float32Array(wire.positions.length/3),rgba=new Float32Array(4);
+  const build=()=>sourceImplicitSliceLines(job,context,retained,field,reuse?.admitWorking),wire=reuse?reuse.slices(retained,build):build(),rgb=new Float32Array(wire.positions.length),alphas=new Float32Array(wire.positions.length/3),rgba=new Float32Array(4);
   for(let i=0;i<rgb.length;i+=3){if((i&4095)===0)check();writeSourcePackedColor(sourceImplicitHeightColor(palette,wire.positions[i+2],low,wireSpan),rgba,0);rgb.set(rgba.subarray(0,3),i);alphas[i/3]=rgba[3];}
   (facts as {wire:SourceImplicitCommonPresentation['wire']}).wire={...wire,colors:rgb,alphas};
   if(output.implicit)output.implicit.estimatedPeakWorkingBytes=Math.max(output.implicit.estimatedPeakWorkingBytes,wire.estimatedPeakWorkingBytes);

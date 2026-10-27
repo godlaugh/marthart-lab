@@ -14,7 +14,8 @@ if(!preview&&values['glyph-backend'])throw Error('--glyph-backend packaging requ
 if(preview&&(process.platform!=='darwin'||process.arch!=='arm64'))throw Error('2.0 native preview packaging currently requires this Apple Silicon Mac');
 if(preview&&(!glyphConfiguration||!path.isAbsolute(glyphConfiguration)))throw Error('2.0 packaging requires an absolute --glyph-backend configuration (or MATHART_GLYPH_BACKEND) selecting an independent JDK and official JLaTeXMath JAR');
 if(preview)await readFile(glyphConfiguration);
-const productName=preview?'MathArt Lab 2 Preview':'MathArt Lab',version=preview?'2.0.0-preview.17':manifest.version;
+const productName=preview?'MathArt Lab 2 Preview':'MathArt Lab',version=preview?'2.0.0-preview.18':manifest.version;
+const appBundleId=preview?'local.mathart.lab.preview2':'local.mathart.lab';
 async function run(command,args,options={}){await new Promise((resolve,reject)=>{const child=spawn(command,args,{cwd:root,stdio:'inherit',...options});child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(new Error(`${command} failed (${code})`)));});}
 await run('npm',['run',preview?'build:v2':'build'],preview?{env:{...process.env,VITE_SOURCE_RENDERER:'native'}}:{});
 await mkdir(path.join(root,'.cache'),{recursive:true});
@@ -42,12 +43,12 @@ try{
  // The helper is already signed and its digest is pinned in the resource manifest.
  // Preserve that seal while signing Electron's nested code and the outer bundle.
  const osxSign=preview?{identity:'-',identityValidation:false,preEmbedProvisioningProfile:false,preAutoEntitlements:false,optionsForFile:()=>({entitlements:path.join(resources,'preview-entitlements.plist'),hardenedRuntime:false,timestamp:'none'}),ignore:file=>file.endsWith('/Contents/Resources/source-renderer/source-cgl-renderer')}:undefined;
- const apps=await packager({dir:staging,out,name:productName,platform:process.platform,arch:process.arch,electronVersion:manifest.devDependencies.electron,asar:true,prune:false,overwrite:true,extraResource,osxSign,appBundleId:preview?'local.mathart.lab.preview2':'local.mathart.lab',appCategoryType:'public.app-category.graphics-design'});
+ const apps=await packager({dir:staging,out,name:productName,platform:process.platform,arch:process.arch,electronVersion:manifest.devDependencies.electron,asar:true,prune:false,overwrite:true,extraResource,osxSign,appBundleId,appCategoryType:'public.app-category.graphics-design'});
  if(preview)for(const directory of apps){
   const native=path.join(directory,productName+'.app','Contents','Resources','source-renderer'),sealed=JSON.parse(await readFile(path.join(native,'manifest.json'),'utf8'));
   if(createHash('sha256').update(await readFile(path.join(native,'source-cgl-renderer'))).digest('hex')!==sealed.sha256)throw new Error('Packaged native helper changed after manifest sealing');
  }
- await writeFile(path.join(out,'build.json'),JSON.stringify({createdAt:new Date().toISOString(),version,productName,sourceRenderer:preview?'bundled-native':'webgl',formulaGlyph:preview?'bundled-java':'unconfigured',electronVersion:manifest.devDependencies.electron,platform:process.platform,arch:process.arch,apps},null,2)+'\n');
+ await writeFile(path.join(out,'build.json'),JSON.stringify({createdAt:new Date().toISOString(),version,productName,appBundleId,sourceRenderer:preview?'bundled-native':'webgl',formulaGlyph:preview?'bundled-java':'unconfigured',electronVersion:manifest.devDependencies.electron,platform:process.platform,arch:process.arch,apps},null,2)+'\n');
  for(const app of apps)console.log(`Desktop package: ${app}`);
 }catch(error){failure=error;}
 const cleanup=await Promise.allSettled([staging,resources].filter(Boolean).map(async directory=>{try{await rm(directory,{recursive:true,force:true});}catch(error){throw new Error(`Build temporary directory retained: ${directory}`,{cause:error});}}));

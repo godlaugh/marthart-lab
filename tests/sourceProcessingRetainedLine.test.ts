@@ -4,11 +4,7 @@ import * as THREE from 'three';
 import fixture from './fixtures/source-implicit-presentation/native.json';
 import oracle from './fixtures/source-implicit-presentation/retained-lines.json';
 import {parseLegacyScene} from '../src/engine/legacyImport';
-import {prepareImplicitJob} from '../src/engine/implicitSurface';
-import {transformFor} from '../src/scenes/geometry';
-import {sourceImplicitSliceLines,sourceImplicitHeightColor} from '../src/engine/sourceImplicitPresentation';
-import {sourceConfigPackedColor} from '../src/engine/sourceConfigColor';
-import {writeSourcePackedColor} from '../src/engine/sourceProcessingGeometry';
+import {generateImplicit} from '../src/scenes/geometry';
 import {createSourceProcessingLines} from '../src/engine/sourceProcessingLineRenderer';
 import {sourceProcessingRetainedLineInstances} from '../src/engine/sourceProcessingRetainedLine';
 import {prepareSourceCamera} from '../src/engine/sourceCamera';
@@ -20,10 +16,12 @@ const matrix=(name:string)=>{const columnMajor=Float32Array.from(uniform(name));
 const plan={...camera.value.plan,modelView:{...camera.value.plan.modelView,...matrix('modelviewMatrix')},projection:{...camera.value.plan.projection,...matrix('projectionMatrix')}};
 describe('original retained PShape LINES renderer boundary',()=>{
  it('matches all original vertices, directions, colors and cache-normalized triangle indices',()=>{
-  const scene=parseLegacyScene(JSON.stringify(fixture.cases[0].input)).scene,context={time:0,width:500,height:600,quality:'export' as const},job=prepareImplicitJob(scene,context,transformFor(scene.settings)),wire=sourceImplicitSliceLines(job,context);
-  const rgb=new Float32Array(wire.positions.length),alphas=new Float32Array(wire.positions.length/3),rgba=new Float32Array(4),palette=scene.palette.stops.map(sourceConfigPackedColor);
-  for(let i=0;i<rgb.length;i+=3){writeSourcePackedColor(sourceImplicitHeightColor(palette,wire.positions[i+2],-120,240),rgba,0);rgb.set(rgba.subarray(0,3),i);alphas[i/3]=rgba[3];}
-  const mesh=createSourceProcessingLines({mode:'retained',positions:wire.positions,lineWidth:oracle.strokeWeight,color:{kind:'vertices',rgb,alphas}},plan),g=mesh.geometry as THREE.InstancedBufferGeometry;
+  const scene=parseLegacyScene(JSON.stringify(fixture.cases[0].input)).scene,context={time:0,width:500,height:600,quality:'export' as const},output=generateImplicit(scene,context);
+  if(output.type!=='geometry'||!output.sourceImplicitPresentation?.wire)throw Error('source Implicit retained wire required');
+  // The generation owner resolves the source palette and slice height colors;
+  // the local editor palette is not the imported source color input.
+  const wire=output.sourceImplicitPresentation.wire;
+  const mesh=createSourceProcessingLines({mode:'retained',positions:wire.positions,lineWidth:oracle.strokeWeight,color:{kind:'vertices',rgb:wire.colors,alphas:wire.alphas}},plan),g=mesh.geometry as THREE.InstancedBufferGeometry;
   const positions=new Float32Array(oracle.vertices*4),directions=new Float32Array(oracle.vertices*4),colors=new Float32Array(oracle.vertices*4),indices=new Uint32Array(oracle.indices);
   for(let pair=0;pair<g.instanceCount;pair++){
    for(let v=0;v<4;v++)for(let c=0;c<4;c++){

@@ -1,6 +1,7 @@
 import {prepareSourceImplicitField} from './sourceImplicitField';
 import {generateSourceImplicitMesh} from './sourceImplicitMesh';
 import {bindSourceImplicitPresentation} from './sourceImplicitPresentation';
+import type {SourceImplicitMeshOwner} from './sourceImplicitMeshOwner';
 import {sourceImplicitMeshRoute,usesSourceImplicitMesh} from './sourceImplicitIdentity';
 import {compileReal,compileRealWithFacts,numberSetting,type Scope} from './expression';
 import {geometryColorModel,paletteDomainColor} from './geometryColor';
@@ -250,10 +251,10 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
  facts.estimatedPeakWorkingBytes=Math.max(budget.peak,previous?.peak??0);
  return{type:'geometry',dimension:3,topology:job.mode==='points'?'points':job.mode==='wireframe'?'segments':'mesh',positions:outPositions,colors,...(outIndices?{indices:outIndices}:{}),...(meshEdges?{meshEdges}:{}),backend:useGpu?'webgl2':'cpu',implicit:facts,stats:{samples:facts.latticeSamples,generated:used,invalid,elapsedMs:performance.now()-started},...(warnings.length?{warnings}:{})};
 }
-export function generateImplicitSurface(scene:SceneDocument,context:GenerateContext,transform:Transform):SceneOutput {
+export function generateImplicitSurface(scene:SceneDocument,context:GenerateContext,transform:Transform,sourceMesh?:SourceImplicitMeshOwner):SceneOutput {
  const started=performance.now(),job=prepareImplicitJob(scene,context,transform);
  if(context.isCancelled?.())return{type:'geometry',dimension:3,topology:job.mode==='points'?'points':job.mode==='wireframe'?'segments':'mesh',positions:new Float32Array(0),colors:new Float32Array(0),...(job.mode!=='points'?{indices:new Uint32Array(0)}:{}),...(job.overlay?{meshEdges:new Uint32Array(0)}:{}),backend:'cpu',implicit:emptyFacts(job),stats:{samples:0,generated:0,invalid:0},warnings:['场采样已取消，未进行等值面剖分。']};
- if(usesSourceImplicitMesh(scene)){const field=prepareSourceImplicitField(job),output=generateSourceImplicitMesh(job,field,context);bindSourceImplicitPresentation(output,job,context,field);output.stats.elapsedMs=performance.now()-started;return output;}
+ if(usesSourceImplicitMesh(scene)){const field=prepareSourceImplicitField(job);if(sourceMesh)return sourceMesh.generate(job,field,context);const output=generateSourceImplicitMesh(job,field,context);bindSourceImplicitPresentation(output,job,context,field);output.stats.elapsedMs=performance.now()-started;return output;}
  const gpu=job.requestedBackend==='webgl2'||job.requestedBackend==='auto'&&job.latticeSamples>=4096;
  let output:SceneOutput;try{output=extract(job,context,gpu,gpu?['GPU 格点逐点以 CPU 双精度核验分类，根细化和网格提取使用 CPU；此质量路径不保证加速。']:[]);}catch(error){if(!(error instanceof GpuRetry))throw error;cancelled(context);output=extract(job,context,false,[`GPU 等值面回退 CPU：${error.message}`,`工作统计包括已完成的 GPU 尝试（${error.work.latticeSamples} 个格点、${error.work.latticeValidationSamples} 次 CPU 分类核验、${error.work.rootEvaluations} 次根求值）和 CPU 重放；实际工作可超过请求网格。`],error);}if(output.type==='geometry')bindSourceImplicitPresentation(output,job,context);output.stats.elapsedMs=performance.now()-started;return output;
 }

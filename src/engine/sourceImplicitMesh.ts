@@ -26,11 +26,12 @@ export function sourceImplicitMeshAllocation(samples:number,coordinateCount:numb
 /** Observed original CPU Marching Cubes, not the local certified-root MT path.
  * Tables, F32 operations, corner/triangle order and normals are validated by
  * complete original Mesh arrays in two independent native runs. */
-export function generateSourceImplicitMesh(job:ImplicitJob,source:SourceImplicitField,context:GenerateContext):Extract<SceneOutput,{type:'geometry'}>{
+export function generateSourceImplicitMesh(job:ImplicitJob,source:SourceImplicitField,context:GenerateContext,admitWorking?:(bytes:number)=>void):Extract<SceneOutput,{type:'geometry'}>{
  const started=performance.now(),n=source.dimensions,{min,step,iso}=source;
  const check=()=>{if(context.isCancelled?.())throw new DOMException('源隐式 MC 已取消','AbortError');};check();
  const coordinateCount=n.reduce((sum,v)=>sum+v+1,0),N=job.latticeSamples;
- sourceImplicitMeshAllocation(N,coordinateCount,0);
+ const allocate=(vertices:number)=>{const value=sourceImplicitMeshAllocation(N,coordinateCount,vertices);admitWorking?.(value.workingBytes);return value;};
+ allocate(0);
  const coords=n.map((v,a)=>Float32Array.from({length:v+1},(_,i)=>source.coordinate(a,i))),idx=(x:number,y:number,z:number)=>x+y*(n[0]+1)+z*(n[0]+1)*(n[1]+1);
  const field=new Float32Array(N);let q=0,invalid=0;
  for(let z=0;z<=n[2];z++)for(let y=0;y<=n[1];y++){check();for(let x=0;x<=n[0];x++){
@@ -56,8 +57,10 @@ export function generateSourceImplicitMesh(job:ImplicitJob,source:SourceImplicit
    const triangles=TRI[mask];for(let i=0;i<triangles.length&&triangles[i]!==-1;i+=3){const triangle=[crossing[triangles[i]],crossing[triangles[i+1]],crossing[triangles[i+2]]];if(triangle.some(p=>p.some(Number.isNaN)))continue;emit(triangle);}
   }}
  }
+ // No output arrays exist during counting; only the final allocation needs
+ // the caller's retained-state admission, not one callback per triangle.
  let vertices=0;visit(()=>{vertices+=3;sourceImplicitMeshAllocation(N,coordinateCount,vertices);});check();
- const allocation=sourceImplicitMeshAllocation(N,coordinateCount,vertices),positions=new Float32Array(vertices*3),normals=new Float32Array(vertices*3);let at=0,degenerates=0;
+ const allocation=allocate(vertices),positions=new Float32Array(vertices*3),normals=new Float32Array(vertices*3);let at=0,degenerates=0;
  visit(points=>{
   if(points[0].every((v,a)=>v===points[1][a])||points[1].every((v,a)=>v===points[2][a])||points[0].every((v,a)=>v===points[2][a]))degenerates++;
   for(const point of points){positions.set(source.world(point),at);normals.set(normal(point),at);at+=3;}

@@ -25,7 +25,7 @@ import {AttractorParticleSession} from '../scenes/attractorParticles';
 import {GenerationCleanupState,withGenerationCleanup} from './generationCleanup';
 import type { GenerateContext, GeometryOutput, SceneDocument, SceneOutput, ParticleCameraRequest } from '../types';
 import { definition } from '../scenes';
-import { integrateStep, prepareAttractorFrame, prepareAttractorParticles, type AttractorParticle } from '../scenes/geometry';
+import { generateImplicit,integrateStep, prepareAttractorFrame, prepareAttractorParticles, type AttractorParticle } from '../scenes/geometry';
 import { numberSetting } from './expression';
 import { paletteColor, vertexColors } from './palette';
 import { sceneAtTime,prepareParticleCamera } from './timeline';
@@ -143,7 +143,7 @@ export class TemporalGenerationSession {
       const oldest = this.frames.keys().next().value!; this.bytes -= frameBytes(this.frames.get(oldest)!); this.frames.delete(oldest);
     }
   }
-  diagnostics() { return { retainedBytes: this.bytes + this.sourceMap.diagnostics().retainedBytes + this.sourceSymmetry.diagnostics().retainedBytes + this.sourceSamila.diagnostics().retainedBytes + this.sourcePerlinGpu.diagnostics().retainedBytes + this.sourceAttractor.diagnostics().retainedBytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),sourcePerlin:this.sourcePerlin.diagnostics(),sourcePerlinGpu:this.sourcePerlinGpu.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),sourceAttractor:this.sourceAttractor.diagnostics(),iterated:this.iterated.diagnostics(),sourceSamila:this.sourceSamila.diagnostics(),sourceSymmetry:this.sourceSymmetry.diagnostics(),sourceMap:this.sourceMap.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
+  diagnostics() { return { retainedBytes: this.bytes + this.sourceImplicit.diagnostics().retainedBytes + this.sourceMap.diagnostics().retainedBytes + this.sourceSymmetry.diagnostics().retainedBytes + this.sourceSamila.diagnostics().retainedBytes + this.sourcePerlinGpu.diagnostics().retainedBytes + this.sourceAttractor.diagnostics().retainedBytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),sourcePerlin:this.sourcePerlin.diagnostics(),sourceImplicit:this.sourceImplicit.diagnostics(),sourcePerlinGpu:this.sourcePerlinGpu.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),sourceAttractor:this.sourceAttractor.diagnostics(),iterated:this.iterated.diagnostics(),sourceSamila:this.sourceSamila.diagnostics(),sourceSymmetry:this.sourceSymmetry.diagnostics(),sourceMap:this.sourceMap.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
 }
 
 /** Grid is anchored at zero; arbitrary seek time adds one final exact-time sample. */
@@ -403,7 +403,7 @@ function generateImplicitFrame(scene:SceneDocument,context:GenerateContext,evalu
       };
       // Source MC is an atomic two-pass producer. Publish only the complete
       // mesh, after its owning display transaction has attached immutable facts.
-      return bind(definition(scene.kind).generate(current,{...context,onProgress:undefined}));
+      return bind(generateImplicit(current,{...context,onProgress:undefined},evaluated.mesh));
 }
 function generationSceneInput(scene:SceneDocument,context:GenerateContext):SceneDocument{
   scene=sourcePaletteRuntimeScene(scene);

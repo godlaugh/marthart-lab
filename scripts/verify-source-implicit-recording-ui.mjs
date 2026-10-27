@@ -57,7 +57,11 @@ async function run(name){
   await method.selectOption('paramStop');await page.getByTestId('implicit-parameter-actions').waitFor();
   await method.selectOption('paramStart');const editor=page.getByTestId('implicit-parameter-actions');
   await editor.getByRole('spinbutton',{name:'Step per frame',exact:true}).first().fill('0.02');
-  await page.waitForFunction(()=>!document.querySelector('.error-card')&&window.__implicit.rows.filter(r=>r.operation==='generate').at(-1)?.output?.parameters);
+  // Editing this source action stages a draft. Record consumes the running
+  // scene, so apply the completed editor change and await its actual receipt.
+  const beforeApply=await page.evaluate(()=>window.__implicit.sequence);
+  await page.getByRole('button',{name:'Apply scene',exact:true}).click();
+  await page.waitForFunction(sequence=>!document.querySelector('.error-card')&&window.__implicit.rows.some(r=>r.operation==='generate'&&r.request.sequence>sequence&&r.output?.parameters&&r.output?.implicitControls?.applyRevision>1&&!r.output.frame.diagnostics.some(d=>d.code==='noncamera-clock')),beforeApply);
   row.parameterEditor=true;await page.screenshot({path:directory+'/parameter-editor.png'});
  }
  const open=async()=>{

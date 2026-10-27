@@ -9,6 +9,7 @@ import type {SourceRecordingOptions} from './generationProtocol';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {usesSourceImplicitMesh,sourceImplicitMeshRoute} from './sourceImplicitIdentity';
 import {sourceImplicitPrimarySize,type SourceImplicitDisplay} from './sourceImplicitDisplay';
+import type {SourceImplicitMeshOwner} from './sourceImplicitMeshOwner';
 import {prepareSourceImplicitOffscreenTarget} from './sourceImplicitViewport';
 import type {SourceImplicitPresentation} from './sourceImplicitPresentation';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,ordinarySourceViewport} from './ordinarySourceCamera';
@@ -25,7 +26,7 @@ export interface SourceImplicitRecordingFrame {
  readonly warmup:boolean;readonly complete:boolean;
 }
 type GeometryOutput=Extract<SceneOutput,{type:'geometry'}>;
-export interface SourceImplicitEvaluation {readonly frame:OrdinarySourceCameraFrame;readonly parameters:Record<string,number>;readonly display?:SourceImplicitDisplay;}
+export interface SourceImplicitEvaluation {readonly frame:OrdinarySourceCameraFrame;readonly parameters:Record<string,number>;readonly display?:SourceImplicitDisplay;readonly mesh:SourceImplicitMeshOwner;}
 type Fixed={scene:SceneDocument;numerical:ReturnType<typeof createSourceImplicitTimeline>};
 type FixedRenderer=(scene:SceneDocument,palette:ImplicitPaletteFacts|undefined,evaluated:SourceImplicitEvaluation)=>GeometryOutput;
 type Primary={presentationModel:SourceImplicitPresentation['model'];scene:SceneDocument;context:GenerationInput;anchor:SceneDocument;input:GenerationInput};
@@ -41,16 +42,24 @@ export class SourceImplicitRecordingSession {
  private primary?:Primary;private recording?:Recording;private handoff?:Recording;private continuation?:Recording;private busy=false;private cancel?:()=>boolean;
  private control?:ImplicitPaletteControlOwner;
  private fixed?:Fixed;
+ private numericalOwners(){return new Set([this.fixed?.numerical,this.recording?.numerical,this.handoff?.numerical,this.continuation?.numerical].filter(v=>v!==undefined));}
+ private evictMeshes(){for(const owner of this.numericalOwners())owner.display.mesh.evict();}
+ diagnostics(){const owners=[...this.numericalOwners()].map(owner=>owner.display.mesh.diagnostics());return{retainedBytes:owners.reduce((n,o)=>n+o.retainedBytes,0),meshBuilds:owners.reduce((n,o)=>n+o.meshBuilds,0),meshCacheHits:owners.reduce((n,o)=>n+o.meshCacheHits,0),sliceBuilds:owners.reduce((n,o)=>n+o.sliceBuilds,0),owners};}
  private freshFixed(scene:SceneDocument):Fixed {
+  // Preserve the previous numerical/control state until Apply succeeds, but
+  // do not carry its optional raw cache into a second owner's work budget.
+  this.evictMeshes();
   const detached=structuredClone(sourcePaletteRuntimeScene(scene));
   return{scene:detached,numerical:createSourceImplicitTimeline(detached,detached.timeline.fps,()=>this.cancel?.()??false)};
  }
  private drawFixed(fixed:Fixed,scene:SceneDocument,context:GenerateContext,palette:ImplicitPaletteFacts|undefined,render:FixedRenderer){
   fixed.numerical.beginOperation();const frame=fixed.numerical.queue.evaluate(context.time);
-  const display=sourceImplicitMeshRoute(scene)?.presentation==='gpu-material'?fixed.numerical.display.prepare(context):undefined;
-  const output=render(scene,palette,{frame,parameters:fixed.numerical.parameters(),display});check(context.isCancelled);
-  if(display){output.sourceImplicitDisplay=display;output.formulaPresentation=withSourceFormulaDrawingViewport(output.formulaPresentation!,display.viewport);}
-  return{output,display};
+  return fixed.numerical.display.transaction(()=>{
+   const display=sourceImplicitMeshRoute(scene)?.presentation==='gpu-material'?fixed.numerical.display.prepare(context):undefined;
+   const output=render(scene,palette,{frame,parameters:fixed.numerical.parameters(),display,mesh:fixed.numerical.display.mesh});check(context.isCancelled);
+   if(display){output.sourceImplicitDisplay=display;output.formulaPresentation=withSourceFormulaDrawingViewport(output.formulaPresentation!,display.viewport);}
+   return{output,display};
+  });
  }
  /** One fixed-replay instance survives repeated displays and hot palettes.
   * Backward seek is rebuilt by the existing queue's own replay boundary. */
@@ -61,15 +70,15 @@ export class SourceImplicitRecordingSession {
   try{
    const {output,display}=this.drawFixed(fixed,scene,context,context.implicitPalettePrepared,render);
    if(display)fixed.numerical.display.commit(display);
-   if(fixed!==old)old?.numerical.queue.reset();this.fixed=fixed;return output;
-  }catch(error){if(fixed!==old)fixed.numerical.queue.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
+   if(fixed!==old)old?.numerical.reset();this.fixed=fixed;return output;
+  }catch(error){if(fixed!==old)fixed.numerical.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  private validatePrimary(scene:SceneDocument,context:GenerationInput,output:GeometryOutput):void {
   if(!usesSourceImplicitMesh(scene)||!output.sourceImplicitPresentation||!output.sourceCameraFrame||context.sourceViewport?.target!=='primary'||output.sourceCameraFrame.viewport.target!=='primary')throw Error('隐式录制需要已完成的源网格主预览');
   validateFrameFormulas(output.formulaPresentation,context.sourceViewport);
  }
  private clearContinuation():void {
-  this.handoff?.queue.reset();this.continuation?.queue.reset();this.handoff=undefined;this.continuation=undefined;
+  this.handoff?.numerical.reset();this.continuation?.numerical.reset();this.handoff=undefined;this.continuation=undefined;
  }
  admitPrimary(scene:SceneDocument,context:GenerationInput,output:GeometryOutput):void {
   if(this.recording||this.busy)throw Error('隐式录制期间不能替换主预览');
@@ -99,7 +108,7 @@ export class SourceImplicitRecordingSession {
    // Every explicit Apply must pass the real producer, even if a later Apply
    // supersedes it. A batch cannot conceal invalid equations or geometry.
    for(const step of prepared.steps)if(step.kind==='apply'){
-    check(context.isCancelled);if(fixed&&fixed!==old)fixed.numerical.queue.reset();fixed=this.freshFixed(step.scene);
+    check(context.isCancelled);if(fixed&&fixed!==old)fixed.numerical.reset();fixed=this.freshFixed(step.scene);
     const candidate=this.drawFixed(fixed,step.scene,context,step.palette,(s,p,e)=>render(s,p!,e));this.validatePrimary(step.scene,context,candidate.output);
     if(step.scene===prepared.current&&step.palette===prepared.palette){output=candidate.output;display=candidate.display;}
    }
@@ -109,22 +118,23 @@ export class SourceImplicitRecordingSession {
    const anchor=structuredClone(prepared.cold),input=snapshotGenerationInput(context);
    control.commit(prepared);this.control=control;
    if(display)fixed.numerical.display.commit(display);
-   if(fixed!==old)old?.numerical.queue.reset();this.fixed=fixed;
+   if(fixed!==old)old?.numerical.reset();this.fixed=fixed;
    if(!same||resets)this.clearContinuation();
    output.implicitControls={sessionId:control.sessionId,...prepared.receipt};
    this.primary={presentationModel:output.sourceImplicitPresentation!.model,scene,context,anchor,input};return output;
-  }catch(error){if(fixed&&fixed!==old)fixed.numerical.queue.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
+  }catch(error){if(fixed&&fixed!==old)fixed.numerical.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  // These are Worker-owned object identities, not caller-provided IDs or JSON
  // equality; the anchor is copied before later requests can mutate its state.
  matchesCompletedPrimary(scene:SceneDocument,context:GenerationInput):boolean{return !this.recording&&this.primary?.scene===scene&&this.primary.context===context;}
  ownsRecording(handle:object):boolean{return this.recording?.handle===handle;}
- reset():void {this.recording?.queue.reset();this.clearContinuation();this.fixed?.numerical.queue.reset();this.fixed=undefined;this.recording=undefined;this.primary=undefined;this.control=undefined;}
+ reset():void {this.recording?.numerical.reset();this.clearContinuation();this.fixed?.numerical.reset();this.fixed=undefined;this.recording=undefined;this.primary=undefined;this.control=undefined;}
  private display(record:Recording,frame:OrdinarySourceCameraFrame,context:GenerationInput,recording:boolean,actualFrameRate:number,cancel?:()=>boolean,prepared?:PreparedImplicitPaletteControls,repeated?:SourceImplicitDisplay):GeometryOutput {
+  return record.numerical.display.transaction(()=>{
   check(cancel);const scene={...(prepared?.current??record.control?.currentScene??record.author),parameters:record.numerical.parameters(),evaluatedSourceCamera:frame};
   const display=sourceImplicitMeshRoute(scene)?.presentation==='gpu-material'?(repeated??record.numerical.display.prepare(context)):undefined;
   const palette=prepared?.palette??record.control?.currentPalette;
-  const output=generateImplicit(scene,{...context,time:frame.sceneTime,isCancelled:cancel,...(palette?{implicitPalettePrepared:palette}:{})});check(cancel);
+  const output=generateImplicit(scene,{...context,time:frame.sceneTime,isCancelled:cancel,...(palette?{implicitPalettePrepared:palette}:{})},record.numerical.display.mesh);check(cancel);
   if(output.type!=='geometry'||output.sourceImplicitPresentation?.model!==record.presentationModel)throw Error('隐式录制未生成匹配的源网格显示模型');
   output.sourceImplicitParameters={model:'implicit-registry-1.7.8',values:{...scene.parameters}};
   output.sourceCameraFrame=ordinarySourceCameraFrame(scene,context);
@@ -137,6 +147,7 @@ export class SourceImplicitRecordingSession {
   if(!recording&&context.implicitLive){const live=record.liveClock!;output.implicitLive={sessionId:context.implicitLive.sessionId,paused:live.diagnostics().paused,clockSource:live.diagnostics().clockSource,actualFrameRate,renderKind:'snapshot'};}
   if(display){output.sourceImplicitDisplay=display;output.formulaPresentation=withSourceFormulaDrawingViewport(output.formulaPresentation!,display.viewport);if(!repeated)record.numerical.display.commit(display);}
   return output;
+  });
  }
  beginRecording(scene:SceneDocument,context:GenerateContext,options:SourceRecordingOptions){
   if(this.busy||!this.matchesCompletedPrimary(scene,context))throw Error('隐式录制需要匹配的已完成主预览');
@@ -157,15 +168,16 @@ export class SourceImplicitRecordingSession {
   const size=sourceRecordingSize(options,density);
   const presentationModel=this.primary!.presentationModel,displayTarget=prepareSourceImplicitOffscreenTarget(presentationModel,size,density,primary.sourceViewport!.logicalHeight);
   const target:GenerationInput={...primary,time:0,quality:'export',width:displayTarget.width,height:displayTarget.height,...(sourceImplicitMeshRoute(author)?.presentation==='gpu-material'?{sourceImplicitPrimarySize:sourceImplicitPrimarySize(primary)}:{}),sourceViewport:{...ordinarySourceViewport(author,size.width,size.height,'offscreen',primary.sourceViewport!.logicalHeight),...displayTarget.sourceViewport}};
+  this.evictMeshes();
   const numerical=createSourceImplicitTimeline(author,fps,()=>this.cancel?.()??false),queue=numerical.queue;this.busy=true;this.cancel=context.isCancelled;
   try{
    const frame=queue.step(Math.fround(1/Math.fround(fps)),{actualFrameRate:observed});
    const record:Recording={presentationModel,handle:Object.freeze({}),author,callerAuthor,control,primary,target,clock,numerical,queue,formulas:resolveFormulaContent(author),frame,next:1,actualFrameRate:observed,cancel:context.isCancelled};
    const warmup=this.display(record,frame,target,true,observed,context.isCancelled,prepared);check(context.isCancelled);
    if(control&&prepared)control.commit(prepared);
-   this.handoff?.queue.reset();this.continuation?.queue.reset();this.fixed?.numerical.queue.reset();this.fixed=undefined;this.continuation=undefined;this.handoff=undefined;this.primary=undefined;this.recording=record;
+   this.handoff?.numerical.reset();this.continuation?.numerical.reset();this.fixed?.numerical.reset();this.fixed=undefined;this.continuation=undefined;this.handoff=undefined;this.primary=undefined;this.recording=record;
    return{handle:record.handle,scene:structuredClone(callerAuthor),context:snapshotGenerationInput(primary),clock:{...clock},warmup};
-  }catch(error){queue.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
+  }catch(error){numerical.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  nextRecordingFrame(handle:object,index:number,actualFrameRate?:number){
   const record=this.recording;
@@ -236,7 +248,7 @@ export class SourceImplicitRecordingSession {
    return record.numerical.display.transaction(()=>{
     const captureContext={...plan.captureContext,...(sourceImplicitMeshRoute(record.control?.currentScene??record.author)?.presentation==='gpu-material'?{sourceImplicitPrimarySize:sourceImplicitPrimarySize(context)}:{})};
     const capture=this.display(record,frame,captureContext,false,record.actualFrameRate);
-    const preview=this.display(record,frame,context,false,record.actualFrameRate);
+    const preview=record.numerical.display.mesh.withOutput(capture,()=>this.display(record,frame,context,false,record.actualFrameRate));
     return{scene:structuredClone(record.callerAuthor),capture,preview};
    });
   }finally{this.busy=false;}

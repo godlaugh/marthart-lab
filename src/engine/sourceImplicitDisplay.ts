@@ -1,5 +1,6 @@
 import type {GenerateContext} from '../types';
 import {parseSourceDrawingViewport,type SourceDrawingViewport} from './sourceDrawingViewport';
+import {SourceImplicitMeshOwner} from './sourceImplicitMeshOwner';
 
 /** A planned source display on one numerical Mobject. This is not a native
  * render acknowledgement. Consumers replay its viewport without consuming
@@ -51,6 +52,7 @@ export function validateSourceImplicitDisplay(value:unknown,context?:DisplayCont
 export class SourceImplicitDisplayOwner {
  readonly instance=crypto.randomUUID();
  private revision=1;private index=0;private dirty=true;
+ readonly mesh=new SourceImplicitMeshOwner(()=>this.revision);
  private pending?:SourceImplicitDisplay;
  markDirty():void {
   if(this.pending)throw Error('隐式显示准备后不能写入网格');
@@ -84,6 +86,6 @@ export class SourceImplicitDisplayOwner {
   * transaction. A failed second geometry production cannot half-consume it. */
  transaction<T>(run:()=>T):T {
   const before={revision:this.revision,index:this.index,dirty:this.dirty,pending:this.pending};
-  try{return run();}catch(error){this.revision=before.revision;this.index=before.index;this.dirty=before.dirty;this.pending=before.pending;throw error;}
+  try{return this.mesh.transaction(run);}catch(error){this.revision=before.revision;this.index=before.index;this.dirty=before.dirty;this.pending=before.pending;throw error;}
  }
 }

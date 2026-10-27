@@ -1,0 +1,606 @@
+{
+  "schemaVersion": 1,
+  "status": "bounded-source-mesh-reuse-validated-on-one-mac",
+  "date": "2026-10-27",
+  "baselineCommit": "86c8874b80ea5c4d575b248b4507ef4cbc4a452f",
+  "scope": "Same numerical owner retains bounded raw Implicit MC mesh and optional slice geometry; source CPU and GPU-material presentation. No new clock, global cache, GPU compute or source PREVIEW implementation.",
+  "documentation": "docs/source-implicit-mesh-reuse.zh-CN.md",
+  "ownerContract": {
+    "producer": "src/engine/sourceImplicitMeshOwner.ts",
+    "lifetime": "SourceImplicitDisplayOwner on the existing source numerical timeline",
+    "key": [
+      "numerical instance",
+      "meshRevision, including successful same-value parameter writes",
+      "source equation text",
+      "sorted exact parameter names/values, preserving signed zero",
+      "parsed F32 bounds/dimensions/scale/offset/iso/isoThreshold"
+    ],
+    "retained": [
+      "raw positions",
+      "raw normals",
+      "raw mathematical facts",
+      "optional slice positions"
+    ],
+    "notRetained": [
+      "completed SceneOutput",
+      "transferable publication buffers",
+      "presentation colors/material/camera/formulas"
+    ],
+    "lifecycle": [
+      "Apply/restart/reverse seek/recording reset rebuild the existing numerical owner",
+      "camera/viewport/hot palette rebind presentation without MC resampling",
+      "historical dirty consumption is distinct from actual local materialization",
+      "publication and paired capture outputs have independent ArrayBuffers",
+      "failed display pair rolls back source display state; optional capacity eviction may require rematerialization",
+      "finish retry does not advance the clock; reset clears retained raw geometry"
+    ],
+    "budget": {
+      "outputBytes": 134217728,
+      "workingBytes": 268435456,
+      "counts": "current/candidate/rollback/borrowed backing buffers deduplicated; capture first output remains charged during the second output",
+      "capacityFallback": "Evict optional cache and release strong candidates before cold retry; never reduce grid or omit output to pass admission."
+    },
+    "workFacts": "Cache hits report zero actual MC lattice/cell samples; cached slice samples are zero; complete generated geometry count remains unchanged."
+  },
+  "cpuValidation": {
+    "uniqueFiles": 13,
+    "uniquePassedTests": 147,
+    "notOneCombinedInvocation": true,
+    "files": [
+      {
+        "path": "tests/source-implicit-mesh-owner.test.ts",
+        "passed": 11
+      },
+      {
+        "path": "tests/source-implicit-display.test.ts",
+        "passed": 11
+      },
+      {
+        "path": "tests/implicit-palette-session.test.ts",
+        "passed": 8
+      },
+      {
+        "path": "tests/implicit-recording-owner.test.ts",
+        "passed": 7
+      },
+      {
+        "path": "tests/implicit-recording-worker.test.ts",
+        "passed": 25
+      },
+      {
+        "path": "tests/implicit-recording-client.test.ts",
+        "passed": 32
+      },
+      {
+        "path": "tests/implicit-palette-recording-lease.test.ts",
+        "passed": 10
+      },
+      {
+        "path": "tests/implicit-palette-generator.test.ts",
+        "passed": 9
+      },
+      {
+        "path": "tests/source-implicit-gpu-lifecycle.test.ts",
+        "passed": 15
+      },
+      {
+        "path": "tests/sourceImplicitPresentation.test.ts",
+        "passed": 8
+      },
+      {
+        "path": "tests/sourceImplicitMesh.test.ts",
+        "passed": 4
+      },
+      {
+        "path": "tests/source-implicit-viewport.test.ts",
+        "passed": 5
+      },
+      {
+        "path": "tests/sourceProcessingRetainedLine.test.ts",
+        "passed": 2
+      }
+    ],
+    "primaryRun": {
+      "files": 9,
+      "passed": 128,
+      "log": {
+        "path": ".cache/source-implicit-grid-cost-20261027/mesh-owner-tests-r2.log",
+        "sha256": "4b9f4030c6f14c8b9f0431088121c649eb47bb8ea572d66c85c6e0ad73be9060"
+      }
+    },
+    "additionalRun": {
+      "passed": 17,
+      "initialFailed": 1,
+      "log": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/producer-tests.log",
+        "sha256": "abca3ecdc539238efa4f648b31a4990d6ac1b0ae1b7259b0456c7704636d5bcd"
+      }
+    },
+    "correctedRetainedLineRun": {
+      "passed": 2,
+      "log": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/retained-line-audit/current-test.log",
+        "sha256": "2ebfd98576255681f1a0e696ecf5678361175c6ef87b087f00c489c2428bcf04"
+      }
+    },
+    "typecheck": {
+      "command": "npx tsc --noEmit",
+      "exitCode": 0,
+      "log": {
+        "path": ".cache/source-implicit-grid-cost-20261027/mesh-owner-tsc-r2.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "emptySuccessfulLog": true
+    },
+    "limits": [
+      "Capacity extremes are admission-callback tests, not maximal-grid throughput.",
+      "Worker/client unit tests do not independently establish native/GPU parity."
+    ]
+  },
+  "originalComparison": {
+    "report": {
+      "path": ".cache/source-implicit-mesh-reuse-20261027/parity-r1/report.json",
+      "sha256": "6fca6044446da57eabd2a7acc083fba79b75e78a204f67294d972c416eba27f6"
+    },
+    "status": "passed",
+    "frames": 17,
+    "dimensions": [
+      500,
+      600
+    ],
+    "grid": 12,
+    "pixelDensity": 2,
+    "completeMathDifferentChannels": 0,
+    "prebrandingArtworkDifferentChannels": 0,
+    "completeAndBoundedExactFrames": 17,
+    "sourceStable": true,
+    "referenceStable": true,
+    "remainingProcesses": 0,
+    "limits": [
+      "First two images compare constructor dirty/steady visual effects only: fixed replay has already performed its first update (.25 seconds), whereas the original reference is initially paused at time zero. Parameters, geometry and formula content are unchanged; no initial paused-clock equivalence claim.",
+      "Remaining fifteen frames require exact scene time, queue completion, parameter bits, mesh buffers and viewport. Repeated fixed-time requests represent repeated displays; retained pause/record/capture UI is verified separately.",
+      "Finite diagnostic 12³ input, 500×600 target, density two and this Mac. Other hardware, all parameter ranges, VRAM and task tokens are not measured."
+    ]
+  },
+  "equivalentCost": {
+    "summary": {
+      "path": ".cache/source-implicit-mesh-reuse-20261027/cost-summary.json",
+      "sha256": "bd61b3df200260717d302c716ea8b12557d17b97aa3de7d1ccd76d39276ce42a"
+    },
+    "matchedCases": 3,
+    "matchedPhases": 9,
+    "wholeGeometryMathRgbaFormulaPngDigestsEqual": true,
+    "sameInputScriptBackendTarget": true,
+    "cases": [
+      {
+        "id": "cpu-wireframe-70",
+        "comparison": {
+          "path": ".cache/source-implicit-mesh-reuse-20261027/comparison-cpu-wireframe-70.json",
+          "sha256": "d3a6987a0c9a2b1f8904de1fcd3188e991019de1c7f54cf0a4dc020f617059d6"
+        },
+        "coldGenerationMs": {
+          "before": 717.3999999761581,
+          "after": 786.8000000715256
+        },
+        "warmGenerationMs": {
+          "before": [
+            449.39999997615814,
+            380.2999999523163
+          ],
+          "after": [
+            17.100000023841858,
+            14.600000023841858
+          ]
+        },
+        "warmCompleteTaskMs": {
+          "before": [
+            979.8999999761581,
+            884.2999999523163
+          ],
+          "after": [
+            531,
+            534.7999999523163
+          ]
+        }
+      },
+      {
+        "id": "gpu-wireframe-70",
+        "comparison": {
+          "path": ".cache/source-implicit-mesh-reuse-20261027/comparison-gpu-wireframe-70.json",
+          "sha256": "1ad055c47959f27f89e3a0f67adf7a69e4ab92826f31486a344884e332ccc0d8"
+        },
+        "coldGenerationMs": {
+          "before": 726,
+          "after": 739.1000000238419
+        },
+        "warmGenerationMs": {
+          "before": [
+            451,
+            385.2999999523163
+          ],
+          "after": [
+            17.300000071525574,
+            25.199999928474426
+          ]
+        },
+        "warmCompleteTaskMs": {
+          "before": [
+            1142.6000000238419,
+            1049.7999999523163
+          ],
+          "after": [
+            704.9000000953674,
+            731.5
+          ]
+        }
+      },
+      {
+        "id": "gpu-wireframe-135",
+        "comparison": {
+          "path": ".cache/source-implicit-mesh-reuse-20261027/comparison-gpu-wireframe-135.json",
+          "sha256": "ab67ef524524306638ee9b2b3f4e2f5bca7cc0bc4350be975da1d38319c603a0"
+        },
+        "coldGenerationMs": {
+          "before": 2246.899999976158,
+          "after": 2261
+        },
+        "warmGenerationMs": {
+          "before": [
+            2061.600000023842,
+            2035.8999999761581
+          ],
+          "after": [
+            48.799999952316284,
+            68.10000002384186
+          ]
+        },
+        "warmCompleteTaskMs": {
+          "before": [
+            4435.5,
+            4438.899999976158
+          ],
+          "after": [
+            2540.100000023842,
+            2462.7000000476837
+          ]
+        }
+      }
+    ],
+    "limits": [
+      "One cold and two warm requests per case; cold is after module/browser setup.",
+      "No cold speedup or universal RSS reduction claim.",
+      "Family CPU/RSS actually include formula PNG and diagnostic hashes, despite stale limits text in original reports; RSS is sampled at 250ms.",
+      "GPU-labelled cases still use CPU MC fallback plus GPU material."
+    ]
+  },
+  "actualApp": {
+    "passedCasesAcrossReports": 8,
+    "reports": [
+      {
+        "mode": "CPU",
+        "report": {
+          "path": ".cache/source-implicit-mesh-reuse-20261027/app-cpu-r1/report.json",
+          "sha256": "f63755ac9b5190b3c150f33827e7ac30e21432c0e63c6b7ebf01cd86bbb231e9"
+        },
+        "overallStatus": "failed",
+        "passedCases": [
+          {
+            "name": "manual",
+            "status": "passed",
+            "recordingUpdates": 2,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true,
+            "video": {
+              "encodedFrames": 1,
+              "size": [
+                128,
+                96
+              ],
+              "fps": "4/1",
+              "independentRawReencodeDecodedRgbDifferentChannels": 0
+            }
+          },
+          {
+            "name": "warmup",
+            "status": "passed",
+            "recordingUpdates": 1,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true
+          },
+          {
+            "name": "export",
+            "status": "passed",
+            "recordingUpdates": 5,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true,
+            "video": {
+              "encodedFrames": 4,
+              "size": [
+                128,
+                96
+              ],
+              "fps": "4/1",
+              "independentRawReencodeDecodedRgbDifferentChannels": 0
+            }
+          }
+        ],
+        "sourceStable": true,
+        "cleanupErrors": [],
+        "remainingProcesses": 0
+      },
+      {
+        "mode": "CPU",
+        "report": {
+          "path": ".cache/source-implicit-mesh-reuse-20261027/app-cpu-parameters-r2/report.json",
+          "sha256": "663e1c1120874d5d24f49ab280ae2fec5ff50477c7327d72092929fd402d4bc8"
+        },
+        "overallStatus": "passed",
+        "passedCases": [
+          {
+            "name": "parameters",
+            "status": "passed",
+            "recordingUpdates": 11,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true,
+            "pngCancelRetained": true,
+            "parameterEditor": true,
+            "video": {
+              "encodedFrames": 10,
+              "size": [
+                128,
+                96
+              ],
+              "fps": "4/1",
+              "independentRawReencodeDecodedRgbDifferentChannels": 0
+            },
+            "pngDeliveries": 4
+          }
+        ],
+        "sourceStable": true,
+        "cleanupErrors": [],
+        "remainingProcesses": 0
+      },
+      {
+        "mode": "GPU",
+        "report": {
+          "path": ".cache/source-implicit-mesh-reuse-20261027/app-gpu-r1/report.json",
+          "sha256": "07f2883b1ee6710cf688a260887e7b221fc32f194bac455665e17f8f11e65a63"
+        },
+        "overallStatus": "passed",
+        "passedCases": [
+          {
+            "name": "natural",
+            "status": "passed",
+            "recordingUpdates": 5,
+            "pauseResizeResume": true,
+            "pngCancelRetained": true,
+            "editRequiresApply": true,
+            "applyRetiresContinuation": true,
+            "video": {
+              "encodedFrames": 4,
+              "size": [
+                128,
+                96
+              ],
+              "fps": "4/1",
+              "independentRawReencodeDecodedRgbDifferentChannels": 0
+            },
+            "pngDeliveries": 4,
+            "jpegSize": [
+              64,
+              48
+            ]
+          },
+          {
+            "name": "cancel",
+            "status": "passed",
+            "recordingUpdates": 2,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true,
+            "cancelRemovedEncoder": true,
+            "retryCompleted": true
+          },
+          {
+            "name": "formulas",
+            "status": "passed",
+            "recordingUpdates": 11,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true,
+            "pngCancelRetained": true,
+            "video": {
+              "encodedFrames": 10,
+              "size": [
+                128,
+                96
+              ],
+              "fps": "4/1",
+              "independentRawReencodeDecodedRgbDifferentChannels": 0
+            },
+            "pngDeliveries": 4,
+            "jpegSize": [
+              64,
+              48
+            ]
+          },
+          {
+            "name": "recovery",
+            "status": "passed",
+            "recordingUpdates": 5,
+            "pauseResizeResume": true,
+            "seekRetiresContinuation": true,
+            "video": {
+              "encodedFrames": 4,
+              "size": [
+                128,
+                96
+              ],
+              "fps": "4/1",
+              "independentRawReencodeDecodedRgbDifferentChannels": 0
+            }
+          }
+        ],
+        "sourceStable": true,
+        "cleanupErrors": [],
+        "remainingProcesses": 0
+      }
+    ],
+    "cpuFirstRunRemainsFailed": true,
+    "cpuParameterDiagnosis": {
+      "path": ".cache/source-implicit-mesh-reuse-20261027/cpu-parameter-verifier-diagnosis.json",
+      "sha256": "9e8322d900fd6f7e7bb49b0ca23bc180283ba8a021ff75e6a2e31a2f9df9923a"
+    },
+    "scope": "Public App recording/export, stop/continue, pause/resize/resume, staged editing/Apply, seek, cancellation/retry and image/video delivery. No original GUI or original MP4 equivalence claim.",
+    "videoOracle": "Decoded RGB equals an independent encode of actual raw input using the same encoder settings; not equality between lossy video and uncompressed RGBA."
+  },
+  "package": {
+    "report": {
+      "path": ".cache/source-implicit-mesh-reuse-20261027/desktop-r1/report.json",
+      "sha256": "562d28be1e566c959036de32944f957e615c98e570af053bc4b60213799685e7"
+    },
+    "buildLog": {
+      "path": ".cache/source-implicit-mesh-reuse-20261027/build-preview18.log",
+      "sha256": "fc4c4eddbcea632f816383da7a6c5a7fd818350627c99734e6c76c1295e0292a"
+    },
+    "version": "2.0.0-preview.18",
+    "buildMetadata": {
+      "path": "dist-desktop-v2/build.json",
+      "sha256": "58b0b98e5a2b4b74d4d374dde593b99755291d289d05da514ef934d5a692ba92"
+    },
+    "asarSha256": "3f52765f66b35f65a1949854eb7c7b8782a3adf072c013b1cf8a54e4b2df4d2b",
+    "nativeHelperSha256": "906ae767e12c86b2a4123a0b1e32cc8f3c92ee75c0d549d568c79ecc47619a90",
+    "rendererIdentity": "5539014f8f91aab52b9fbb56412c2cdbafbe02a9e2dd41fc6dc1f0e053c2d945",
+    "status": "passed",
+    "actualPreview": {
+      "computation": "cpu",
+      "presentationModel": "mathart-1.7.8-gpu-material-v1",
+      "vertices": 90120,
+      "nativeFrame": {
+        "version": 16,
+        "generation": 1,
+        "sequence": 1,
+        "width": 1724,
+        "height": 1128,
+        "samples": 4,
+        "viewport": [
+          0,
+          0,
+          1724,
+          1128
+        ]
+      }
+    },
+    "png": {
+      "dimensions": [
+        500,
+        600
+      ],
+      "sha256": "83db63ad4b8015776dfd816dfe4c1364efa82edf645e86e614a21612e969e358",
+      "rgbaSha256": "6ad8f77ae4fb49617920026c7be8e4c9f07f1b6476d62ed8bae2be2cc9d2dd80",
+      "nativeViewport": [
+        0,
+        0,
+        1724,
+        1128
+      ],
+      "actualEncodeDownloadHashEqual": true,
+      "actualGlyphReceipts": 1,
+      "formulaContributes": false,
+      "formulaScope": "The observed formula bounds are clipped by the actual dirty viewport; a glyph request is not a claim of visible formula pixels or independent placement parity."
+    },
+    "stable": [
+      "build",
+      "Info.plist",
+      "asar",
+      "helper",
+      "manifest",
+      "source input",
+      "verifier"
+    ],
+    "visibleWindows": 0,
+    "exitCode": 0,
+    "remainingOwnedProcesses": [],
+    "portsClosed": true,
+    "limits": [
+      "No original image comparison, recording, save/reopen or other families are claimed by this package check.",
+      "Observers copy/hash actual payloads and add scheduling cost; elapsed time is not a throughput benchmark.",
+      "Formula markers, actual glyph receipts, composition input and encoded download are bound; this is not an independent glyph-placement oracle."
+    ],
+    "startupRestoreSmoke": {
+      "report": {
+        "path": ".cache/desktop-smoke-QrndxN/report.json",
+        "sha256": "7b534cccc20909ae17b9c791ead82f9b6a5df4cbd3e37b73b4d69c2ec3e247eb"
+      },
+      "phases": [
+        {
+          "phase": "initial",
+          "status": "passed",
+          "elapsedMs": 3690,
+          "exitCode": 0,
+          "ownedProcessCount": 0,
+          "servicesClosed": true,
+          "closedPortsVerified": true
+        },
+        {
+          "phase": "restore",
+          "status": "passed",
+          "elapsedMs": 2827,
+          "exitCode": 0,
+          "ownedProcessCount": 0,
+          "servicesClosed": true,
+          "closedPortsVerified": true
+        }
+      ],
+      "scope": "Generic package startup/restore, isolation and shutdown; separate from Implicit image parity."
+    }
+  },
+  "preservedInitialFailures": [
+    {
+      "kind": "pre-existing-test-palette-owner-drift",
+      "initial": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/producer-tests.log",
+        "sha256": "abca3ecdc539238efa4f648b31a4990d6ac1b0ae1b7259b0456c7704636d5bcd"
+      },
+      "diagnosis": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/retained-line-audit/diagnosis.json",
+        "sha256": "1fffb201ea473c3bccb92491b45887d2aa95b873a3faaa1d92687ec61a756612"
+      },
+      "baseline": "Unmodified 86c8874 reproduces the same color SHA mismatch.",
+      "correction": "Test consumes actual generateImplicit wire positions/colors/alphas; original golden hashes unchanged."
+    },
+    {
+      "kind": "app-parameter-verifier-omitted-required-apply",
+      "initial": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/app-cpu-r1/report.json",
+        "sha256": "f63755ac9b5190b3c150f33827e7ac30e21432c0e63c6b7ebf01cd86bbb231e9"
+      },
+      "diagnosis": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/cpu-parameter-verifier-diagnosis.json",
+        "sha256": "9e8322d900fd6f7e7bb49b0ca23bc180283ba8a021ff75e6a2e31a2f9df9923a"
+      },
+      "correction": "Verifier clicks actual Apply and waits for the new applied Worker receipt; product not changed for this failure.",
+      "retry": {
+        "path": ".cache/source-implicit-mesh-reuse-20261027/app-cpu-parameters-r2/report.json",
+        "sha256": "663e1c1120874d5d24f49ab280ae2fec5ff50477c7327d72092929fd402d4bc8"
+      }
+    }
+  ],
+  "nextStepReferenceOnly": {
+    "index": {
+      "path": ".cache/source-implicit-preview-reference-20261027/capture-index.json",
+      "sha256": "37be47cdd71177c4ba962b069c61c4350c52a45cfee83ab1ee06887b01ab2f97"
+    },
+    "originalReferenceReady": true,
+    "sourceMode": "PREVIEW",
+    "grid": 50,
+    "originalPausedFrames": 2,
+    "productSourceAlgorithmImplemented": false,
+    "productParityClaim": false
+  },
+  "limitations": [
+    "One Apple Silicon Mac; no cross-device proof.",
+    "Source PREVIEW remains a separate unimplemented parity task; original reference capture does not complete product integration.",
+    "Source parameter dirty writes still require rebuilding; static cache gains do not imply all-animation speedups.",
+    "No full Implicit-family, M3 or eleven-family Goal completion claim.",
+    "No 200³ throughput claim; token usage and VRAM unmeasured."
+  ]
+}

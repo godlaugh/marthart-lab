@@ -1,4 +1,5 @@
 import {generateImplicitSurface,IMPLICIT_MAX_SEGMENTS} from '../engine/implicitSurface';
+import type {SourceImplicitMeshOwner} from '../engine/sourceImplicitMeshOwner';
 import {attractorBackendControl} from '../engine/attractorControls';
 import {parseAttractorInitial,AttractorSeedStream} from '../engine/attractorSeeds';
 import { compileReal, numberSetting, random, type Scope } from '../engine/expression';
@@ -458,8 +459,8 @@ export function generateAttractor(scene: SceneDocument, context: GenerateContext
 }
 
 /** Implicit grid/root/output ownership is isolated from surface and attractor. */
-export function generateImplicit(scene:SceneDocument,context:GenerateContext):SceneOutput {
-  return generateImplicitSurface(scene,context,transformFor(scene.settings));
+export function generateImplicit(scene:SceneDocument,context:GenerateContext,sourceMesh?:SourceImplicitMeshOwner):SceneOutput {
+  return generateImplicitSurface(scene,context,transformFor(scene.settings),sourceMesh);
 }
 
 function numberControl(key: string, label: string, group: string, min?: number, max?: number, step?: number, help?: string): ControlSpec {
