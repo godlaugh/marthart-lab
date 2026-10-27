@@ -1,0 +1,705 @@
+{
+  "schemaVersion": 1,
+  "status": "finite-grid-costs-measured-source-preview-algorithm-remains-local",
+  "requirement": "MAS-IMP-026",
+  "baselineCommit": "a75dd8e3e76dd1d7976374e08955bc10a6b59569",
+  "platformScope": "One Apple M2 Max Mac; original GL4.1 compute unavailable, normal CPU fallback plus GPU material.",
+  "profile": {
+    "primaryLogical": [
+      405,
+      486
+    ],
+    "pixelDensity": 2,
+    "targetPhysical": [
+      500,
+      600
+    ],
+    "targetLogical": [
+      250,
+      300
+    ]
+  },
+  "coverage": {
+    "originalCases": 5,
+    "originalDisplays": 10,
+    "productCases": 5,
+    "productDisplays": 15,
+    "productSourceFormulaPngDeliveries": 12,
+    "silentGridReduction": false,
+    "rejectedTaskCountInFinalMatrix": 0,
+    "sourceByteOrFullImageParityClaim": false,
+    "gpuReleased": true
+  },
+  "index": {
+    "path": ".cache/source-implicit-grid-cost-20261027/index.json",
+    "sha256": "4b320e4fdf2ce4d60621003cd61a2fe525fea6bd4f1450f25cccd263af4c2819"
+  },
+  "results": {
+    "path": ".cache/source-implicit-grid-cost-20261027/results.json",
+    "sha256": "f5bf2468a3a55a93375be0cfebac375aa73bd1e3dcdfe97c1c5bbff8e5973371"
+  },
+  "cases": [
+    {
+      "id": "cpu-preview-50",
+      "nominal": {
+        "segments": 50,
+        "meshMode": "CPU",
+        "renderMode": "PREVIEW",
+        "cells": 125000,
+        "latticeSamples": 132651
+      },
+      "input": {
+        "sha256": "9d8f09a4de62686239c483d273c605ede85086811566265b8d4ef1f979825761",
+        "path": ".cache/source-implicit-grid-cost-20261027/inputs/cpu-preview-50.json"
+      },
+      "original": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/original-host/reference-cpu-preview-50-r1/report.json",
+          "sha256": "d5f88454a3069b0f7a551eac0d3b149e73221ad0c2f0e647aa350ffd11cff9de"
+        },
+        "familyTaskCost": {
+          "seconds": 10.14449895801954,
+          "sampledProcessFamilyPeakRssBytes": 335921152,
+          "childUserCpuSecondsIncludingCompileMonitor": 6.828597,
+          "childSystemCpuSecondsIncludingCompileMonitor": 2.03918
+        },
+        "particleCount": 2676,
+        "meshVertexCount": 0,
+        "computeProgram": -1,
+        "materialProgram": 0,
+        "wallMs": [
+          589.095917,
+          159.783958,
+          8.46025
+        ],
+        "renderThreadCpuMs": [
+          421.536,
+          149.025,
+          7.705
+        ],
+        "cleanupConfirmed": true
+      },
+      "product": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/product-cpu-preview-50-r3/report.json",
+          "sha256": "9bbe0b71602f857debf80ada08d6754c4d08f27cfdce839120ffbba593001afe"
+        },
+        "rows": [
+          {
+            "phase": "cold",
+            "elapsedMs": 792.8999999761581,
+            "generateMs": 780.8999999761581,
+            "rendererSetupMs": 8.899999976158142,
+            "drawReadbackMs": 3.100000023841858,
+            "totalTaskMs": 797.1000000238419,
+            "vertices": 29598,
+            "producerElapsedMs": 475.39999997615814,
+            "cpuMs": 3370,
+            "sampledPeakFamilyRssBytes": 1855832064,
+            "familySamples": 4,
+            "formulaPng": null,
+            "display": null
+          },
+          {
+            "phase": "warm-1",
+            "elapsedMs": 434.10000002384186,
+            "generateMs": 428.60000002384186,
+            "rendererSetupMs": 3.100000023841858,
+            "drawReadbackMs": 2.399999976158142,
+            "totalTaskMs": 435.10000002384186,
+            "vertices": 29598,
+            "producerElapsedMs": 428.10000002384186,
+            "cpuMs": 1839.9999999999995,
+            "sampledPeakFamilyRssBytes": 1864957952,
+            "familySamples": 3,
+            "formulaPng": null,
+            "display": null
+          },
+          {
+            "phase": "warm-2",
+            "elapsedMs": 429,
+            "generateMs": 423.5,
+            "rendererSetupMs": 3.100000023841858,
+            "drawReadbackMs": 2.399999976158142,
+            "totalTaskMs": 430,
+            "vertices": 29598,
+            "producerElapsedMs": 423.2999999523163,
+            "cpuMs": 1610,
+            "sampledPeakFamilyRssBytes": 1867169792,
+            "familySamples": 3,
+            "formulaPng": null,
+            "display": null
+          }
+        ],
+        "cleanupConfirmed": true
+      }
+    },
+    {
+      "id": "cpu-wireframe-70",
+      "nominal": {
+        "segments": 70,
+        "meshMode": "CPU",
+        "renderMode": "WIREFRAME",
+        "cells": 343000,
+        "latticeSamples": 357911
+      },
+      "input": {
+        "sha256": "7388e3c8cdaa13cf24e975b1b42e5c9f6b6340f8b06bc549eb4f028ecc71ff1f",
+        "path": ".cache/source-implicit-grid-cost-20261027/inputs/cpu-wireframe-70.json"
+      },
+      "original": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/original-host/reference-cpu-wireframe-70-r1/report.json",
+          "sha256": "ab4ef4120adb278561c30aa088440b9d6f7236ae7e7b3760035d6d892b7f2e10"
+        },
+        "familyTaskCost": {
+          "seconds": 8.077108166064136,
+          "sampledProcessFamilyPeakRssBytes": 443957248,
+          "childUserCpuSecondsIncludingCompileMonitor": 7.309509,
+          "childSystemCpuSecondsIncludingCompileMonitor": 1.630145
+        },
+        "particleCount": 0,
+        "meshVertexCount": 122256,
+        "computeProgram": -1,
+        "materialProgram": 0,
+        "wallMs": [
+          688.148125,
+          285.878167,
+          24.857834
+        ],
+        "renderThreadCpuMs": [
+          548.177,
+          282.211,
+          24.016
+        ],
+        "cleanupConfirmed": true
+      },
+      "product": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/product-cpu-wireframe-70-r2/report.json",
+          "sha256": "c059a2b0eb79f0f34fdb3da823d0b25736fe5970a3fa07e08c65c2b7170d28e0"
+        },
+        "rows": [
+          {
+            "phase": "cold",
+            "elapsedMs": 949.1000000238419,
+            "generateMs": 717.3999999761581,
+            "rendererSetupMs": 33.10000002384186,
+            "drawReadbackMs": 198.60000002384186,
+            "totalTaskMs": 2522.7999999523163,
+            "vertices": 122256,
+            "producerElapsedMs": 413.59999990463257,
+            "cpuMs": 8280.000000000002,
+            "sampledPeakFamilyRssBytes": 2184839168,
+            "familySamples": 10,
+            "formulaPng": {
+              "elapsedMs": 1569.3000000715256,
+              "pngBytes": 83873,
+              "pngSha256": "245e6279581eeca27e035a891a02c6d2517d167f3a8bab2446bb4c0267d3594e",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": null
+          },
+          {
+            "phase": "warm-1",
+            "elapsedMs": 671.7999999523163,
+            "generateMs": 449.39999997615814,
+            "rendererSetupMs": 28.799999952316284,
+            "drawReadbackMs": 193.60000002384186,
+            "totalTaskMs": 979.8999999761581,
+            "vertices": 122256,
+            "producerElapsedMs": 448.5,
+            "cpuMs": 3379.999999999999,
+            "sampledPeakFamilyRssBytes": 2122252288,
+            "familySamples": 5,
+            "formulaPng": {
+              "elapsedMs": 305.60000002384186,
+              "pngBytes": 83873,
+              "pngSha256": "245e6279581eeca27e035a891a02c6d2517d167f3a8bab2446bb4c0267d3594e",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": null
+          },
+          {
+            "phase": "warm-2",
+            "elapsedMs": 590.8999999761581,
+            "generateMs": 380.2999999523163,
+            "rendererSetupMs": 26,
+            "drawReadbackMs": 184.60000002384186,
+            "totalTaskMs": 884.2999999523163,
+            "vertices": 122256,
+            "producerElapsedMs": 379.7000000476837,
+            "cpuMs": 2100,
+            "sampledPeakFamilyRssBytes": 2173304832,
+            "familySamples": 5,
+            "formulaPng": {
+              "elapsedMs": 292.60000002384186,
+              "pngBytes": 83873,
+              "pngSha256": "245e6279581eeca27e035a891a02c6d2517d167f3a8bab2446bb4c0267d3594e",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": null
+          }
+        ],
+        "cleanupConfirmed": true
+      }
+    },
+    {
+      "id": "gpu-wireframe-70",
+      "nominal": {
+        "segments": 70,
+        "meshMode": "GPU",
+        "renderMode": "WIREFRAME",
+        "cells": 343000,
+        "latticeSamples": 357911
+      },
+      "input": {
+        "sha256": "c3cea7418988543dfd0da2545d7fbcbdca36f9d4aed119e42fd95c81ee79f454",
+        "path": ".cache/source-implicit-grid-cost-20261027/inputs/gpu-wireframe-70.json"
+      },
+      "original": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/original-host/reference-gpu-wireframe-70-r1/report.json",
+          "sha256": "bb8c2ec30f4c5fba4d8ceee91d99eea322df29c30ee280bffce59151182ddeaf"
+        },
+        "familyTaskCost": {
+          "seconds": 8.092500958009623,
+          "sampledProcessFamilyPeakRssBytes": 392593408,
+          "childUserCpuSecondsIncludingCompileMonitor": 7.14628,
+          "childSystemCpuSecondsIncludingCompileMonitor": 1.652519
+        },
+        "particleCount": 0,
+        "meshVertexCount": 122256,
+        "computeProgram": 0,
+        "materialProgram": 1,
+        "wallMs": [
+          688.894458,
+          251.845542,
+          5.541833
+        ],
+        "renderThreadCpuMs": [
+          550.953,
+          245.059,
+          3.582
+        ],
+        "cleanupConfirmed": true
+      },
+      "product": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/product-gpu-wireframe-70-r1/report.json",
+          "sha256": "fee431db74ee48da9fc45bba41fa9a8c3d7ec733031df58895eaf8b414d88335"
+        },
+        "rows": [
+          {
+            "phase": "cold",
+            "elapsedMs": 1033.7000000476837,
+            "generateMs": 726,
+            "rendererSetupMs": 36.10000002384186,
+            "drawReadbackMs": 271.60000002384186,
+            "totalTaskMs": 2569.2000000476837,
+            "vertices": 122256,
+            "producerElapsedMs": 425.2000000476837,
+            "cpuMs": 8480,
+            "sampledPeakFamilyRssBytes": 2235187200,
+            "familySamples": 10,
+            "formulaPng": {
+              "elapsedMs": 1533.1999999284744,
+              "pngBytes": 152254,
+              "pngSha256": "242ca5e47a3e1206b5aea9300ef006d059998dc2023caf0ff0e8827f181caa90",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 1,
+              "meshRevision": 1,
+              "rebuilt": true,
+              "viewport": [
+                0,
+                0,
+                810,
+                972
+              ]
+            }
+          },
+          {
+            "phase": "warm-1",
+            "elapsedMs": 732.1000000238419,
+            "generateMs": 451,
+            "rendererSetupMs": 26,
+            "drawReadbackMs": 255.10000002384186,
+            "totalTaskMs": 1142.6000000238419,
+            "vertices": 122256,
+            "producerElapsedMs": 450.2999999523163,
+            "cpuMs": 3870,
+            "sampledPeakFamilyRssBytes": 2255699968,
+            "familySamples": 5,
+            "formulaPng": {
+              "elapsedMs": 408.1999999284744,
+              "pngBytes": 157138,
+              "pngSha256": "49d06b010ede7391775f496a182072084140d5be0383bbd14619eb94a93b6a57",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 2,
+              "meshRevision": 1,
+              "rebuilt": false,
+              "viewport": [
+                0,
+                0,
+                500,
+                600
+              ]
+            }
+          },
+          {
+            "phase": "warm-2",
+            "elapsedMs": 667.2000000476837,
+            "generateMs": 385.2999999523163,
+            "rendererSetupMs": 26.600000023841858,
+            "drawReadbackMs": 255.30000007152557,
+            "totalTaskMs": 1049.7999999523163,
+            "vertices": 122256,
+            "producerElapsedMs": 384.7999999523163,
+            "cpuMs": 2599.9999999999995,
+            "sampledPeakFamilyRssBytes": 2311159808,
+            "familySamples": 5,
+            "formulaPng": {
+              "elapsedMs": 381,
+              "pngBytes": 157138,
+              "pngSha256": "49d06b010ede7391775f496a182072084140d5be0383bbd14619eb94a93b6a57",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 3,
+              "meshRevision": 1,
+              "rebuilt": false,
+              "viewport": [
+                0,
+                0,
+                500,
+                600
+              ]
+            }
+          }
+        ],
+        "cleanupConfirmed": true
+      }
+    },
+    {
+      "id": "gpu-wireframe-100",
+      "nominal": {
+        "segments": 100,
+        "meshMode": "GPU",
+        "renderMode": "WIREFRAME",
+        "cells": 1000000,
+        "latticeSamples": 1030301
+      },
+      "input": {
+        "sha256": "1f1c2883d41cd20e834fc6d1b925d679d525d2172443fb75dd4e294c1a4fa162",
+        "path": ".cache/source-implicit-grid-cost-20261027/inputs/gpu-wireframe-100.json"
+      },
+      "original": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/original-host/reference-gpu-wireframe-100-r1/report.json",
+          "sha256": "6acbc8a6b02d096cb70d5976863cb1eb5cfaf843c968bf2f55dbc8f83e09de37"
+        },
+        "familyTaskCost": {
+          "seconds": 8.463299917057157,
+          "sampledProcessFamilyPeakRssBytes": 469319680,
+          "childUserCpuSecondsIncludingCompileMonitor": 7.645982,
+          "childSystemCpuSecondsIncludingCompileMonitor": 1.746762
+        },
+        "particleCount": 0,
+        "meshVertexCount": 250176,
+        "computeProgram": 0,
+        "materialProgram": 1,
+        "wallMs": [
+          815.362959,
+          385.963458,
+          5.782875
+        ],
+        "renderThreadCpuMs": [
+          666.212,
+          376.871,
+          3.125
+        ],
+        "cleanupConfirmed": true
+      },
+      "product": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/product-gpu-wireframe-100-r1/report.json",
+          "sha256": "e7c7a73d10df3a8082d2531c903d7779e73bfb3bbf2ef2183e8ea12430abdb8a"
+        },
+        "rows": [
+          {
+            "phase": "cold",
+            "elapsedMs": 1840,
+            "generateMs": 1249.2999999523163,
+            "rendererSetupMs": 52.90000009536743,
+            "drawReadbackMs": 537.7999999523163,
+            "totalTaskMs": 3456.600000023842,
+            "vertices": 250176,
+            "producerElapsedMs": 947.2999999523163,
+            "cpuMs": 11760.000000000002,
+            "sampledPeakFamilyRssBytes": 2442788864,
+            "familySamples": 13,
+            "formulaPng": {
+              "elapsedMs": 1614.2999999523163,
+              "pngBytes": 151989,
+              "pngSha256": "aefe6729ac9294d7dcf14c1ee8441b3ad9cd037468cbfe1cd0c9a4d97785febe",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 1,
+              "meshRevision": 1,
+              "rebuilt": true,
+              "viewport": [
+                0,
+                0,
+                810,
+                972
+              ]
+            }
+          },
+          {
+            "phase": "warm-1",
+            "elapsedMs": 1627.2999999523163,
+            "generateMs": 1063.7999999523163,
+            "rendererSetupMs": 41.299999952316284,
+            "drawReadbackMs": 522.2000000476837,
+            "totalTaskMs": 2371.0999999046326,
+            "vertices": 250176,
+            "producerElapsedMs": 1063.1000000238419,
+            "cpuMs": 4430,
+            "sampledPeakFamilyRssBytes": 2735538176,
+            "familySamples": 10,
+            "formulaPng": {
+              "elapsedMs": 742.9000000953674,
+              "pngBytes": 149202,
+              "pngSha256": "ef86c164af18ce913c9d1874b54ca70233e1dec18ea9f16500ac1ef166e4ff5f",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 2,
+              "meshRevision": 1,
+              "rebuilt": false,
+              "viewport": [
+                0,
+                0,
+                500,
+                600
+              ]
+            }
+          },
+          {
+            "phase": "warm-2",
+            "elapsedMs": 1487.0999999046326,
+            "generateMs": 922.1999999284744,
+            "rendererSetupMs": 45.300000071525574,
+            "drawReadbackMs": 519.5999999046326,
+            "totalTaskMs": 2238.6999999284744,
+            "vertices": 250176,
+            "producerElapsedMs": 921.9000000953674,
+            "cpuMs": 2950.0000000000005,
+            "sampledPeakFamilyRssBytes": 2764292096,
+            "familySamples": 9,
+            "formulaPng": {
+              "elapsedMs": 750.6000000238419,
+              "pngBytes": 149202,
+              "pngSha256": "ef86c164af18ce913c9d1874b54ca70233e1dec18ea9f16500ac1ef166e4ff5f",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 3,
+              "meshRevision": 1,
+              "rebuilt": false,
+              "viewport": [
+                0,
+                0,
+                500,
+                600
+              ]
+            }
+          }
+        ],
+        "cleanupConfirmed": true
+      }
+    },
+    {
+      "id": "gpu-wireframe-135",
+      "nominal": {
+        "segments": 135,
+        "meshMode": "GPU",
+        "renderMode": "WIREFRAME",
+        "cells": 2460375,
+        "latticeSamples": 2515456
+      },
+      "input": {
+        "sha256": "4913616c3bfd6ab5e6ff2ca30741f86f887176c49a0e6999cf40f89ba9393d7e",
+        "path": ".cache/source-implicit-grid-cost-20261027/inputs/gpu-wireframe-135.json"
+      },
+      "original": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/original-host/reference-gpu-wireframe-135-r1/report.json",
+          "sha256": "dff1028f0ce1e3057acb4c4b16d4ab7fac89818d1ec6d1e367d4f60790c34082"
+        },
+        "familyTaskCost": {
+          "seconds": 9.408885875018314,
+          "sampledProcessFamilyPeakRssBytes": 614842368,
+          "childUserCpuSecondsIncludingCompileMonitor": 8.151352,
+          "childSystemCpuSecondsIncludingCompileMonitor": 1.943606
+        },
+        "particleCount": 0,
+        "meshVertexCount": 455040,
+        "computeProgram": 0,
+        "materialProgram": 1,
+        "wallMs": [
+          1079.200625,
+          592.714625,
+          6.295959
+        ],
+        "renderThreadCpuMs": [
+          941.169,
+          578.17,
+          3.735
+        ],
+        "cleanupConfirmed": true
+      },
+      "product": {
+        "report": {
+          "path": ".cache/source-implicit-grid-cost-20261027/product-gpu-wireframe-135-r1/report.json",
+          "sha256": "9dc69c14a1a64e0e68a45c7ea261046a1de106b482cedac0ec5ad12471a54c33"
+        },
+        "rows": [
+          {
+            "phase": "cold",
+            "elapsedMs": 3308,
+            "generateMs": 2246.899999976158,
+            "rendererSetupMs": 80.70000004768372,
+            "drawReadbackMs": 980.3999999761581,
+            "totalTaskMs": 5402.600000023842,
+            "vertices": 455040,
+            "producerElapsedMs": 1947.7000000476837,
+            "cpuMs": 15670,
+            "sampledPeakFamilyRssBytes": 2858795008,
+            "familySamples": 19,
+            "formulaPng": {
+              "elapsedMs": 2092.2999999523163,
+              "pngBytes": 132845,
+              "pngSha256": "e5a1af763a9f4bc64ada90f3f289ffef9e0296a0890cffc1c96fba6772fcb441",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 1,
+              "meshRevision": 1,
+              "rebuilt": true,
+              "viewport": [
+                0,
+                0,
+                810,
+                972
+              ]
+            }
+          },
+          {
+            "phase": "warm-1",
+            "elapsedMs": 3081.8000000715256,
+            "generateMs": 2061.600000023842,
+            "rendererSetupMs": 64.20000004768372,
+            "drawReadbackMs": 956,
+            "totalTaskMs": 4435.5,
+            "vertices": 455040,
+            "producerElapsedMs": 2060.7999999523163,
+            "cpuMs": 5359.999999999998,
+            "sampledPeakFamilyRssBytes": 3269722112,
+            "familySamples": 16,
+            "formulaPng": {
+              "elapsedMs": 1351.2000000476837,
+              "pngBytes": 128364,
+              "pngSha256": "bce64c5a79310dcfec86b7d77aed7abef39a9ed520224c25e93d254654b69f08",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 2,
+              "meshRevision": 1,
+              "rebuilt": false,
+              "viewport": [
+                0,
+                0,
+                500,
+                600
+              ]
+            }
+          },
+          {
+            "phase": "warm-2",
+            "elapsedMs": 3076.0999999046326,
+            "generateMs": 2035.8999999761581,
+            "rendererSetupMs": 93.89999997615814,
+            "drawReadbackMs": 946.2999999523163,
+            "totalTaskMs": 4438.899999976158,
+            "vertices": 455040,
+            "producerElapsedMs": 2035.2000000476837,
+            "cpuMs": 5340.000000000002,
+            "sampledPeakFamilyRssBytes": 3301769216,
+            "familySamples": 16,
+            "formulaPng": {
+              "elapsedMs": 1361.7999999523163,
+              "pngBytes": 128364,
+              "pngSha256": "bce64c5a79310dcfec86b7d77aed7abef39a9ed520224c25e93d254654b69f08",
+              "scope": "Actual formula compositor and source paused PNG enhancement; no original branding"
+            },
+            "display": {
+              "displayIndex": 3,
+              "meshRevision": 1,
+              "rebuilt": false,
+              "viewport": [
+                0,
+                0,
+                500,
+                600
+              ]
+            }
+          }
+        ],
+        "cleanupConfirmed": true
+      }
+    }
+  ],
+  "earlierAttempts": [
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-grid-cost-20261027/product-cpu-preview-50-r1/report.json",
+      "classification": "sandbox loopback listen EPERM; no generation started"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-grid-cost-20261027/product-cpu-preview-50-r2/report.json",
+      "classification": "completed math-only before formula-delivery instrumentation; preserved, superseded by r3"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-implicit-grid-cost-20261027/product-cpu-wireframe-70-r1/report.json",
+      "classification": "harness selected bounded route not used by actual source Implicit image consumer; rejected unsupported attribute rebasing. Numeric success is not complete throughput. Preserved; actual route measured by r2."
+    }
+  ],
+  "limitations": [
+    "Original display includes math, formulas, branding and loadPixels; product math and optional formula+enhancedPNG are separately timed. These are not equal whole-workflow scopes; no overall speed ratio is claimed.",
+    "Product 50 PREVIEW uses local certified-root MT points (29598) rather than original particle preview (2676); finite cost exists but parity remains unverified/unimplemented.",
+    "Original per-phase CPU is current Java render thread only, not all process threads. Original family CPU includes javac/PNG/monitor; product per-frame sampled family CPU includes Node/Vite/Chrome/Worker/native/glyph.",
+    "RSS sampling period is 250ms. Reported peaks may miss shorter transients. No claimed per-phase true high-water mark. Product browser-family peak is not the 256MiB typed-buffer budget.",
+    "Same-owner steady product requests still invoke numerical MC; display.rebuilt=false is a viewport/lifecycle fact, not proof of cache reuse. Before measurements are preserved.",
+    "Five finite inputs on one M2 Max. 200 cubed is a scale statement only; no universal field complexity, cross-driver throughput, or full family parity claim.",
+    "GPU execution time, VRAM and agent tokens were not independently measured; wall time, CPU and RSS do not establish those costs."
+  ],
+  "followUp": [
+    "Implement source PREVIEW particle semantics; current local MT counts differ (2676 original versus29598 local for50cubed).",
+    "Evaluate mesh numerical ownership/cache for unchanged same-owner requests. Preserve dirty/replay/hot palette/material, transfer ownership and budget; no production modification in this task."
+  ],
+  "costColumnMeaning": {
+    "originalWallAndThreadCpuOrder": [
+      "initScene",
+      "first-full-display",
+      "same-owner-steady-display"
+    ],
+    "productElapsedMs": "Numerical generation through complete math draw/readback; formula/PNG excluded.",
+    "productTotalTaskMs": "Includes formula/paused PNG when present; no branding.",
+    "productCpuAndRss": "Per complete measured request (includes formula/PNG when present), 250ms sampled Node+Chrome+Worker+helpers; not math-only."
+  }
+}

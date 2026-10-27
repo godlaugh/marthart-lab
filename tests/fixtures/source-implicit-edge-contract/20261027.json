@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "requirement": "MAS-IMP-019",
+  "disposition": "source-contract-reconciled",
+  "wholeFamilyAcceptance": false,
+  "allFamiliesAcceptance": false,
+  "productChanges": false,
+  "independentAttackReleaseModelImplemented": false,
+  "baseHead": "a75dd8e3e76dd1d7976374e08955bc10a6b59569",
+  "source": {
+    "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "sha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+  },
+  "guide": {
+    "url": "https://www.mathartstudio.art/guide/implicit-surface",
+    "capturedAt": "2026-10-14T15:33:16.974374+00:00",
+    "htmlSha256": "2d792cefb81cd1ba145750fcbf3b54c86ca66cb7ce8dc6438f21d0e3c1ef9711",
+    "blocks": [
+      205,
+      206,
+      207,
+      208,
+      209,
+      210,
+      211,
+      310,
+      311,
+      312,
+      313,
+      314
+    ]
+  },
+  "sourceContract": {
+    "rawFields": [
+      "window",
+      "floor",
+      "easing"
+    ],
+    "windowUnit": "phase radians; same angular-distance window at pi/2 and 3pi/2",
+    "floorMeaning": "coefficient in floor + (1-floor)*easing(float32(distance/window)); not upper-end width",
+    "jsonDefault": {
+      "window": 0.5,
+      "floor": 0.25,
+      "easing": "SINE_OUT"
+    },
+    "nullRuntimeEdgeDefault": {
+      "window": 0.4,
+      "floor": 0.5,
+      "easing": "SINE_OUT"
+    },
+    "inheritance": [
+      "JSON defaults",
+      "settings.param_edge_easing",
+      "action args.edgeEasing",
+      "named parameter edgeEasing"
+    ],
+    "runtimeNormalization": {
+      "window": "max(1e-6,window)",
+      "floor": "clamp01(floor)"
+    },
+    "unknownGuideKeys": [
+      "attackRatio",
+      "releaseRatio"
+    ],
+    "unknownGuideKeysPolicy": "original reader ignores; local import preserves original values and warnings; canonical executable config rejects unknown keys",
+    "evidenceKind": "static classfile interpretation; current JAR member hashes rechecked, no new original execution"
+  },
+  "classes": [
+    {
+      "class": "mathart.animation.ParamEdgeEasingConfig",
+      "sha256": "1d0e76df2c3630e465a24516cd2c72fe22d7a4fd29c0f68131f707acb71481d0",
+      "verification": "current unchanged JAR member matches retained static decode"
+    },
+    {
+      "class": "mathart.animation.OscillationEdgeEasing",
+      "sha256": "8504db872f70e6c5c7aa3b1491dc4b02220d9aadbad189c111d957a04bc8fb60",
+      "verification": "current unchanged JAR member matches retained static decode"
+    },
+    {
+      "class": "mathart.animation.StartImplicitParamAnimation",
+      "sha256": "27c5ace38401fd12ddc7c98eb45940f16ac63150b3e5675ce83d8189ff402a40",
+      "staticPath": ".cache/source-implicit-parameters-20261024/mathart.animation.StartImplicitParamAnimation.javap.txt",
+      "staticSha256": "555f7973bdadee1de61bde962b03b529e3b83181f1cb3150b573a280e22c7668"
+    },
+    {
+      "class": "mathart.implicit.ImplicitSurfaceParameterAnimator",
+      "sha256": "dc11afbbdd8fa918afe9f0bb5b9b9bd6a180308ac60e7397582c6d188eee0ec0",
+      "staticPath": ".cache/source-implicit-parameters-20261024/mathart.implicit.ImplicitSurfaceParameterAnimator.javap.txt",
+      "staticSha256": "602562ce7e703d73cf4e8a1f0a9bd0a49631d62592299f268ee7fc1789033ce3"
+    },
+    {
+      "class": "mathart.implicit.config.JsonImplicitSurfaceConfig",
+      "sha256": "a065b71dde04367f3c792b8469e0f8299c58d0ff2528844dac3bb9c6b807391b",
+      "staticPath": ".cache/source-implicit-parameters-20261024/mathart.implicit.config.JsonImplicitSurfaceConfig.javap.txt",
+      "staticSha256": "a3b64c9c17f9de1628e3ecc20fe0e54e88b3babaa1cf5e97b50d61428401bcb0"
+    }
+  ],
+  "staticEvidence": [
+    {
+      "path": ".cache/domain-param-peer-ParamEdgeEasingConfig-bytecode.json",
+      "sha256": "527b17bd940ad7ea49d247c2055d003ca60d771c4aa5cc00953b5b2f5200d817"
+    },
+    {
+      "path": ".cache/domain-param-peer-OscillationEdgeEasing-bytecode.json",
+      "sha256": "5fbfd0da8f019e110ea03de151a6ba7c089f31e545fbb25dcb131a462a54f448"
+    },
+    {
+      "path": ".cache/source-implicit-parameters-20261024/static.json",
+      "sha256": "d85b143e4ae92bb3c4ce1bf30f26822a035ea0c03b97becd7df70b4f5ca3b6cc"
+    }
+  ],
+  "retainedRuntime": {
+    "report": ".cache/source-implicit-parameters-20261024/parity-verified/report.json",
+    "cases": [
+      {
+        "name": "complete-parameters",
+        "frames": 19
+      },
+      {
+        "name": "continued-parameters",
+        "frames": 10
+      },
+      {
+        "name": "fixed-parameters",
+        "frames": 11
+      },
+      {
+        "name": "negative-parameters",
+        "frames": 10
+      }
+    ],
+    "frameCount": 50,
+    "allMathPixelsExact": true,
+    "scope": "CPU 24^3, controlled original clock and prebranding 384x288 artwork; existing 20261024 run, not rerun",
+    "allInputsOmitCustomEdge": true,
+    "unknownAttackReleaseOriginalRuntimeExecuted": false,
+    "newCustomEdgeOriginalRuntimeExecuted": false,
+    "reportPin": {
+      "path": ".cache/source-implicit-parameters-20261024/parity-verified/report.json",
+      "sha256": "54e8da73772d4416c965828383c2af44aa1cfad4cc436a23ef575e1d03051ef8"
+    },
+    "numericFixturePin": {
+      "path": "tests/fixtures/source-implicit-presentation/parameters.json",
+      "sha256": "7f631e8126d2e1e630adbb1cba8cf1148e4af1dec490ac842ae7ce7db2688e0f"
+    }
+  },
+  "localChecks": {
+    "scope": "CPU-only source-contract review and public import/save/load/SSR tests; no target JVM or GPU launched",
+    "executed": [
+      {
+        "command": "npx vitest run tests/source-implicit-edge-contract.test.ts tests/source-implicit-parameter-import-ui.test.ts",
+        "exitCode": 0,
+        "files": 2,
+        "tests": 12,
+        "elapsedSeconds": 2.83,
+        "log": {
+          "path": ".cache/source-implicit-edge-contract-20261027/tests-r2.log",
+          "sha256": "8aa9a6125840af6b6bfb215c5ac85a3f05b213d23eeff27bd49ec8444cc452d5"
+        }
+      },
+      {
+        "command": "npx tsc --noEmit",
+        "exitCode": 0,
+        "log": {
+          "path": ".cache/source-implicit-edge-contract-20261027/tsc.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    ],
+    "preservedFailure": {
+      "log": {
+        "path": ".cache/source-implicit-edge-contract-20261027/tests-r1.log",
+        "sha256": "a5d97dc0f7bdc8cc2423d5b79955277760a179ae6d9671b5e44ecd70c32cd1ec"
+      },
+      "reason": "Test used unsupported zh-CN language value, which selected existing English fallback; corrected test to the existing en Provider contract. No product change."
+    },
+    "originalRuntimeRerun": false,
+    "gpuRuns": 0,
+    "performance": {
+      "cpu": null,
+      "peakRss": null,
+      "tokens": null,
+      "comparisonClaim": false
+    }
+  },
+  "provenance": {
+    "audit": {
+      "path": ".cache/source-implicit-edge-contract-20261027/audit.json",
+      "sha256": "75914313a78a74a428f58ae517b5c0f2ac3e71d7264d353fe3200cb53fc6b3f5"
+    },
+    "checks": {
+      "path": ".cache/source-implicit-edge-contract-20261027/checks.json",
+      "sha256": "74d3b4d41c32aec7a80ce8797c3975058fadd0913861ddbd100bf8c21bb89786"
+    },
+    "test": {
+      "path": "tests/source-implicit-edge-contract.test.ts",
+      "sha256": "ddbcb24e72b8e7b9e9b8b73d4a5710bdfa0776c9e8a5fa200809ad3a02f26611"
+    },
+    "report": {
+      "path": "docs/source-implicit-edge-easing-contract.zh-CN.md",
+      "sha256": "1faa25c3c2d82a285630a51cb47c1b7ead1c16dee571086656f5550d5be13d18"
+    }
+  },
+  "limits": [
+    "The guide was captured on 2026-10-14, not fetched again in this review.",
+    "All 50 retained Implicit runtime frames omit custom edge configuration; they cover JSON defaults, not a new custom-field original oracle.",
+    "No independent lower/upper endpoint ratio model is specified or implemented.",
+    "No whole Implicit-family, all-family, M3, release, original PNG/MP4 or full-window acceptance claim.",
+    "Local finite-value and resource admission remains explicit; original NaN/Infinity execution is not covered."
+  ]
+}

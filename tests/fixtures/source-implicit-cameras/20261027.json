@@ -1,0 +1,523 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-27",
+  "requirement": "MAS-IMP-012",
+  "status": "passed-listed-local-visual-scope",
+  "readableReport": "docs/source-implicit-cameras.zh-CN.md",
+  "scope": "Three authored source-camera examples, each dirty and steady display: independent public import/Generator/real Worker/native math/glyph compositor, exact complete math and prebranding artwork RGBA.",
+  "limits": [
+    "The original reference is initially paused at sceneTime=0; public fixed replay already performs its first 1/30-second update. The same input begins with a one-second wait and has no parameter or camera writes during that step. This verifies matched camera/geometry/visual effects, not initial paused-clock equivalence.",
+    "Finite original 60³ GPU-mode input using actual CPU mesh fallback on this Mac, 500×600 offscreen target and primary 405×486 at density two; no arbitrary-camera, other-topology, other-device or successful Compute claim.",
+    "Cost includes the verifier, browser, services, encoding, comparison and observation; it is not an ordinary-use throughput benchmark. VRAM and task tokens are not measured.",
+    "Guide observer-axis descriptions conflict with the shipped camera transform. Product preserves original phi/theta/gamma, with no phi remap or Y/Z swizzle.",
+    "PNG artifacts were independently decoded offline; this does not verify the enhanced image export UI.",
+    "The user has one Mac; no cross-device or arbitrary-camera claim."
+  ],
+  "reference": {
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "authorPlan": {
+      "path": ".cache/source-implicit-camera-reference-20261027/plan.json",
+      "sha256": "7b18d310a38bb7fafe03fc2de784fb7c9d0c8f41dd738caf3646c23465ccc31c"
+    },
+    "index": {
+      "path": ".cache/source-implicit-camera-reference-20261027/capture-index.json",
+      "sha256": "c97922fb281592a52678dd2085cd71add5ee7c083f9c26c080a189db0fd416ff"
+    },
+    "primary": [
+      405,
+      486,
+      2
+    ],
+    "target": [
+      250,
+      300,
+      500,
+      600,
+      2
+    ],
+    "gl": {
+      "version": "4.1 Metal - 90.5",
+      "renderer": "Apple M2 Max",
+      "vendor": "Apple"
+    },
+    "originalHeapBytes": 536870912
+  },
+  "cameraSemantics": {
+    "evidenceKind": "Static instruction sequence plus derivation from actual matched matrices",
+    "rotation": "rotateZ(-gamma) * rotateX(phi) * rotateZ(theta)",
+    "gammaZeroObserverAxis": "[sin(phi)*sin(theta), sin(phi)*cos(theta), cos(phi)]",
+    "axisMeaning": "Unit direction from origin toward observer, not the opposite viewing-ray direction. Values are idealized; matrices use source Float32 arithmetic.",
+    "guideConflict": {
+      "front": "Guide says +Y; shipped source/matched matrices give +Z for phi=theta=gamma=0.",
+      "top": "Guide says +Z; shipped source/matched matrices give +Y for phi=PI/2,theta=gamma=0.",
+      "isometric": "Preserved guide label and PI/4 values; not a claim that all three world axes have equal observer angle."
+    },
+    "staticPins": [
+      {
+        "path": ".cache/v2-camera-source/CameraController.json",
+        "sha256": "d083496bd9ae66ba53206a5719cf1fc194f2cfa33c20fc47a78916fa4cb45ce7",
+        "classSha256": "80a478f361fdcbca2d8aeda2cc96f55e500a3527fa889ffd69765d815d0be9dd",
+        "method": "applyTransform(PGraphics)",
+        "pcs": [
+          6,
+          14,
+          22,
+          50
+        ]
+      },
+      {
+        "path": ".cache/v2-camera-source/Scene.json",
+        "sha256": "75efa39c9c4f059aedeb16e66a661356d0962bbcf3ddd1c0869fd70411af01a5",
+        "classSha256": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+        "methodEvidence": "applyPerspective PC135; render PC227,273,281,356"
+      },
+      {
+        "path": ".cache/source-implicit-parameters-20261024/mathart.implicit.ImplicitSurface.javap.txt",
+        "sha256": "c5757e5d6488555b5728ba47b4de47832eb7a05e379253b0ef88f1f0646268ac",
+        "methodEvidence": "addVertexWithInterpolatedGradient PC342–378; buildMeshShape PC130–159 and PC227; renderMeshFillShape"
+      },
+      {
+        "path": ".cache/source-implicit-camera-reference-20261027/reference-front-r1/frame-1/program-1/35633.glsl",
+        "sha256": "739452b168f5b67bdb2b3d47db01982631f58c7b75a3c632ab04dc552f666c04",
+        "claim": "Captured source shader equals shipped bytes; vertex.xyz, no Y/Z swizzle."
+      },
+      {
+        "path": "../.cache/mathart-investigation/public-docs/guide__implicit-surface.txt",
+        "sha256": "74a3122b8d7f9c524f9de8c0186767f24e97b9d533f9ac5b64bad5ab653e2204",
+        "lines": [
+          148,
+          160
+        ],
+        "blocks": [
+          147,
+          159
+        ],
+        "capturedAtUtc": "2026-10-14T15:33:16.974374+00:00"
+      },
+      {
+        "path": "../.cache/mathart-investigation/public-docs/guide__implicit-surface.html",
+        "sha256": "2d792cefb81cd1ba145750fcbf3b54c86ca66cb7ce8dc6438f21d0e3c1ef9711"
+      }
+    ]
+  },
+  "comparison": {
+    "report": {
+      "path": ".cache/source-implicit-camera-product-20261027/run-2/report.json",
+      "sha256": "daa9cee6b1a90f56c679beb39883c125eb04df790f26aac57458fe52cb688a04"
+    },
+    "verifier": {
+      "path": "scripts/verify-source-implicit-cameras.mjs",
+      "sha256": "560a8c6c605fcd7e7b06813c4e13b2e3f7cc0e3d6913494084241c85a13e596d"
+    },
+    "executedVerifier": {
+      "path": ".cache/source-implicit-camera-product-20261027/run-2/executed-verifier.mjs",
+      "sha256": "560a8c6c605fcd7e7b06813c4e13b2e3f7cc0e3d6913494084241c85a13e596d"
+    },
+    "pngArtifactAudit": {
+      "path": ".cache/source-implicit-camera-product-20261027/png-artifact-audit.json",
+      "sha256": "d2c4a38e10274c291c958ea0a4288fd0743fbec5171f7f0239378fe88c5c777f"
+    },
+    "runtime": {
+      "node": "v24.18.0",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "frames": 6,
+    "pixelsPerLayerPerFrame": 300000,
+    "numericMaterialUniformsComparedPerFrame": 22,
+    "matricesComparedPerFrame": [
+      "projection",
+      "modelview",
+      "transform"
+    ],
+    "matrixMatch": "All 16 Float32 components per matrix equal the actual original uniforms. Hashes below are independently serialized little-endian Float32.",
+    "matrixNaming": "Product line uniform projection is compared with original projectionMatrix; material modelview/transform names are unchanged.",
+    "sharedMesh": {
+      "vertices": 90120,
+      "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+      "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+      "computation": "source-cpu-fallback",
+      "presentation": "native GPU material"
+    },
+    "sourceStable": true,
+    "referenceStable": true,
+    "cleanupErrors": [],
+    "remainingProcesses": 0,
+    "elapsedMs": 10128.038958000001,
+    "processFamily": {
+      "rootPid": 88979,
+      "samples": 31,
+      "observedProcesses": 42,
+      "maxConcurrentProcesses": 12,
+      "sampledPeakRssKiB": 2354672,
+      "observedCpuMs": 24860,
+      "samplingErrors": []
+    },
+    "cases": [
+      {
+        "name": "front",
+        "camera": {
+          "phi": "0",
+          "theta": "0",
+          "gamma": "0"
+        },
+        "input": {
+          "path": ".cache/source-implicit-camera-reference-20261027/source-front.json",
+          "sha256": "824e0cd630ab37b1fa2bd89349010a78e5e3473c4557a24857d14780ed96e1a5"
+        },
+        "reusedOriginal": false,
+        "observerAxisDerivedFromActualMatrices": [
+          0,
+          0,
+          1
+        ],
+        "matricesF32LESha256": {
+          "projection": "54a57be9e89244cda75e069cb2d1463d2552f0da43e4e302c5aebcadfdc92c3a",
+          "modelview": "468ff0ba893baae353bf3cef68918534cfe65a87133f04a55260e5e8d40bb162",
+          "transform": "6b64c5f53e1e945ee6fdb6393e8340fa2bee9ad2a454d3f7d19be88eee40a70f"
+        },
+        "frames": [
+          {
+            "phase": "dirty",
+            "viewport": [
+              0,
+              0,
+              810,
+              972
+            ],
+            "originalSceneTime": 0,
+            "productSceneTime": 0.03333333507180214,
+            "comparison": {
+              "math": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              },
+              "art": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              }
+            },
+            "mathRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/front-dirty.math.rgba",
+              "sha256": "7f4f5e9cd6bae9b3b3f218f35771c075b6275781b91ba87deecc81dac12d6246"
+            },
+            "artRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/front-dirty.art.rgba",
+              "sha256": "4332a715b87ba061bfeb9cec4296b5c3e084d3d8dadbdbfcaa057a7821774604"
+            },
+            "png": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/front-dirty.png",
+              "sha256": "f93258df2bdee22397b1c163b7fa322643535d081e72df976c7ef56471acf3a5"
+            },
+            "sourceFacts": {
+              "path": ".cache/source-implicit-camera-reference-20261027/frames/front/dirty/source-facts.json",
+              "sha256": "a7bc3a55b10e60fe4a2b421a0c67d97236f015c73ed2b7d025e8a38c84170a78"
+            }
+          },
+          {
+            "phase": "steady",
+            "viewport": [
+              0,
+              0,
+              500,
+              600
+            ],
+            "originalSceneTime": 0,
+            "productSceneTime": 0.03333333507180214,
+            "comparison": {
+              "math": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              },
+              "art": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              }
+            },
+            "mathRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/front-steady.math.rgba",
+              "sha256": "233a3ca2b3cc44d6921057d3de2adeaf27d5b4cb6515742510a3713b3688eb0e"
+            },
+            "artRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/front-steady.art.rgba",
+              "sha256": "b615771463e750d4d17893da08d774f5e0d923b366106e93d308b4512451b86b"
+            },
+            "png": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/front-steady.png",
+              "sha256": "889151b5be8f3796b6826a389987f3613eb299721b2474099fa52659f93cf51a"
+            },
+            "sourceFacts": {
+              "path": ".cache/source-implicit-camera-reference-20261027/frames/front/steady/source-facts.json",
+              "sha256": "fafcb46f8a08820b77d0b74a8a8b42efbd881f488a4c2f2087f2362617a8a889"
+            }
+          }
+        ]
+      },
+      {
+        "name": "top",
+        "camera": {
+          "phi": "PI/2",
+          "theta": "0",
+          "gamma": "0"
+        },
+        "input": {
+          "path": ".cache/source-implicit-camera-reference-20261027/source-top.json",
+          "sha256": "9e774614618f7a10c02ad737fcf9acac0d80bba9271c6123cc4d45d1a5b0cf40"
+        },
+        "reusedOriginal": true,
+        "observerAxisDerivedFromActualMatrices": [
+          0,
+          1,
+          0
+        ],
+        "matricesF32LESha256": {
+          "projection": "54a57be9e89244cda75e069cb2d1463d2552f0da43e4e302c5aebcadfdc92c3a",
+          "modelview": "d5023c258aec64f50a8252732159c393361443f3c896ede461a8706f05e52317",
+          "transform": "f7b2cd5dd320968a23e68989a8d90b801d359e8a10a30a561f11def172918d64"
+        },
+        "frames": [
+          {
+            "phase": "dirty",
+            "viewport": [
+              0,
+              0,
+              810,
+              972
+            ],
+            "originalSceneTime": 0,
+            "productSceneTime": 0.03333333507180214,
+            "comparison": {
+              "math": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              },
+              "art": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              }
+            },
+            "mathRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/top-dirty.math.rgba",
+              "sha256": "8fd56a2b351c6f069494fa1e481a725ac4db3183cbe6a1e4c0048c359f5f7342"
+            },
+            "artRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/top-dirty.art.rgba",
+              "sha256": "ff297457ca83affb03c05ec210d0ae94f12a3dfdaf89882002a3589a00a81a6f"
+            },
+            "png": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/top-dirty.png",
+              "sha256": "5e51047d06640a08b3c906eb1c7c95680e83aae9f20e2b6f576068821558aca2"
+            },
+            "sourceFacts": {
+              "path": ".cache/source-implicit-camera-reference-20261027/frames/top/dirty/source-facts.json",
+              "sha256": "7ffd1795e50e036c738a1bd6274a0a717c16ac49baef2005d97effb0075742c1"
+            }
+          },
+          {
+            "phase": "steady",
+            "viewport": [
+              0,
+              0,
+              500,
+              600
+            ],
+            "originalSceneTime": 0,
+            "productSceneTime": 0.03333333507180214,
+            "comparison": {
+              "math": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              },
+              "art": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              }
+            },
+            "mathRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/top-steady.math.rgba",
+              "sha256": "c892a65714ecafc0b0272373d9f78da3ce88fda8f198f23b39e4261dfa1d20af"
+            },
+            "artRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/top-steady.art.rgba",
+              "sha256": "739d491614c601f21cc23c1df98bb270a70982b37dbdbad14f408327df44f141"
+            },
+            "png": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/top-steady.png",
+              "sha256": "e8078fec1c447af637f6b2d033d2145c243462ad061e36194de08b967cf46b03"
+            },
+            "sourceFacts": {
+              "path": ".cache/source-implicit-camera-reference-20261027/frames/top/steady/source-facts.json",
+              "sha256": "118eff35dc2b627db5efc66efe639318dd959657276233abc83d4f4f1ce6bf80"
+            }
+          }
+        ]
+      },
+      {
+        "name": "isometric",
+        "camera": {
+          "phi": "PI/4",
+          "theta": "PI/4",
+          "gamma": "0"
+        },
+        "input": {
+          "path": ".cache/source-implicit-camera-reference-20261027/source-isometric.json",
+          "sha256": "4ce4817844ed0b19386523fa225d5ccdfad86a7955487697b04fa7b51e9e3a4f"
+        },
+        "reusedOriginal": false,
+        "observerAxisDerivedFromActualMatrices": [
+          0.5,
+          0.5,
+          0.7071067811865476
+        ],
+        "matricesF32LESha256": {
+          "projection": "54a57be9e89244cda75e069cb2d1463d2552f0da43e4e302c5aebcadfdc92c3a",
+          "modelview": "37eb5414bb3a0a2397da924d04548473e2de493b5b7f362407b2d7defb864df3",
+          "transform": "dbf934c36a8d5ec0f4d8123022b7b390852d5b2f05c8332edc1e2cd67211e879"
+        },
+        "frames": [
+          {
+            "phase": "dirty",
+            "viewport": [
+              0,
+              0,
+              810,
+              972
+            ],
+            "originalSceneTime": 0,
+            "productSceneTime": 0.03333333507180214,
+            "comparison": {
+              "math": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              },
+              "art": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              }
+            },
+            "mathRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/isometric-dirty.math.rgba",
+              "sha256": "9c2e3a150df9050c265e8adce3da9a80015fafc4ac7151ff24128a5fa0f59948"
+            },
+            "artRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/isometric-dirty.art.rgba",
+              "sha256": "13422af27f314e39a15cbc623df710d9f8cab5e8cf85f801c8ca65cc9ea6a290"
+            },
+            "png": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/isometric-dirty.png",
+              "sha256": "82e1688509ba6ca634102385d8e6e88f0ea932581225df67e4b112d68507fb42"
+            },
+            "sourceFacts": {
+              "path": ".cache/source-implicit-camera-reference-20261027/frames/isometric/dirty/source-facts.json",
+              "sha256": "9944c42b28773e92de5430127213c2d4f4fdcd242dd05cb27df3d572f92906ce"
+            }
+          },
+          {
+            "phase": "steady",
+            "viewport": [
+              0,
+              0,
+              500,
+              600
+            ],
+            "originalSceneTime": 0,
+            "productSceneTime": 0.03333333507180214,
+            "comparison": {
+              "math": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              },
+              "art": {
+                "bytes": 1200000,
+                "pixels": 0,
+                "channels": 0,
+                "maxDelta": 0
+              }
+            },
+            "mathRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/isometric-steady.math.rgba",
+              "sha256": "c13b528f247d17688daa22f1d77be54fc79e3d138a2abd34ff1d1f6218754a92"
+            },
+            "artRgba": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/isometric-steady.art.rgba",
+              "sha256": "8031b5968e450b4a21e9123c1f11c7952d7a64502bdb03434ac27a1b3151f18f"
+            },
+            "png": {
+              "path": ".cache/source-implicit-camera-product-20261027/run-2/isometric-steady.png",
+              "sha256": "c847a48e23dc489f5b3bebfa6c265ae8f1f0f09661dd56afdf601bec2913adb0"
+            },
+            "sourceFacts": {
+              "path": ".cache/source-implicit-camera-reference-20261027/frames/isometric/steady/source-facts.json",
+              "sha256": "aa89213602fda642b7748941a6f70cad79c8d3ab21ada568fa9469526c7f865d"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "originalCaptureCosts": [
+    {
+      "name": "front",
+      "report": {
+        "path": ".cache/source-implicit-camera-reference-20261027/reference-front-r1/report.json",
+        "sha256": "6312997ce715d037837321d545d9390ca67d0a3167435b860131a1784f4fe551"
+      },
+      "cost": {
+        "seconds": 11.26342483307235,
+        "sampledProcessFamilyPeakRssBytes": 447610880,
+        "childUserCpuSecondsIncludingCompileMonitor": 8.328515,
+        "childSystemCpuSecondsIncludingCompileMonitor": 2.321539
+      }
+    },
+    {
+      "name": "isometric",
+      "report": {
+        "path": ".cache/source-implicit-camera-reference-20261027/reference-isometric-r1/report.json",
+        "sha256": "7a777e6190ced0c23db465d42a190f6732ce8f7e22211f386e314460c643d665"
+      },
+      "cost": {
+        "seconds": 8.906056624953635,
+        "sampledProcessFamilyPeakRssBytes": 511049728,
+        "childUserCpuSecondsIncludingCompileMonitor": 8.009024,
+        "childSystemCpuSecondsIncludingCompileMonitor": 1.893986
+      }
+    }
+  ],
+  "previousFailure": {
+    "report": {
+      "path": ".cache/source-implicit-camera-product-20261027/run-1/report.json",
+      "sha256": "51c4628c2adcd40503d5ffb06659891c8c4c05e6641d959892baa1e6c2d3e6d3"
+    },
+    "executedVerifier": {
+      "path": ".cache/source-implicit-camera-product-20261027/run-1/executed-verifier.mjs",
+      "sha256": "2e0a247e1b2d97ed49e3d4e7f1245cb608d1404b5a356b629ca06df13110c50d"
+    },
+    "reason": "Harness looked up product projectionMatrix; actual product retained-line uniform is projection. Corrected harness mapping; source product semantics unchanged.",
+    "completedComparisonFrames": 0,
+    "elapsedMs": 2840.462959,
+    "cleanupErrors": [],
+    "remainingProcesses": 0
+  }
+}
